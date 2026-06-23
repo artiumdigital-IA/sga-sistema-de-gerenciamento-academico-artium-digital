@@ -2,6 +2,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY package*.json ./
 RUN npm ci
 
@@ -14,6 +16,9 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+
+# OpenSSL necessário para o Prisma schema engine
+RUN apk add --no-cache openssl
 
 # Dependências de produção + Prisma CLI (necessário para migrate deploy)
 COPY package*.json ./
