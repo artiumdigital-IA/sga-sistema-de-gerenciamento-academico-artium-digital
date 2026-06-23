@@ -10,13 +10,15 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// Injeta o tema ANTES da pintura inicial, evitando flash
+const themeScript = `(function(){try{if((localStorage.getItem('fiurj_theme')||'light')==='dark'){document.documentElement.classList.add('dark-theme');}}catch(e){}})();`;
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );

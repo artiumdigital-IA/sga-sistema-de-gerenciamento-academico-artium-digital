@@ -3,6 +3,7 @@ const nextConfig = {
   // PWA: configurar next-pwa quando o shell estiver estável
   // por ora mantemos simples
   reactStrictMode: true,
+  output: 'standalone', // necessario para Docker
   async rewrites() {
     return [
       {

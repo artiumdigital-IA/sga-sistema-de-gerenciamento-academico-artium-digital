@@ -1,6 +1,6 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 
 @ApiTags('auth')
@@ -13,5 +13,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Login com e-mail/senha (+ MFA para Admin/Secretaria/Financeiro)' })
   async login(@Request() req: any, @Body('totpToken') totpToken?: string) {
     return this.authService.login(req.user, totpToken);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Retorna os dados do usuario autenticado (via JWT)' })
+  me(@Request() req: any) {
+    return req.user;
   }
 }

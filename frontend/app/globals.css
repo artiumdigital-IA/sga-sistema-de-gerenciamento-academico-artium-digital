@@ -2,46 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --radius: 0.5rem;
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-  }
+/* =============================================================================
+   FIURJ Design Tokens
+   ============================================================================= */
+:root {
+  --blue-dark:  #1C3A6B;
+  --blue-mid:   #1e4d9b;
+  --blue-light: #2563d4;
+  --red:        #C8102E;
+  --red-light:  #f8d7db;
+  --white:      #ffffff;
+  --gray-50:    #f7f8fa;
+  --gray-100:   #eef0f3;
+  --gray-200:   #dde1e8;
+  --gray-300:   #c4cad5;
+  --gray-400:   #8993a4;
+  --gray-500:   #5e6878;
+  --gray-700:   #2d3a4a;
+  --green:      #1a7a3c;
+  --green-bg:   #d4edda;
+  --orange:     #b45309;
+  --orange-bg:  #fef3cd;
+  --teal:       #0d7377;
+  --teal-bg:    #d1f5f5;
+  --accent-blue-text: #1C3A6B;
+  --accent-red-text:  #C8102E;
+  --sidebar-w:  52px;
+  --top-h:      44px;
+  --radius:     0.25rem;
+  /* shadcn compat */
+  --background: 0 0% 97%;
+  --foreground: 215 28% 17%;
+  --border: 214 18% 88%;
+  --input: 214 18% 88%;
+  --ring: 221 67% 37%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 215 14% 43%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 28% 17%;
+  --primary: 221 67% 27%;
+  --primary-foreground: 0 0% 100%;
 }
 
+html.dark-theme {
+  --gray-50:   #11161d;
+  --gray-100:  #1a212b;
+  --gray-200:  #2a3340;
+  --gray-300:  #3c4759;
+  --gray-400:  #7d8a9c;
+  --gray-500:  #aab4c2;
+  --gray-700:  #e7eaee;
+  --white:     #1b2330;
+  --accent-blue-text: #7fa8e8;
+  --accent-red-text:  #ff8a9b;
+  --background: 222 28% 9%;
+  --foreground: 210 20% 94%;
+  --border: 217 18% 22%;
+  --card: 222 28% 11%;
+  --card-foreground: 210 20% 94%;
+}
+
+/* =============================================================================
+   Base
+   ============================================================================= */
 @layer base {
-  * {
-    @apply border-border;
-  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
-    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-700);
+    font-size: 13px;
+    overflow-x: hidden;
   }
+  a { text-decoration: none; color: inherit; }
+  button { cursor: pointer; font-family: inherit; }
 }
+
+/* =============================================================================
+   Scrollbar
+   ============================================================================= */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
