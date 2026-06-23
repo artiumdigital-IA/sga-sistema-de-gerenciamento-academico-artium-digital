@@ -1,0 +1,57 @@
+# =============================================================================
+# .gitignore — FIURJ Plataforma Acadêmica
+# =============================================================================
+
+# ── Node / NPM ────────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Variáveis de ambiente (NUNCA versionar) ───────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+# ⚠️  .env.example deve ser versionado — contém apenas chaves, sem valores reais
+
+# ── NestJS / TypeScript ───────────────────────────────────────────────────────
+dist/
+build/
+tsconfig.tsbuildinfo
+
+# ── Next.js ───────────────────────────────────────────────────────────────────
+.next/
+out/
+.vercel
+
+# ── Prisma ────────────────────────────────────────────────────────────────────
+# NÃO ignorar schema.prisma nem migrations/ — são essenciais para o versionamento
+# Ignorar apenas o client gerado (regenerado via `prisma generate`)
+backend/node_modules/.prisma/
+
+# ── Cobertura de testes ───────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+docker-check.log
+
+# ── Editores e SO ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# ── Sentry ────────────────────────────────────────────────────────────────────
+.sentryclirc

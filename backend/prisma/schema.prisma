@@ -1,0 +1,436 @@
+// =============================================================================
+// schema.prisma — FIURJ Plataforma Acadêmica
+// Núcleo de Graduação · Fase 0
+//
+// Campos marcados com // [CENSO] são exigidos pelo Censo da Educação Superior
+// (INEP) e devem existir desde o início — nunca remover.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ESTRUTURA ACADÊMICA
+// =============================================================================
+
+model Curso {
+  id                          String   @id @default(uuid())
+  nome                        String
+  grau                        Grau     // [CENSO] bacharelado | licenciatura | tecnologo
+  modalidade                  Modalidade // [CENSO] presencial | EAD
+  codigoEmec                  String   @unique // [CENSO]
+  cargaHorariaTotal           Int
+  prazoIntegralizacaoSemestres Int
+  status                      CursoStatus @default(ATIVO)
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  matrizesCurriculares MatrizCurricular[]
+  alunos               Aluno[]
+
+  @@map("cursos")
+}
+
+model MatrizCurricular {
+  id          String              @id @default(uuid())
+  cursoId     String
+  versao      String
+  anoVigencia Int
+  status      MatrizStatus        @default(VIGENTE)
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  curso       Curso         @relation(fields: [cursoId], references: [id])
+  disciplinas Disciplina[]
+  alunos      Aluno[]
+
+  @@unique([cursoId, versao])
+  @@map("matrizes_curriculares")
+}
+
+model Disciplina {
+  id                 String   @id @default(uuid())
+  matrizCurricularId String
+  codigo             String
+  nome               String
+  cargaHoraria       Int
+  creditos           Int
+  ementa             String?  @db.Text
+  periodoSugerido    Int
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  matrizCurricular MatrizCurricular           @relation(fields: [matrizCurricularId], references: [id])
+  ofertas          Oferta[]
+  prerequisitos    DisciplinaPrerequisito[]   @relation("disciplina")
+  dependentes      DisciplinaPrerequisito[]   @relation("prerequisito")
+
+  @@unique([matrizCurricularId, codigo])
+  @@map("disciplinas")
+}
+
+model DisciplinaPrerequisito {
+  id            String @id @default(uuid())
+  disciplinaId  String
+  prerequisitoId String
+
+  disciplina   Disciplina @relation("disciplina",   fields: [disciplinaId],   references: [id])
+  prerequisito Disciplina @relation("prerequisito", fields: [prerequisitoId], references: [id])
+
+  @@unique([disciplinaId, prerequisitoId])
+  @@map("disciplinas_prerequisitos")
+}
+
+// =============================================================================
+// PERÍODO LETIVO
+// =============================================================================
+
+model PeriodoLetivo {
+  id         String              @id @default(uuid())
+  ano        Int
+  semestre   Semestre            // 1 ou 2
+  dataInicio DateTime            @db.Date
+  dataFim    DateTime            @db.Date
+  status     PeriodoStatus       @default(PLANEJADO)
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  ofertas Oferta[]
+
+  @@unique([ano, semestre])
+  @@map("periodos_letivos")
+}
+
+// =============================================================================
+// OFERTA (turma)
+// =============================================================================
+
+model Oferta {
+  id              String   @id @default(uuid())
+  disciplinaId    String
+  periodoLetivoId String
+  professorId     String
+  vagas           Int
+  turno           Turno    // [CENSO] manha | tarde | noite | integral
+  horario         String?
+  sala            String?
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  disciplina    Disciplina           @relation(fields: [disciplinaId],    references: [id])
+  periodoLetivo PeriodoLetivo        @relation(fields: [periodoLetivoId], references: [id])
+  professor     Professor            @relation(fields: [professorId],     references: [id])
+  matriculas    MatriculaDisciplina[]
+
+  @@map("ofertas")
+}
+
+// =============================================================================
+// PESSOAS
+// =============================================================================
+
+model Aluno {
+  id                 String          @id @default(uuid())
+  cursoId            String
+  matrizCurricularId String
+  ra                 String          @unique  // registro acadêmico
+  nome               String
+  cpf                String          @unique
+  dataNascimento     DateTime        @db.Date
+  sexo               Sexo            // [CENSO]
+  corRaca            CorRaca         // [CENSO]
+  nacionalidade      String          // [CENSO]
+  formaIngresso      FormaIngresso   // [CENSO]
+  dataIngresso       DateTime        @db.Date // [CENSO]
+  situacaoVinculo    SituacaoVinculo @default(CURSANDO) // [CENSO]
+  email              String          @unique
+  telefone           String?
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  curso            Curso                @relation(fields: [cursoId],            references: [id])
+  matrizCurricular MatrizCurricular     @relation(fields: [matrizCurricularId], references: [id])
+  usuario          Usuario?
+  matriculas       MatriculaDisciplina[]
+  consentimentos   ConsentimentoLgpd[]
+
+  @@map("alunos")
+}
+
+model Professor {
+  id             String          @id @default(uuid())
+  nome           String
+  cpf            String          @unique
+  titulacao      Titulacao       // [CENSO]
+  regimeTrabalho RegimeTrabalho  // [CENSO]
+  lattes         String?
+  email          String          @unique
+  telefone       String?
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuario Usuario?
+  ofertas Oferta[]
+
+  @@map("professores")
+}
+
+// =============================================================================
+// MATRÍCULA E AVALIAÇÃO
+// =============================================================================
+
+model MatriculaDisciplina {
+  id            String                 @id @default(uuid())
+  alunoId       String
+  ofertaId      String
+  status        MatriculaStatus        @default(MATRICULADO)
+  isDependencia Boolean                @default(false)
+  dataMatricula DateTime               @default(now()) @db.Date
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  aluno     Aluno               @relation(fields: [alunoId],   references: [id])
+  oferta    Oferta              @relation(fields: [ofertaId],  references: [id])
+  avaliacoes Avaliacao[]
+  resultado  ResultadoDisciplina?
+
+  @@unique([alunoId, ofertaId])
+  @@map("matriculas_disciplinas")
+}
+
+model Avaliacao {
+  id                    String        @id @default(uuid())
+  matriculaDisciplinaId String
+  tipo                  AvaliacaoTipo
+  nota                  Decimal       @db.Decimal(5, 2)
+  peso                  Decimal       @db.Decimal(5, 2)
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  matriculaDisciplina MatriculaDisciplina @relation(fields: [matriculaDisciplinaId], references: [id])
+
+  @@map("avaliacoes")
+}
+
+model ResultadoDisciplina {
+  id                    String             @id @default(uuid())
+  matriculaDisciplinaId String             @unique
+  mediaFinal            Decimal            @db.Decimal(5, 2)
+  faltas                Int
+  frequenciaPercentual  Decimal            @db.Decimal(5, 2)
+  situacao              SituacaoResultado
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  matriculaDisciplina MatriculaDisciplina @relation(fields: [matriculaDisciplinaId], references: [id])
+
+  @@map("resultados_disciplinas")
+}
+
+// =============================================================================
+// AUTH, AUDITORIA E LGPD
+// =============================================================================
+
+model Usuario {
+  id          String        @id @default(uuid())
+  email       String        @unique
+  senhaHash   String
+  perfil      Perfil
+  mfaAtivo    Boolean       @default(false)
+  mfaSegredo  String?       // TOTP secret — nunca expor via API
+  status      UsuarioStatus @default(ATIVO)
+
+  // Relações opcionais: um usuário é ou aluno ou professor (nunca os dois)
+  alunoId     String?       @unique
+  professorId String?       @unique
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  aluno     Aluno?     @relation(fields: [alunoId],     references: [id])
+  professor Professor? @relation(fields: [professorId], references: [id])
+  auditorias Auditoria[]
+
+  @@map("usuarios")
+}
+
+model Auditoria {
+  id          String   @id @default(uuid())
+  usuarioId   String?  // null = ação de sistema
+  acao        String   // CREATE | UPDATE | DELETE | LOGIN | LOGOUT | etc.
+  entidade    String   // nome da tabela/entidade
+  entidadeId  String?  // uuid do registro afetado
+  dadosAntes  Json?
+  dadosDepois Json?
+  ip          String?
+  userAgent   String?
+  criadoEm    DateTime @default(now())
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@index([entidade, entidadeId])
+  @@index([usuarioId])
+  @@index([criadoEm])
+  @@map("auditorias")
+}
+
+model ConsentimentoLgpd {
+  id          String   @id @default(uuid())
+  alunoId     String
+  finalidade  String   // ex: "comunicacao_marketing", "compartilhamento_parceiros"
+  concedido   Boolean
+  data        DateTime @default(now())
+  ip          String?
+
+  aluno Aluno @relation(fields: [alunoId], references: [id])
+
+  @@map("consentimentos_lgpd")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+// --- Censo ---
+enum Grau {
+  BACHARELADO
+  LICENCIATURA
+  TECNOLOGO
+}
+
+enum Modalidade {
+  PRESENCIAL
+  EAD
+  SEMIPRESENCIAL
+}
+
+enum Turno {
+  MANHA
+  TARDE
+  NOITE
+  INTEGRAL
+}
+
+enum Sexo {
+  MASCULINO
+  FEMININO
+  NAO_DECLARADO
+}
+
+enum CorRaca {
+  BRANCA
+  PRETA
+  PARDA
+  AMARELA
+  INDIGENA
+  NAO_DECLARADO
+}
+
+enum FormaIngresso {
+  VESTIBULAR
+  ENEM
+  TRANSFERENCIA_EXTERNA
+  TRANSFERENCIA_INTERNA
+  PORTADOR_DIPLOMA
+  CONVENIO
+  OUTRO
+}
+
+enum SituacaoVinculo {
+  CURSANDO
+  TRANCADO
+  FORMADO
+  EVADIDO
+  TRANSFERIDO_OUT
+  FALECIDO
+}
+
+enum Titulacao {
+  GRADUADO
+  ESPECIALISTA
+  MESTRE
+  DOUTOR
+  POS_DOUTOR
+}
+
+enum RegimeTrabalho {
+  HORISTA
+  PARCIAL   // 20h/semana
+  INTEGRAL  // 40h/semana
+}
+
+// --- Status internos ---
+enum CursoStatus {
+  ATIVO
+  ENCERRADO
+}
+
+enum MatrizStatus {
+  VIGENTE
+  ENCERRADA
+}
+
+enum Semestre {
+  S1
+  S2
+}
+
+enum PeriodoStatus {
+  PLANEJADO
+  EM_ANDAMENTO
+  ENCERRADO
+}
+
+enum MatriculaStatus {
+  MATRICULADO
+  APROVADO
+  REPROVADO
+  DEPENDENCIA
+  TRANCADO
+  CANCELADO
+}
+
+enum AvaliacaoTipo {
+  PROVA
+  TRABALHO
+  SEMINARIO
+  EXAME_FINAL
+  OUTRO
+}
+
+enum SituacaoResultado {
+  APROVADO
+  REPROVADO_NOTA
+  REPROVADO_FALTA
+  REPROVADO_NOTA_E_FALTA
+}
+
+enum Perfil {
+  ADMIN
+  SECRETARIA
+  FINANCEIRO
+  PROFESSOR
+  ALUNO
+}
+
+enum UsuarioStatus {
+  ATIVO
+  INATIVO
+  BLOQUEADO
+}
