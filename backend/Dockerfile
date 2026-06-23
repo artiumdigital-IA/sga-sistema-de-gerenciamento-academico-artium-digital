@@ -15,17 +15,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Apenas dependências de produção
+# Dependências de produção + Prisma CLI (necessário para migrate deploy)
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev && npm install prisma && npm cache clean --force
 
 # Artefatos do build + Prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
-
-RUN addgroup -S fiurj && adduser -S fiurj -G fiurj
-USER fiurj
 
 EXPOSE 3001
 
