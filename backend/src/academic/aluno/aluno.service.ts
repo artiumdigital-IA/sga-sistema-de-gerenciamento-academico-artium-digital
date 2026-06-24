@@ -94,4 +94,66 @@ export class AlunoService {
     }
     return { message: 'Aluno removido.' };
   }
+  /**
+   * Histórico acadêmico do aluno:
+   * todas as matrículas com resultado consolidado + avaliações
+   */
+  async historico(alunoId: string) {
+    const aluno = await this.findOne(alunoId);
+
+    const matriculas = await this.prisma.matriculaDisciplina.findMany({
+      where: { alunoId },
+      include: {
+        oferta: {
+          include: {
+            disciplina: true,
+            periodoLetivo: true,
+            professor: { select: { nome: true, titulacao: true } },
+          },
+        },
+        avaliacoes: { orderBy: { criadoEm: 'asc' } },
+        resultado: true,
+      },
+      orderBy: { dataMatricula: 'asc' },
+    });
+
+    const cr = this.calcularCR(matriculas);
+
+    return {
+      aluno: { id: aluno.id, ra: aluno.ra, nome: aluno.nome, situacaoVinculo: aluno.situacaoVinculo },
+      cr,
+      totalDisciplinas: matriculas.length,
+      aprovadas: matriculas.filter(m => m.resultado?.situacao === 'APROVADO').length,
+      matriculas,
+    };
+  }
+
+  /**
+   * CR = soma(mediaFinal * creditos) / soma(creditos)
+   * Considera apenas disciplinas com resultado aprovado ou reprovado.
+   */
+  private calcularCR(matriculas: Array<{
+    resultado: { mediaFinal: unknown; situacao: string } | null;
+    oferta: { disciplina: { creditos: number } };
+  }>): number {
+    let somaPonderada = 0;
+    let somaCreditos = 0;
+
+    for (const m of matriculas) {
+      if (!m.resultado) continue;
+      const situacao = m.resultado.situacao;
+      if (situacao !== 'APROVADO' && situacao !== 'REPROVADO_NOTA' &&
+          situacao !== 'REPROVADO_FALTA' && situacao !== 'REPROVADO_NOTA_E_FALTA') continue;
+
+      const media = Number(m.resultado.mediaFinal);
+      const creditos = m.oferta.disciplina.creditos;
+      somaPonderada += media * creditos;
+      somaCreditos += creditos;
+    }
+
+    return somaCreditos > 0
+      ? Math.round((somaPonderada / somaCreditos) * 100) / 100
+      : 0;
+  }
+
 }

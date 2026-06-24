@@ -42,4 +42,10 @@ export class AlunoController {
   remove(@Param('id') id: string, @Request() req: any) {
     return this.service.remove(id, req.user?.id);
   }
+  @Get(':id/historico')
+  @ApiOperation({ summary: 'Histórico acadêmico + CR do aluno' })
+  historico(@Param('id') id: string) {
+    return this.service.historico(id);
+  }
+
 }
