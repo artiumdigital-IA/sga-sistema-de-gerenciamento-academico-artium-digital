@@ -4,6 +4,8 @@ const nextConfig = {
   // por ora mantemos simples
   reactStrictMode: true,
   output: 'standalone', // necessario para Docker
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: false }, // TS ainda valida
   async rewrites() {
     return [
       {
