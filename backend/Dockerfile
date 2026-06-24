@@ -32,4 +32,4 @@ COPY prisma ./prisma
 EXPOSE 3001
 
 # Roda migrations e sobe o servidor
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
