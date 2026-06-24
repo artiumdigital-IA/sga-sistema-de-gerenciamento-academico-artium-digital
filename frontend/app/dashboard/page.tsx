@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { getToken } from '@/lib/auth';
 import Image from 'next/image';
 
 /* ─── Tipos ─── */
@@ -55,6 +56,54 @@ const CAT_COLORS: Record<string, { bg: string; color: string }> = {
   'Avaliações': { bg: '#f8d7db', color: '#C8102E' },
   'Eventos':    { bg: '#d4edda', color: '#1a7a3c' },
 };
+
+/* ─── Stats Bar (dados reais da API) ─── */
+interface Stats { cursos: number; alunos: number; professores: number; loading: boolean; }
+
+const STATS_CONFIG = [
+  { key: 'cursos' as const,      label: 'Cursos',      color: '#1a56db', emoji: '📚' },
+  { key: 'alunos' as const,      label: 'Alunos',      color: '#0694a2', emoji: '👥' },
+  { key: 'professores' as const, label: 'Professores', color: '#7e3af2', emoji: '🎓' },
+];
+
+function StatsBar({ stats }: { stats: Stats }) {
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: 12,
+      padding: '14px 14px 0',
+    }}>
+      {STATS_CONFIG.map(cfg => (
+        <div key={cfg.label} style={{
+          background: 'var(--white)',
+          border: '1px solid var(--gray-200)',
+          borderRadius: 8,
+          padding: '14px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          boxShadow: '0 1px 3px rgba(0,0,0,.06)',
+        }}>
+          <div style={{
+            width: 42, height: 42, borderRadius: 10,
+            background: cfg.color + '18',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, flexShrink: 0,
+          }}>
+            {cfg.emoji}
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gray-900)', lineHeight: 1.1 }}>
+              {stats.loading ? '—' : stats[cfg.key].toLocaleString('pt-BR')}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 2 }}>{cfg.label}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* ─── Componente card draggable ─── */
 function DashCard({
@@ -325,6 +374,26 @@ export default function DashboardPage() {
   const [colMode, setColMode] = useState<'1' | '2'>('2');
   const [cards, setCards] = useState(INITIAL_CARDS);
   const dragId = useRef<string | null>(null);
+  const [stats, setStats] = useState<Stats>({ cursos: 0, alunos: 0, professores: 0, loading: true });
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
+    const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+    Promise.all([
+      fetch(`${API}/cursos`, { headers }).then(r => r.json()),
+      fetch(`${API}/alunos`, { headers }).then(r => r.json()),
+      fetch(`${API}/professores`, { headers }).then(r => r.json()),
+    ]).then(([cursos, alunos, professores]) => {
+      setStats({
+        cursos: Array.isArray(cursos) ? cursos.length : 0,
+        alunos: Array.isArray(alunos) ? alunos.length : 0,
+        professores: Array.isArray(professores) ? professores.length : 0,
+        loading: false,
+      });
+    }).catch(() => setStats(s => ({ ...s, loading: false })));
+  }, []);
 
   /* Drag & drop */
   function onDragStart(e: React.DragEvent, id: string) {
@@ -419,6 +488,8 @@ export default function DashboardPage() {
 
       {/* ── Views ── */}
       {activeView === 'painel' && (
+        <div>
+        <StatsBar stats={stats} />
         <div style={{
           display: 'grid',
           gridTemplateColumns: colMode === '2' ? '1fr 1fr' : '1fr',
@@ -476,6 +547,7 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
+        </div>
         </div>
       )}
 
