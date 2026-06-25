@@ -399,6 +399,7 @@ enum PeriodoStatus {
 
 enum MatriculaStatus {
   MATRICULADO
+  PENDENTE_EXAME  // frequência OK, nota < 6.0 — aguardando exame final
   APROVADO
   REPROVADO
   DEPENDENCIA

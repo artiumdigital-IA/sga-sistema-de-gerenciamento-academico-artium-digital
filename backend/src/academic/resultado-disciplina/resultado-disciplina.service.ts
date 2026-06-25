@@ -6,11 +6,17 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { ConsolidarResultadoDto } from './dto/consolidar-resultado.dto';
-import { SituacaoResultado, MatriculaStatus } from '@prisma/client';
+import { SituacaoResultado, MatriculaStatus, AvaliacaoTipo } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
-const NOTA_MINIMA = 5.0;       // confirmar com secretaria (seção 7 da spec)
-const FREQ_MINIMA = 75.0;      // 75% — legislação federal
+// ── Regras de negócio FIURJ (confirmadas com secretaria em Jun/2026) ──
+const NOTA_MINIMA_APROVACAO   = 6.0;  // aprovação direta
+const NOTA_MINIMA_POS_EXAME   = 6.0;  // aprovação após exame final: (média + exame) / 2 >= 6
+const FREQ_MINIMA_PERCENTUAL  = 75.0; // legislação federal; FIURJ não é mais restritiva
+// Exame final:
+//   - elegível: frequência >= 75% E nota < 6.0
+//   - aluno reprovado por falta NÃO faz exame
+//   - nota final pós-exame = (média_semestre + nota_exame) / 2
 
 @Injectable()
 export class ResultadoDisciplinaService {
@@ -21,51 +27,102 @@ export class ResultadoDisciplinaService {
 
   /**
    * Consolida o resultado de uma matrícula:
-   * 1. Busca todas as avaliações da matrícula
-   * 2. Calcula média ponderada
-   * 3. Calcula frequência a partir das faltas fornecidas
-   * 4. Determina situação (aprovado/reprovado)
-   * 5. Persiste ResultadoDisciplina e atualiza status da MatriculaDisciplina
+   * 1. Separa avaliações regulares de EXAME_FINAL
+   * 2. Calcula média ponderada do semestre (avaliacoes regulares)
+   * 3. Calcula frequência com base nas faltas em horas-aula
+   * 4. Se reprovado por falta → REPROVADO_FALTA (sem exame)
+   * 5. Se média >= 6.0 → APROVADO diretamente
+   * 6. Se média < 6.0 e freq >= 75%:
+   *      - sem EXAME_FINAL lançado → PENDENTE_EXAME
+   *      - com EXAME_FINAL lançado → nota_final = (média + exame) / 2
+   *        → APROVADO se nota_final >= 6.0, senão REPROVADO_NOTA
    */
-  async consolidar(matriculaDisciplinaId: string, dto: ConsolidarResultadoDto, usuarioId?: string) {
+  async consolidar(
+    matriculaDisciplinaId: string,
+    dto: ConsolidarResultadoDto,
+    usuarioId?: string,
+  ) {
     const matricula = await this.prisma.matriculaDisciplina.findUnique({
       where: { id: matriculaDisciplinaId },
       include: { avaliacoes: true },
     });
     if (!matricula) throw new NotFoundException('Matrícula não encontrada.');
     if (matricula.avaliacoes.length === 0) {
-      throw new BadRequestException('Nenhuma avaliação lançada para esta matrícula. Lance ao menos uma nota antes de consolidar.');
+      throw new BadRequestException(
+        'Nenhuma avaliação lançada. Lance ao menos uma nota antes de consolidar.',
+      );
     }
 
-    // Média ponderada
+    // ── 1. Separar avaliações ────────────────────────────────────────
+    const regulares = matricula.avaliacoes.filter(
+      (a) => a.tipo !== AvaliacaoTipo.EXAME_FINAL,
+    );
+    const exameFinal = matricula.avaliacoes.find(
+      (a) => a.tipo === AvaliacaoTipo.EXAME_FINAL,
+    );
+
+    if (regulares.length === 0) {
+      throw new BadRequestException(
+        'Nenhuma avaliação regular encontrada. O EXAME_FINAL não pode ser a única avaliação.',
+      );
+    }
+
+    // ── 2. Média ponderada do semestre (sem exame) ───────────────────
     let somaPonderada = 0;
     let somaPesos = 0;
-    for (const av of matricula.avaliacoes) {
+    for (const av of regulares) {
       somaPonderada += Number(av.nota) * Number(av.peso);
       somaPesos += Number(av.peso);
     }
-    const mediaFinal = somaPesos > 0 ? somaPonderada / somaPesos : 0;
+    const mediaSemestre = somaPesos > 0 ? somaPonderada / somaPesos : 0;
 
-    // Frequência
-    const frequenciaPercentual = dto.totalAulas > 0
-      ? ((dto.totalAulas - dto.faltas) / dto.totalAulas) * 100
-      : 0;
+    // ── 3. Frequência ────────────────────────────────────────────────
+    // faltas e totalAulas são em horas-aula
+    const frequenciaPercentual =
+      dto.totalAulas > 0
+        ? ((dto.totalAulas - dto.faltas) / dto.totalAulas) * 100
+        : 0;
 
-    // Situação
-    const reprovadoNota = mediaFinal < NOTA_MINIMA;
-    const reprovadoFalta = frequenciaPercentual < FREQ_MINIMA;
+    const reprovadoFalta = frequenciaPercentual < FREQ_MINIMA_PERCENTUAL;
+
+    // ── 4. Determinação do resultado ────────────────────────────────
+    let mediaFinal: number;
     let situacao: SituacaoResultado;
-    if (reprovadoNota && reprovadoFalta) situacao = SituacaoResultado.REPROVADO_NOTA_E_FALTA;
-    else if (reprovadoNota) situacao = SituacaoResultado.REPROVADO_NOTA;
-    else if (reprovadoFalta) situacao = SituacaoResultado.REPROVADO_FALTA;
-    else situacao = SituacaoResultado.APROVADO;
-
-    // Status da matrícula
     let novoStatus: MatriculaStatus;
-    if (situacao === SituacaoResultado.APROVADO) novoStatus = MatriculaStatus.APROVADO;
-    else novoStatus = MatriculaStatus.REPROVADO;
 
-    // Upsert resultado + atualizar matrícula (transação)
+    if (reprovadoFalta) {
+      // Reprovado por falta: não faz exame, resultado imediato
+      mediaFinal = mediaSemestre;
+      situacao = SituacaoResultado.REPROVADO_FALTA;
+      novoStatus = MatriculaStatus.REPROVADO;
+    } else if (mediaSemestre >= NOTA_MINIMA_APROVACAO) {
+      // Aprovado diretamente
+      mediaFinal = mediaSemestre;
+      situacao = SituacaoResultado.APROVADO;
+      novoStatus = MatriculaStatus.APROVADO;
+    } else {
+      // Nota < 6.0, frequência OK → elegível para exame final
+      if (!exameFinal) {
+        // Exame ainda não lançado → pendente
+        mediaFinal = mediaSemestre;
+        situacao = SituacaoResultado.REPROVADO_NOTA; // provisório até exame
+        novoStatus = MatriculaStatus.PENDENTE_EXAME;
+      } else {
+        // Calcular nota pós-exame: (média_semestre + nota_exame) / 2
+        const notaExame = Number(exameFinal.nota);
+        mediaFinal = (mediaSemestre + notaExame) / 2;
+
+        if (mediaFinal >= NOTA_MINIMA_POS_EXAME) {
+          situacao = SituacaoResultado.APROVADO;
+          novoStatus = MatriculaStatus.APROVADO;
+        } else {
+          situacao = SituacaoResultado.REPROVADO_NOTA;
+          novoStatus = MatriculaStatus.REPROVADO;
+        }
+      }
+    }
+
+    // ── 5. Persistir resultado + atualizar status (transação) ───────
     const resultado = await this.prisma.$transaction(async (tx) => {
       const res = await tx.resultadoDisciplina.upsert({
         where: { matriculaDisciplinaId },
@@ -95,10 +152,22 @@ export class ResultadoDisciplinaService {
       acao: 'CONSOLIDAR',
       entidade: 'ResultadoDisciplina',
       entidadeId: resultado.id,
-      dadosDepois: { ...resultado, mediaFinal, frequenciaPercentual, situacao },
+      dadosDepois: {
+        ...resultado,
+        mediaSemestre,
+        mediaFinal,
+        frequenciaPercentual,
+        situacao,
+        novoStatus,
+        exameFinalConsiderado: !!exameFinal,
+      },
     });
 
-    return resultado;
+    return {
+      ...resultado,
+      mediaSemestre: Math.round(mediaSemestre * 100) / 100,
+      elegibleParaExame: novoStatus === MatriculaStatus.PENDENTE_EXAME,
+    };
   }
 
   findByMatricula(matriculaDisciplinaId: string) {
@@ -109,7 +178,7 @@ export class ResultadoDisciplinaService {
           include: {
             aluno: { select: { ra: true, nome: true } },
             oferta: { include: { disciplina: true, periodoLetivo: true } },
-            avaliacoes: true,
+            avaliacoes: { orderBy: { criadoEm: 'asc' } },
           },
         },
       },

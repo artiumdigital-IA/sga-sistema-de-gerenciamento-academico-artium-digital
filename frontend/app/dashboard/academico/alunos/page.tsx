@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 
 // ── tipos ──────────────────────────────────────────────────────────────
@@ -185,6 +186,7 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
 
 // ── página principal ───────────────────────────────────────────────────
 export default function AlunosPage() {
+  const router = useRouter();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [matrizes, setMatrizes] = useState<MatrizCurricular[]>([]);
@@ -259,7 +261,7 @@ export default function AlunosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                {['RA', 'Nome', 'CPF', 'Curso', 'Ingresso', 'Situação', ''].map(h => (
+                {['RA', 'Nome', 'CPF', 'Curso', 'Ingresso', 'Situação', '', ''].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
@@ -293,6 +295,13 @@ export default function AlunosPage() {
                           {deleting === a.id ? '...' : 'Excluir'}
                         </button>
                       </div>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <button
+                        style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #1a56db', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#1a56db', fontWeight: 500 }}
+                        onClick={() => router.push(`/dashboard/academico/alunos/${a.id}/historico`)}>
+                        Histórico →
+                      </button>
                     </td>
                   </tr>
                 );

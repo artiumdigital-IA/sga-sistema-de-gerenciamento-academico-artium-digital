@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 
 // ── tipos ──────────────────────────────────────────────────────────────
-type StatusMatricula = 'MATRICULADO' | 'APROVADO' | 'REPROVADO' | 'DEPENDENCIA' | 'TRANCADO';
+type StatusMatricula = 'MATRICULADO' | 'PENDENTE_EXAME' | 'APROVADO' | 'REPROVADO' | 'DEPENDENCIA' | 'TRANCADO';
 
 interface Aluno { id: string; ra: string; nome: string; cursoId: string; }
 interface Curso { id: string; nome: string; }
@@ -28,7 +29,8 @@ interface MatriculaDisciplina {
 }
 
 const STATUS_STYLE: Record<StatusMatricula, { bg: string; color: string; label: string }> = {
-  MATRICULADO: { bg: '#dbeafe', color: '#1e40af', label: 'Matriculado' },
+  MATRICULADO:    { bg: '#dbeafe', color: '#1e40af', label: 'Matriculado' },
+  PENDENTE_EXAME: { bg: '#fef3c7', color: '#92400e', label: 'Pendente exame' },
   APROVADO:    { bg: '#d1fae5', color: '#065f46', label: 'Aprovado' },
   REPROVADO:   { bg: '#fee2e2', color: '#991b1b', label: 'Reprovado' },
   DEPENDENCIA: { bg: '#fef3c7', color: '#92400e', label: 'Dependência' },
@@ -176,6 +178,7 @@ function MatriculaModal({ alunos, cursos, periodos, disciplinas, professores, of
 
 // ── página ─────────────────────────────────────────────────────────────
 export default function MatriculasPage() {
+  const router = useRouter();
   const [matriculas, setMatriculas] = useState<MatriculaDisciplina[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [cursos, setCursos] = useState<Curso[]>([]);
@@ -267,7 +270,7 @@ export default function MatriculasPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                {['Aluno', 'Disciplina / Período', 'Status', 'DP', 'Data', ''].map(h => (
+                {['Aluno', 'Disciplina / Período', 'Status', 'DP', 'Data', '', ''].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
@@ -297,6 +300,13 @@ export default function MatriculasPage() {
                       <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }}
                         disabled={deleting === m.id} onClick={() => deletar(m.id)}>
                         {deleting === m.id ? '...' : 'Cancelar'}
+                      </button>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <button
+                        style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #1a56db', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#1a56db', fontWeight: 500 }}
+                        onClick={() => router.push(`/dashboard/academico/matriculas/${m.id}`)}>
+                        Notas →
                       </button>
                     </td>
                   </tr>

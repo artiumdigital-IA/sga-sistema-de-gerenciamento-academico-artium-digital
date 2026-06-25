@@ -130,9 +130,13 @@ export class AlunoService {
 
   /**
    * CR = soma(mediaFinal * creditos) / soma(creditos)
-   * Considera apenas disciplinas com resultado aprovado ou reprovado.
+   * Regras FIURJ (confirmadas Jun/2026):
+   *   - Apenas disciplinas APROVADO entram no cálculo
+   *   - Disciplinas reprovadas ficam FORA
+   *   - Disciplinas em DP (isDependencia) ficam FORA
    */
   private calcularCR(matriculas: Array<{
+    isDependencia: boolean;
     resultado: { mediaFinal: unknown; situacao: string } | null;
     oferta: { disciplina: { creditos: number } };
   }>): number {
@@ -140,10 +144,10 @@ export class AlunoService {
     let somaCreditos = 0;
 
     for (const m of matriculas) {
-      if (!m.resultado) continue;
-      const situacao = m.resultado.situacao;
-      if (situacao !== 'APROVADO' && situacao !== 'REPROVADO_NOTA' &&
-          situacao !== 'REPROVADO_FALTA' && situacao !== 'REPROVADO_NOTA_E_FALTA') continue;
+      // DP fica fora do CR
+      if (m.isDependencia) continue;
+      // Sem resultado ou não aprovado → fora do CR
+      if (!m.resultado || m.resultado.situacao !== 'APROVADO') continue;
 
       const media = Number(m.resultado.mediaFinal);
       const creditos = m.oferta.disciplina.creditos;
