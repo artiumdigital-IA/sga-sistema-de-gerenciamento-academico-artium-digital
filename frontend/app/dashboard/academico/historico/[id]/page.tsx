@@ -80,7 +80,7 @@ export default function HistoricoPage() {
     if (!periodos.has(key)) periodos.set(key, []);
     periodos.get(key)!.push(m);
   }
-  const sortedPeriodos = [...periodos.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const sortedPeriodos: [string, Matricula[]][] = Array.from(periodos.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 
   const reprovadas = historico.matriculas.filter(m => m.resultado && ['REPROVADO_NOTA', 'REPROVADO_FALTA'].includes(m.resultado.situacao)).length;
   const pendentes = historico.matriculas.filter(m => !m.resultado || m.resultado.situacao === 'PENDENTE_EXAME').length;

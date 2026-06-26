@@ -33,4 +33,4 @@ COPY --from=builder /app/.next/static ./.next/static
 USER fiurj
 EXPOSE 3000
 
-CMD [
+CMD ["node", "server.js"]
