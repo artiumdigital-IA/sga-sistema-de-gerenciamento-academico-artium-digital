@@ -70,6 +70,21 @@ const BTN = (variant: 'primary' | 'danger' | 'ghost') => ({
 const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const };
 const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
 
+// ── componentes auxiliares (fora do modal para evitar remount no render) ──
+function G({ cols, children }: { cols: string; children: React.ReactNode }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 12 }}>{children}</div>;
+}
+function F({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div><label style={LABEL}>{label}</label>{children}</div>;
+}
+function SEL({ value, onChange, opts }: { value: string; onChange: (v: string) => void; opts: Record<string, string> }) {
+  return (
+    <select style={INPUT} value={value} onChange={e => onChange(e.target.value)}>
+      {Object.entries(opts).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+    </select>
+  );
+}
+
 // ── modal ──────────────────────────────────────────────────────────────
 function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
   aluno: Aluno | null;
@@ -115,18 +130,6 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
     }
   }
 
-  const G = ({ cols, children }: { cols: string; children: React.ReactNode }) => (
-    <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 12 }}>{children}</div>
-  );
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div><label style={LABEL}>{label}</label>{children}</div>
-  );
-  const SEL = ({ k, opts }: { k: keyof FormData; opts: Record<string, string> }) => (
-    <select style={INPUT} value={String(form[k])} onChange={e => set(k, e.target.value)}>
-      {Object.entries(opts).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-    </select>
-  );
-
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -143,15 +146,15 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
             <F label="Data de nascimento *"><input style={INPUT} type="date" value={form.dataNascimento} required onChange={e => set('dataNascimento', e.target.value)} /></F>
           </G>
           <G cols="1fr 1fr">
-            <F label="Sexo (Censo)"><SEL k="sexo" opts={SEXO_LABEL} /></F>
-            <F label="Cor/raça (Censo)"><SEL k="corRaca" opts={COR_LABEL} /></F>
+            <F label="Sexo (Censo)"><SEL value={form.sexo} onChange={v => set('sexo', v)} opts={SEXO_LABEL} /></F>
+            <F label="Cor/raça (Censo)"><SEL value={form.corRaca} onChange={v => set('corRaca', v)} opts={COR_LABEL} /></F>
           </G>
           <F label="Nacionalidade *"><input style={INPUT} value={form.nacionalidade} required onChange={e => set('nacionalidade', e.target.value)} /></F>
           <G cols="1fr 1fr">
-            <F label="Forma de ingresso (Censo)"><SEL k="formaIngresso" opts={INGRESSO_LABEL} /></F>
+            <F label="Forma de ingresso (Censo)"><SEL value={form.formaIngresso} onChange={v => set('formaIngresso', v)} opts={INGRESSO_LABEL} /></F>
             <F label="Data de ingresso *"><input style={INPUT} type="date" value={form.dataIngresso} required onChange={e => set('dataIngresso', e.target.value)} /></F>
           </G>
-          <F label="Situação de vínculo (Censo)"><SEL k="situacaoVinculo" opts={VINCULO_LABEL} /></F>
+          <F label="Situação de vínculo (Censo)"><SEL value={form.situacaoVinculo} onChange={v => set('situacaoVinculo', v)} opts={VINCULO_LABEL} /></F>
           <G cols="1fr 1fr">
             <F label="E-mail *"><input style={INPUT} type="email" value={form.email} required onChange={e => set('email', e.target.value)} /></F>
             <F label="Telefone"><input style={INPUT} value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="(21) 99999-9999" /></F>
