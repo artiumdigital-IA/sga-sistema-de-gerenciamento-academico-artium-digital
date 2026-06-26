@@ -14,10 +14,10 @@ export default function DocumentosPage() {
   async function buscar() {
     if (!search.trim()) return;
     setLoading(true);
-    const r = await apiFetch(`/alunos?search=${encodeURIComponent(search)}`);
-    const d = await r.json();
-    setAlunos(Array.isArray(d) ? d : d.data ?? []);
-    setLoading(false);
+    try {
+      const d = await apiFetch<any>(`/alunos?search=${encodeURIComponent(search)}`);
+      setAlunos(Array.isArray(d) ? d : (d as any).data ?? []);
+    } finally { setLoading(false); }
   }
 
   return (

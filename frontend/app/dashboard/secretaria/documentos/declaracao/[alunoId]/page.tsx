@@ -22,10 +22,9 @@ export default function DeclaracaoPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    apiFetch(`/documentos/declaracao-matricula/${alunoId}`)
-      .then(r => r.ok ? r.json() : Promise.reject('Aluno não encontrado'))
+    apiFetch<DeclaracaoData>(`/documentos/declaracao-matricula/${alunoId}`)
       .then(setData)
-      .catch(e => setError(String(e)))
+      .catch(e => setError(e instanceof Error ? e.message : 'Aluno não encontrado'))
       .finally(() => setLoading(false));
   }, [alunoId]);
 

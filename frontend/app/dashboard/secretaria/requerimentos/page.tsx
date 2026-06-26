@@ -42,7 +42,7 @@ function ModalNovoRequerimento({ onClose, onSaved }: { onClose: () => void; onSa
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    apiFetch('/alunos?limit=200').then(r => r.json()).then(d => setAlunos(d.data ?? d));
+    apiFetch<any>('/alunos?limit=200').then((d: any) => setAlunos(d.data ?? d));
   }, []);
 
   const filtered = search
@@ -53,8 +53,7 @@ function ModalNovoRequerimento({ onClose, onSaved }: { onClose: () => void; onSa
     if (!alunoId) return;
     setLoading(true);
     try {
-      const r = await apiFetch('/requerimentos', { method: 'POST', body: JSON.stringify({ alunoId, tipo, descricao }) });
-      if (!r.ok) throw new Error('Erro ao criar');
+      await apiFetch<any>('/requerimentos', { method: 'POST', body: JSON.stringify({ alunoId, tipo, descricao }) });
       onSaved();
       onClose();
     } finally { setLoading(false); }
@@ -154,9 +153,8 @@ export default function RequerimentosPage() {
     const params = new URLSearchParams();
     if (filterStatus) params.set('status', filterStatus);
     if (filterTipo) params.set('tipo', filterTipo);
-    const r = await apiFetch(`/requerimentos?${params}`);
-    const d = await r.json();
-    setItems(Array.isArray(d) ? d : d.data ?? []);
+    const d = await apiFetch<any>(`/requerimentos?${params}`);
+    setItems(Array.isArray(d) ? d : (d as any).data ?? []);
     setLoading(false);
   }, [filterStatus, filterTipo]);
 
