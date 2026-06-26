@@ -293,6 +293,7 @@ export default function AlunosPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(a)}>Editar</button>
+                        <button style={{ padding: '4px 10px', fontSize: 12, borderRadius: 4, border: '1px solid #7c3aed', background: '#f5f3ff', color: '#7c3aed', cursor: 'pointer', fontWeight: 500 }} onClick={() => router.push(`/dashboard/academico/historico/${a.id}`)}>Histórico</button>
                         <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }}
                           disabled={deleting === a.id} onClick={() => deleteAluno(a.id)}>
                           {deleting === a.id ? '...' : 'Excluir'}
@@ -301,28 +302,4 @@ export default function AlunosPage() {
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <button
-                        style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #1a56db', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#1a56db', fontWeight: 500 }}
-                        onClick={() => router.push(`/dashboard/academico/alunos/${a.id}/historico`)}>
-                        Histórico →
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {modal !== null && (
-        <AlunoModal
-          aluno={modal === 'new' ? null : modal}
-          cursos={cursos}
-          matrizes={matrizes}
-          onClose={() => setModal(null)}
-          onSave={load}
-        />
-      )}
-    </div>
-  );
-}
+                        style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #1a56db', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#1a56db', fo
