@@ -1,17 +1,19 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AlunoService } from './aluno.service';
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
 
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Perfil } from '@prisma/client';
+
 @ApiTags('alunos')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
 @Controller('alunos')
 export class AlunoController {
   constructor(private readonly service: AlunoService) {}
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Post()
   @ApiOperation({ summary: 'Cadastrar novo aluno' })
   create(@Body() dto: CreateAlunoDto, @Request() req: any) {
@@ -31,12 +33,14 @@ export class AlunoController {
     return this.service.findOne(id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar aluno' })
   update(@Param('id') id: string, @Body() dto: UpdateAlunoDto, @Request() req: any) {
     return this.service.update(id, dto, req.user?.id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Delete(':id')
   @ApiOperation({ summary: 'Remover aluno' })
   remove(@Param('id') id: string, @Request() req: any) {

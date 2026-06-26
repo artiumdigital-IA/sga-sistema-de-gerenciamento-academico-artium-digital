@@ -1,17 +1,19 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { OfertaService } from './oferta.service';
 import { CreateOfertaDto } from './dto/create-oferta.dto';
 import { UpdateOfertaDto } from './dto/update-oferta.dto';
 
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Perfil } from '@prisma/client';
+
 @ApiTags('Ofertas')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('ofertas')
 export class OfertaController {
   constructor(private readonly service: OfertaService) {}
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Post()
   @ApiOperation({ summary: 'Criar oferta de disciplina' })
   create(@Body() dto: CreateOfertaDto, @Request() req: any) {
@@ -31,12 +33,14 @@ export class OfertaController {
     return this.service.findOne(id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar oferta' })
   update(@Param('id') id: string, @Body() dto: UpdateOfertaDto, @Request() req: any) {
     return this.service.update(id, dto, req.user?.id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover oferta' })

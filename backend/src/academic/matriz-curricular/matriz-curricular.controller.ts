@@ -9,21 +9,22 @@ import {
   Post,
   Query,
   Request,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { MatrizCurricularService } from './matriz-curricular.service';
 import { CreateMatrizDto } from './dto/create-matriz.dto';
 import { UpdateMatrizDto } from './dto/update-matriz.dto';
 
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Perfil } from '@prisma/client';
+
 @ApiTags('Matrizes Curriculares')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('matrizes')
 export class MatrizCurricularController {
   constructor(private readonly matrizService: MatrizCurricularService) {}
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Post()
   @ApiOperation({ summary: 'Criar matriz curricular' })
   create(@Body() dto: CreateMatrizDto, @Request() req: any) {
@@ -43,6 +44,7 @@ export class MatrizCurricularController {
     return this.matrizService.findOne(id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar matriz curricular' })
   update(
@@ -53,6 +55,7 @@ export class MatrizCurricularController {
     return this.matrizService.update(id, dto, req.user?.id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover matriz curricular' })

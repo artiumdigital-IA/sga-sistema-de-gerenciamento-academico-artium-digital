@@ -9,7 +9,6 @@ import {
   Post,
   Query,
   Request,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -17,18 +16,20 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DisciplinaService } from './disciplina.service';
 import { CreateDisciplinaDto } from './dto/create-disciplina.dto';
 import { UpdateDisciplinaDto } from './dto/update-disciplina.dto';
 
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Perfil } from '@prisma/client';
+
 @ApiTags('Disciplinas')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('disciplinas')
 export class DisciplinaController {
   constructor(private readonly disciplinaService: DisciplinaService) {}
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Post()
   @ApiOperation({ summary: 'Criar disciplina' })
   create(@Body() dto: CreateDisciplinaDto, @Request() req: any) {
@@ -48,6 +49,7 @@ export class DisciplinaController {
     return this.disciplinaService.findOne(id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar disciplina' })
   update(
@@ -58,6 +60,7 @@ export class DisciplinaController {
     return this.disciplinaService.update(id, dto, req.user?.id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover disciplina' })

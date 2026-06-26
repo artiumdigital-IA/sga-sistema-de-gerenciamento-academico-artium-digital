@@ -1,17 +1,19 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { MatriculaDisciplinaService } from './matricula-disciplina.service';
 import { CreateMatriculaDisciplinaDto } from './dto/create-matricula-disciplina.dto';
 import { UpdateMatriculaDisciplinaDto } from './dto/update-matricula-disciplina.dto';
 
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Perfil } from '@prisma/client';
+
 @ApiTags('Matrículas por Disciplina')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('matriculas')
 export class MatriculaDisciplinaController {
   constructor(private readonly service: MatriculaDisciplinaService) {}
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Post()
   @ApiOperation({ summary: 'Matricular aluno em uma oferta' })
   create(@Body() dto: CreateMatriculaDisciplinaDto, @Request() req: any) {
@@ -35,12 +37,14 @@ export class MatriculaDisciplinaController {
     return this.service.findOne(id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar status da matrícula' })
   update(@Param('id') id: string, @Body() dto: UpdateMatriculaDisciplinaDto, @Request() req: any) {
     return this.service.update(id, dto, req.user?.id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Cancelar matrícula' })

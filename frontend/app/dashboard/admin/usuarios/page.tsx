@@ -1,0 +1,468 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/api';
+import { parseJwt, getToken } from '@/lib/auth';
+
+// ─── tipos ───────────────────────────────────────────────────────────────────
+type Perfil = 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO';
+type Status = 'ATIVO' | 'INATIVO' | 'BLOQUEADO';
+
+interface Usuario {
+  id: string;
+  email: string;
+  perfil: Perfil;
+  status: Status;
+  mfaAtivo: boolean;
+  alunoId: string | null;
+  professorId: string | null;
+  criadoEm: string;
+  aluno?: { id: string; ra: string; nome: string; curso?: { nome: string } } | null;
+  professor?: { id: string; nome: string } | null;
+}
+
+interface CreateForm {
+  email: string;
+  senha: string;
+  perfil: Perfil;
+  alunoId: string;
+  professorId: string;
+}
+
+const PERFIL_LABEL: Record<Perfil, string> = {
+  ADMIN: 'Admin', SECRETARIA: 'Secretaria', FINANCEIRO: 'Financeiro',
+  PROFESSOR: 'Professor', ALUNO: 'Aluno',
+};
+const PERFIL_COLOR: Record<Perfil, string> = {
+  ADMIN: '#dc2626', SECRETARIA: '#2563eb', FINANCEIRO: '#16a34a',
+  PROFESSOR: '#7c3aed', ALUNO: '#d97706',
+};
+const STATUS_COLOR: Record<Status, string> = {
+  ATIVO: '#16a34a', INATIVO: '#6b7280', BLOQUEADO: '#dc2626',
+};
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+function Badge({ label, color }: { label: string; color: string }) {
+  return (
+    <span style={{
+      display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+      fontSize: 11, fontWeight: 600, color: '#fff', background: color,
+    }}>{label}</span>
+  );
+}
+
+function Input({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{label}</label>
+      <input {...props} style={{
+        padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6,
+        fontSize: 13, outline: 'none', ...props.style,
+      }} />
+    </div>
+  );
+}
+
+function Select({ label, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{label}</label>
+      <select {...props} style={{
+        padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6,
+        fontSize: 13, background: '#fff',
+      }}>{children}</select>
+    </div>
+  );
+}
+
+// ─── componente principal ─────────────────────────────────────────────────────
+export default function UsuariosPage() {
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
+  const [busca, setBusca] = useState('');
+  const [filtroPerfil, setFiltroPerfil] = useState<Perfil | ''>('');
+  const [filtroStatus, setFiltroStatus] = useState<Status | ''>('');
+
+  // modais
+  const [modalCriar, setModalCriar] = useState(false);
+  const [modalEditar, setModalEditar] = useState<Usuario | null>(null);
+  const [modalResetar, setModalResetar] = useState<Usuario | null>(null);
+  const [modalMinhaSenha, setModalMinhaSenha] = useState(false);
+
+  // forms
+  const [criar, setCriar] = useState<CreateForm>({ email: '', senha: '', perfil: 'SECRETARIA', alunoId: '', professorId: '' });
+  const [editarPerfil, setEditarPerfil] = useState<Perfil>('SECRETARIA');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [minhaSenhaAtual, setMinhaSenhaAtual] = useState('');
+  const [minhaNovaSenha, setMinhaNovaSenha] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  // perfil do usuario logado
+  const token = getToken();
+  const meUser = token ? parseJwt(token) : null;
+  const isAdmin = meUser?.perfil === 'ADMIN';
+
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    setErro('');
+    try {
+      const data = await apiFetch<Usuario[]>('/usuarios');
+      setUsuarios(data);
+    } catch (e: any) {
+      setErro(e.message ?? 'Erro ao carregar usuários');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  const flash = (texto: string) => { setMsg(texto); setTimeout(() => setMsg(''), 3000); };
+
+  // ── filtros ──────────────────────────────────────────────────────────────
+  const filtrados = usuarios.filter(u => {
+    const termo = busca.toLowerCase();
+    const matchBusca = !busca || u.email.toLowerCase().includes(termo) ||
+      (u.aluno?.nome ?? '').toLowerCase().includes(termo) ||
+      (u.professor?.nome ?? '').toLowerCase().includes(termo);
+    const matchPerfil = !filtroPerfil || u.perfil === filtroPerfil;
+    const matchStatus = !filtroStatus || u.status === filtroStatus;
+    return matchBusca && matchPerfil && matchStatus;
+  });
+
+  // ── ações ────────────────────────────────────────────────────────────────
+  async function handleCriar(e: React.FormEvent) {
+    e.preventDefault();
+    setSalvando(true);
+    try {
+      const body: Record<string, string> = { email: criar.email, senha: criar.senha, perfil: criar.perfil };
+      if (criar.alunoId) body.alunoId = criar.alunoId;
+      if (criar.professorId) body.professorId = criar.professorId;
+      await apiFetch('/usuarios', { method: 'POST', body: JSON.stringify(body) });
+      setModalCriar(false);
+      setCriar({ email: '', senha: '', perfil: 'SECRETARIA', alunoId: '', professorId: '' });
+      flash('Usuário criado com sucesso.');
+      carregar();
+    } catch (e: any) {
+      flash('Erro: ' + (e.message ?? 'falha ao criar'));
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function handleEditar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!modalEditar) return;
+    setSalvando(true);
+    try {
+      await apiFetch(`/usuarios/${modalEditar.id}`, { method: 'PATCH', body: JSON.stringify({ perfil: editarPerfil }) });
+      setModalEditar(null);
+      flash('Perfil atualizado.');
+      carregar();
+    } catch (e: any) {
+      flash('Erro: ' + (e.message ?? 'falha'));
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function handleToggleStatus(u: Usuario) {
+    const rota = u.status === 'BLOQUEADO' ? 'ativar' : 'bloquear';
+    try {
+      await apiFetch(`/usuarios/${u.id}/${rota}`, { method: 'POST' });
+      flash(u.status === 'BLOQUEADO' ? 'Usuário reativado.' : 'Usuário bloqueado.');
+      carregar();
+    } catch (e: any) {
+      flash('Erro: ' + (e.message ?? 'falha'));
+    }
+  }
+
+  async function handleResetar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!modalResetar) return;
+    setSalvando(true);
+    try {
+      await apiFetch(`/usuarios/${modalResetar.id}/resetar-senha`, { method: 'POST', body: JSON.stringify({ novaSenha }) });
+      setModalResetar(null);
+      setNovaSenha('');
+      flash('Senha resetada com sucesso.');
+    } catch (e: any) {
+      flash('Erro: ' + (e.message ?? 'falha'));
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function handleMinhaSenha(e: React.FormEvent) {
+    e.preventDefault();
+    setSalvando(true);
+    try {
+      await apiFetch('/usuarios/me/senha', { method: 'PATCH', body: JSON.stringify({ senhaAtual: minhaSenhaAtual, novaSenha: minhaNovaSenha }) });
+      setModalMinhaSenha(false);
+      setMinhaSenhaAtual('');
+      setMinhaNovaSenha('');
+      flash('Senha alterada com sucesso.');
+    } catch (e: any) {
+      flash('Erro: ' + (e.message ?? 'falha'));
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  // ── modal genérico ────────────────────────────────────────────────────────
+  function Modal({ titulo, onClose, children }: { titulo: string; onClose: () => void; children: React.ReactNode }) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
+      }} onClick={onClose}>
+        <div style={{
+          background: '#fff', borderRadius: 10, padding: 24, width: 420, maxWidth: '94vw',
+          boxShadow: '0 20px 60px rgba(0,0,0,.25)',
+        }} onClick={e => e.stopPropagation()}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{titulo}</h3>
+            <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, cursor: 'pointer', color: '#6b7280' }}>×</button>
+          </div>
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // ── render ────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+
+      {/* cabeçalho */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Gestão de Usuários</h1>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
+            {usuarios.length} usuário{usuarios.length !== 1 ? 's' : ''} cadastrado{usuarios.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setModalMinhaSenha(true)} style={{
+            padding: '7px 14px', border: '1px solid #d1d5db', borderRadius: 6,
+            background: '#fff', cursor: 'pointer', fontSize: 13, color: '#374151',
+          }}>Minha senha</button>
+          {isAdmin && (
+            <button onClick={() => setModalCriar(true)} style={{
+              padding: '7px 14px', border: 'none', borderRadius: 6,
+              background: '#1e3a5f', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+            }}>+ Novo usuário</button>
+          )}
+        </div>
+      </div>
+
+      {/* flash */}
+      {msg && (
+        <div style={{
+          padding: '10px 14px', borderRadius: 6, marginBottom: 12,
+          background: msg.startsWith('Erro') ? '#fef2f2' : '#f0fdf4',
+          color: msg.startsWith('Erro') ? '#dc2626' : '#16a34a',
+          border: `1px solid ${msg.startsWith('Erro') ? '#fca5a5' : '#86efac'}`,
+          fontSize: 13,
+        }}>{msg}</div>
+      )}
+
+      {/* filtros */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <input
+          placeholder="Buscar por e-mail ou nome..."
+          value={busca} onChange={e => setBusca(e.target.value)}
+          style={{
+            flex: 1, minWidth: 200, padding: '7px 10px',
+            border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13,
+          }}
+        />
+        <select value={filtroPerfil} onChange={e => setFiltroPerfil(e.target.value as Perfil | '')}
+          style={{ padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, background: '#fff' }}>
+          <option value="">Todos os perfis</option>
+          {(Object.keys(PERFIL_LABEL) as Perfil[]).map(p => (
+            <option key={p} value={p}>{PERFIL_LABEL[p]}</option>
+          ))}
+        </select>
+        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value as Status | '')}
+          style={{ padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, background: '#fff' }}>
+          <option value="">Todos os status</option>
+          <option value="ATIVO">Ativo</option>
+          <option value="INATIVO">Inativo</option>
+          <option value="BLOQUEADO">Bloqueado</option>
+        </select>
+      </div>
+
+      {/* tabela */}
+      {loading ? (
+        <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p>
+      ) : erro ? (
+        <p style={{ color: '#dc2626', fontSize: 13 }}>{erro}</p>
+      ) : (
+        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                {['E-mail', 'Perfil', 'Status', 'Vínculo', 'Criado em', 'Ações'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtrados.length === 0 ? (
+                <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>Nenhum usuário encontrado.</td></tr>
+              ) : filtrados.map((u, i) => (
+                <tr key={u.id} style={{ borderBottom: i < filtrados.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                  <td style={{ padding: '10px 12px' }}>
+                    <div style={{ fontWeight: 500 }}>{u.email}</div>
+                    {u.mfaAtivo && <span style={{ fontSize: 10, color: '#7c3aed' }}>MFA ativo</span>}
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <Badge label={PERFIL_LABEL[u.perfil]} color={PERFIL_COLOR[u.perfil]} />
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <Badge label={u.status} color={STATUS_COLOR[u.status]} />
+                  </td>
+                  <td style={{ padding: '10px 12px', color: '#6b7280', fontSize: 12 }}>
+                    {u.aluno ? `${u.aluno.nome} (RA: ${u.aluno.ra})` : u.professor ? u.professor.nome : '—'}
+                  </td>
+                  <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: 12 }}>
+                    {new Date(u.criadoEm).toLocaleDateString('pt-BR')}
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>
+                    {isAdmin && (
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                        <button onClick={() => { setModalEditar(u); setEditarPerfil(u.perfil); }}
+                          style={{ padding: '3px 8px', border: '1px solid #d1d5db', borderRadius: 4, background: '#fff', cursor: 'pointer', fontSize: 11 }}>
+                          Editar
+                        </button>
+                        <button onClick={() => handleToggleStatus(u)}
+                          style={{
+                            padding: '3px 8px', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11,
+                            background: u.status === 'BLOQUEADO' ? '#dcfce7' : '#fee2e2',
+                            color: u.status === 'BLOQUEADO' ? '#16a34a' : '#dc2626',
+                          }}>
+                          {u.status === 'BLOQUEADO' ? 'Ativar' : 'Bloquear'}
+                        </button>
+                        <button onClick={() => { setModalResetar(u); setNovaSenha(''); }}
+                          style={{ padding: '3px 8px', border: '1px solid #d1d5db', borderRadius: 4, background: '#fff', cursor: 'pointer', fontSize: 11 }}>
+                          Reset senha
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Modal: Criar usuário ───────────────────────────────────────────── */}
+      {modalCriar && (
+        <Modal titulo="Novo Usuário" onClose={() => setModalCriar(false)}>
+          <form onSubmit={handleCriar} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Input label="E-mail *" type="email" required value={criar.email}
+              onChange={e => setCriar(p => ({ ...p, email: e.target.value }))} />
+            <Input label="Senha * (mín. 8 caracteres)" type="password" required minLength={8} value={criar.senha}
+              onChange={e => setCriar(p => ({ ...p, senha: e.target.value }))} />
+            <Select label="Perfil *" required value={criar.perfil}
+              onChange={e => setCriar(p => ({ ...p, perfil: e.target.value as Perfil }))}>
+              {(Object.keys(PERFIL_LABEL) as Perfil[]).map(p => (
+                <option key={p} value={p}>{PERFIL_LABEL[p]}</option>
+              ))}
+            </Select>
+            {criar.perfil === 'ALUNO' && (
+              <Input label="ID do Aluno (opcional)" placeholder="uuid do aluno" value={criar.alunoId}
+                onChange={e => setCriar(p => ({ ...p, alunoId: e.target.value }))} />
+            )}
+            {criar.perfil === 'PROFESSOR' && (
+              <Input label="ID do Professor (opcional)" placeholder="uuid do professor" value={criar.professorId}
+                onChange={e => setCriar(p => ({ ...p, professorId: e.target.value }))} />
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+              <button type="button" onClick={() => setModalCriar(false)}
+                style={{ padding: '7px 16px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={salvando}
+                style={{ padding: '7px 16px', border: 'none', borderRadius: 6, background: '#1e3a5f', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                {salvando ? 'Criando...' : 'Criar usuário'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* ── Modal: Editar perfil ──────────────────────────────────────────── */}
+      {modalEditar && (
+        <Modal titulo={`Editar — ${modalEditar.email}`} onClose={() => setModalEditar(null)}>
+          <form onSubmit={handleEditar} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Select label="Perfil" value={editarPerfil} onChange={e => setEditarPerfil(e.target.value as Perfil)}>
+              {(Object.keys(PERFIL_LABEL) as Perfil[]).map(p => (
+                <option key={p} value={p}>{PERFIL_LABEL[p]}</option>
+              ))}
+            </Select>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+              <button type="button" onClick={() => setModalEditar(null)}
+                style={{ padding: '7px 16px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={salvando}
+                style={{ padding: '7px 16px', border: 'none', borderRadius: 6, background: '#1e3a5f', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                {salvando ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* ── Modal: Resetar senha ──────────────────────────────────────────── */}
+      {modalResetar && (
+        <Modal titulo={`Resetar senha — ${modalResetar.email}`} onClose={() => setModalResetar(null)}>
+          <form onSubmit={handleResetar} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Input label="Nova senha * (mín. 8 caracteres)" type="password" required minLength={8}
+              value={novaSenha} onChange={e => setNovaSenha(e.target.value)} />
+            <p style={{ margin: 0, fontSize: 11, color: '#6b7280' }}>
+              O usuário será informado da nova senha pelo administrador.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+              <button type="button" onClick={() => setModalResetar(null)}
+                style={{ padding: '7px 16px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={salvando}
+                style={{ padding: '7px 16px', border: 'none', borderRadius: 6, background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                {salvando ? 'Resetando...' : 'Resetar senha'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* ── Modal: Minha senha ────────────────────────────────────────────── */}
+      {modalMinhaSenha && (
+        <Modal titulo="Alterar minha senha" onClose={() => setModalMinhaSenha(false)}>
+          <form onSubmit={handleMinhaSenha} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Input label="Senha atual *" type="password" required
+              value={minhaSenhaAtual} onChange={e => setMinhaSenhaAtual(e.target.value)} />
+            <Input label="Nova senha * (mín. 8 caracteres)" type="password" required minLength={8}
+              value={minhaNovaSenha} onChange={e => setMinhaNovaSenha(e.target.value)} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+              <button type="button" onClick={() => setModalMinhaSenha(false)}
+                style={{ padding: '7px 16px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={salvando}
+                style={{ padding: '7px 16px', border: 'none', borderRadius: 6, background: '#1e3a5f', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                {salvando ? 'Salvando...' : 'Alterar senha'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}

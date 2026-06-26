@@ -1,16 +1,18 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ResultadoDisciplinaService } from './resultado-disciplina.service';
 import { ConsolidarResultadoDto } from './dto/consolidar-resultado.dto';
 
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Perfil } from '@prisma/client';
+
 @ApiTags('Resultado de Disciplinas')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('matriculas')
 export class ResultadoDisciplinaController {
   constructor(private readonly service: ResultadoDisciplinaService) {}
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.PROFESSOR)
   @Post(':id/consolidar')
   @ApiOperation({ summary: 'Calcular e persistir média + frequência de uma matrícula' })
   consolidar(

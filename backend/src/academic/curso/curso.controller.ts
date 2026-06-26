@@ -8,25 +8,26 @@ import {
   Patch,
   Post,
   Request,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CursoService } from './curso.service';
 import { CreateCursoDto } from './dto/create-curso.dto';
 import { UpdateCursoDto } from './dto/update-curso.dto';
 
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Perfil } from '@prisma/client';
+
 @ApiTags('Cursos')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('cursos')
 export class CursoController {
   constructor(private readonly cursoService: CursoService) {}
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Post()
   @ApiOperation({ summary: 'Criar curso' })
   create(@Body() dto: CreateCursoDto, @Request() req: any) {
@@ -45,6 +46,7 @@ export class CursoController {
     return this.cursoService.findOne(id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar curso' })
   update(
@@ -55,6 +57,7 @@ export class CursoController {
     return this.cursoService.update(id, dto, req.user?.id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover curso' })
