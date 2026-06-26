@@ -508,6 +508,7 @@ enum StatusProcesso {
   CANCELADO
 }
 
+
 enum StatusInscricao {
   INSCRITO
   EM_ANALISE

@@ -3,10 +3,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateInscricaoDto } from './dto/create-inscricao.dto';
 import { UpdateInscricaoDto } from './dto/update-inscricao.dto';
-import { Perfil } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
-// Mapeamento local (evita dep de enums Prisma ainda nao gerados)
+// Mapeamento TipoProcesso -> FormaIngresso (evita dep de enums nao gerados)
 const TIPO_PARA_INGRESSO: Record<string, string> = {
   VESTIBULAR: 'VESTIBULAR',
   ENEM: 'ENEM',
@@ -71,28 +70,25 @@ export class InscricaoService {
     }
 
     const { candidato, processoSeletivo } = inscricao;
-    const count = await this.prisma.aluno.count();
+    const count = await (this.prisma as any).aluno.count();
     const ra = String(count + 1).padStart(6, '0');
 
     const senhaTemp = Math.random().toString(36).slice(-8);
     const senhaHash = await bcrypt.hash(senhaTemp, 12);
-    const usuario = await this.prisma.usuario.create({
-      data: { email: candidato.email, senhaHash, perfil: Perfil.ALUNO, status: 'ATIVO' },
-    });
 
-    const aluno = await this.prisma.aluno.create({
+    // Cria o aluno primeiro (sem usuarioId — FK está em Usuario.alunoId)
+    const aluno = await (this.prisma as any).aluno.create({
       data: {
-        usuarioId: usuario.id,
         cursoId: processoSeletivo.cursoId,
         matrizCurricularId,
         ra,
         nome: candidato.nome,
         cpf: candidato.cpf,
         email: candidato.email,
-        telefone: candidato.telefone ?? '',
+        telefone: candidato.telefone ?? null,
         dataNascimento: candidato.dataNascimento,
         sexo: candidato.sexo,
-        corRaca: candidato.corRaca ?? '',
+        corRaca: candidato.corRaca ?? 'NAO_DECLARADO',
         nacionalidade: candidato.nacionalidade,
         formaIngresso: TIPO_PARA_INGRESSO[processoSeletivo.tipo] ?? 'OUTRO',
         dataIngresso: new Date(),
@@ -100,7 +96,21 @@ export class InscricaoService {
       },
     });
 
-    await (this.prisma as any).inscricao.update({ where: { id }, data: { status: 'MATRICULADO', alunoId: aluno.id } });
+    // Cria usuario com alunoId apontando para o aluno recém-criado
+    await (this.prisma as any).usuario.create({
+      data: {
+        email: candidato.email,
+        senhaHash,
+        perfil: 'ALUNO',
+        status: 'ATIVO',
+        alunoId: aluno.id,
+      },
+    });
+
+    await (this.prisma as any).inscricao.update({
+      where: { id },
+      data: { status: 'MATRICULADO', alunoId: aluno.id },
+    });
     await this.audit.log(userId, 'CONVERT_ALUNO', 'Inscricao', id, inscricao, { alunoId: aluno.id, ra });
 
     return { aluno, senhaTemporaria: senhaTemp, mensagem: 'Aluno criado com sucesso. Senha temporária gerada.' };
