@@ -14,7 +14,7 @@ export class CandidatoService {
     const item = await (this.prisma as any).candidato.create({
       data: { ...dto, dataNascimento: new Date(dto.dataNascimento) },
     });
-    await this.audit.log(userId, 'CREATE', 'Candidato', item.id, null, item);
+    await this.audit.log({ usuarioId: userId, acao: 'CREATE', entidade: 'Candidato', entidadeId: item.id, dadosDepois: item });
     return item;
   }
 
@@ -45,14 +45,14 @@ export class CandidatoService {
     const data: any = { ...dto };
     if (dto.dataNascimento) data.dataNascimento = new Date(dto.dataNascimento);
     const updated = await (this.prisma as any).candidato.update({ where: { id }, data });
-    await this.audit.log(userId, 'UPDATE', 'Candidato', id, before, updated);
+    await this.audit.log({ usuarioId: userId, acao: 'UPDATE', entidade: 'Candidato', entidadeId: id, dadosAntes: before, dadosDepois: updated });
     return updated;
   }
 
   async remove(id: string, userId?: string) {
     const before = await this.findOne(id);
     await (this.prisma as any).candidato.delete({ where: { id } });
-    await this.audit.log(userId, 'DELETE', 'Candidato', id, before, null);
+    await this.audit.log({ usuarioId: userId, acao: 'DELETE', entidade: 'Candidato', entidadeId: id, dadosAntes: before });
     return { deleted: true };
   }
 }

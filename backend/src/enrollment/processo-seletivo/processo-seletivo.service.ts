@@ -17,7 +17,7 @@ export class ProcessoSeletivoService {
       },
       include: { curso: true, periodoLetivo: true },
     });
-    await this.audit.log(userId, 'CREATE', 'ProcessoSeletivo', item.id, null, item);
+    await this.audit.log({ usuarioId: userId, acao: 'CREATE', entidade: 'ProcessoSeletivo', entidadeId: item.id, dadosDepois: item });
     return item;
   }
 
@@ -41,17 +41,17 @@ export class ProcessoSeletivoService {
   async update(id: string, dto: UpdateProcessoSeletivoDto, userId?: string) {
     const before = await this.findOne(id);
     const data: any = { ...dto };
-    if (dto.dataAbertura) data.dataAbertura = new Date(dto.dataAbertura);
-    if (dto.dataEncerramento) data.dataEncerramento = new Date(dto.dataEncerramento);
+    if ((dto as any).dataAbertura) data.dataAbertura = new Date((dto as any).dataAbertura);
+    if ((dto as any).dataEncerramento) data.dataEncerramento = new Date((dto as any).dataEncerramento);
     const updated = await (this.prisma as any).processoSeletivo.update({ where: { id }, data, include: { curso: true, periodoLetivo: true } });
-    await this.audit.log(userId, 'UPDATE', 'ProcessoSeletivo', id, before, updated);
+    await this.audit.log({ usuarioId: userId, acao: 'UPDATE', entidade: 'ProcessoSeletivo', entidadeId: id, dadosAntes: before, dadosDepois: updated });
     return updated;
   }
 
   async remove(id: string, userId?: string) {
     const before = await this.findOne(id);
     await (this.prisma as any).processoSeletivo.delete({ where: { id } });
-    await this.audit.log(userId, 'DELETE', 'ProcessoSeletivo', id, before, null);
+    await this.audit.log({ usuarioId: userId, acao: 'DELETE', entidade: 'ProcessoSeletivo', entidadeId: id, dadosAntes: before });
     return { deleted: true };
   }
 }

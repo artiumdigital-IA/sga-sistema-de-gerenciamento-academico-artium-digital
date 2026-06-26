@@ -5,7 +5,6 @@ import { CreateInscricaoDto } from './dto/create-inscricao.dto';
 import { UpdateInscricaoDto } from './dto/update-inscricao.dto';
 import * as bcrypt from 'bcrypt';
 
-// Mapeamento TipoProcesso -> FormaIngresso (evita dep de enums nao gerados)
 const TIPO_PARA_INGRESSO: Record<string, string> = {
   VESTIBULAR: 'VESTIBULAR',
   ENEM: 'ENEM',
@@ -25,7 +24,7 @@ export class InscricaoService {
       data: { ...dto, notaEnem: dto.notaEnem ?? null },
       include: { candidato: true, processoSeletivo: true },
     });
-    await this.audit.log(userId, 'CREATE', 'Inscricao', item.id, null, item);
+    await this.audit.log({ usuarioId: userId, acao: 'CREATE', entidade: 'Inscricao', entidadeId: item.id, dadosDepois: item });
     return item;
   }
 
@@ -56,7 +55,7 @@ export class InscricaoService {
       data: dto,
       include: { candidato: true, processoSeletivo: true },
     });
-    await this.audit.log(userId, 'UPDATE', 'Inscricao', id, before, updated);
+    await this.audit.log({ usuarioId: userId, acao: 'UPDATE', entidade: 'Inscricao', entidadeId: id, dadosAntes: before, dadosDepois: updated });
     return updated;
   }
 
@@ -76,7 +75,6 @@ export class InscricaoService {
     const senhaTemp = Math.random().toString(36).slice(-8);
     const senhaHash = await bcrypt.hash(senhaTemp, 12);
 
-    // Cria o aluno primeiro (sem usuarioId — FK está em Usuario.alunoId)
     const aluno = await (this.prisma as any).aluno.create({
       data: {
         cursoId: processoSeletivo.cursoId,
@@ -96,7 +94,6 @@ export class InscricaoService {
       },
     });
 
-    // Cria usuario com alunoId apontando para o aluno recém-criado
     await (this.prisma as any).usuario.create({
       data: {
         email: candidato.email,
@@ -111,7 +108,7 @@ export class InscricaoService {
       where: { id },
       data: { status: 'MATRICULADO', alunoId: aluno.id },
     });
-    await this.audit.log(userId, 'CONVERT_ALUNO', 'Inscricao', id, inscricao, { alunoId: aluno.id, ra });
+    await this.audit.log({ usuarioId: userId, acao: 'CONVERT_ALUNO', entidade: 'Inscricao', entidadeId: id, dadosDepois: { alunoId: aluno.id, ra } });
 
     return { aluno, senhaTemporaria: senhaTemp, mensagem: 'Aluno criado com sucesso. Senha temporária gerada.' };
   }
