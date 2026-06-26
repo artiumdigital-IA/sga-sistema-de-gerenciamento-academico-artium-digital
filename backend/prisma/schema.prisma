@@ -34,6 +34,7 @@ model Curso {
 
   matrizesCurriculares MatrizCurricular[]
   alunos               Aluno[]
+  processosSeletivos   ProcessoSeletivo[]
 
   @@map("cursos")
 }
@@ -105,7 +106,8 @@ model PeriodoLetivo {
   criadoEm   DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  ofertas Oferta[]
+  ofertas             Oferta[]
+  processosSeletivos  ProcessoSeletivo[]
 
   @@unique([ano, semestre])
   @@map("periodos_letivos")
@@ -434,4 +436,83 @@ enum UsuarioStatus {
   ATIVO
   INATIVO
   BLOQUEADO
+}
+
+// ── Fase 5: Ingresso / Processo Seletivo ──────────────────────────────────────
+
+model ProcessoSeletivo {
+  id               String         @id @default(uuid())
+  nome             String
+  tipo             TipoProcesso
+  cursoId          String
+  curso            Curso          @relation(fields: [cursoId], references: [id])
+  periodoLetivoId  String
+  periodoLetivo    PeriodoLetivo  @relation(fields: [periodoLetivoId], references: [id])
+  vagas            Int
+  dataAbertura     DateTime
+  dataEncerramento DateTime
+  status           StatusProcesso @default(ABERTO)
+  inscricoes       Inscricao[]
+  criadoEm         DateTime       @default(now())
+  atualizadoEm     DateTime       @updatedAt
+
+  @@map("processos_seletivos")
+}
+
+model Candidato {
+  id             String      @id @default(uuid())
+  nome           String
+  cpf            String      @unique
+  email          String
+  telefone       String?
+  dataNascimento DateTime
+  sexo           String
+  corRaca        String?
+  nacionalidade  String      @default("BRASILEIRA")
+  inscricoes     Inscricao[]
+  criadoEm       DateTime    @default(now())
+  atualizadoEm   DateTime    @updatedAt
+
+  @@map("candidatos")
+}
+
+model Inscricao {
+  id                 String           @id @default(uuid())
+  candidatoId        String
+  candidato          Candidato        @relation(fields: [candidatoId], references: [id])
+  processoSeletivoId String
+  processoSeletivo   ProcessoSeletivo @relation(fields: [processoSeletivoId], references: [id])
+  status             StatusInscricao  @default(INSCRITO)
+  notaEnem           Decimal?
+  documentosOk       Boolean          @default(false)
+  observacoes        String?
+  alunoId            String?          // preenchido ao converter para Aluno
+  criadoEm           DateTime         @default(now())
+  atualizadoEm       DateTime         @updatedAt
+
+  @@unique([candidatoId, processoSeletivoId])
+  @@map("inscricoes")
+}
+
+enum TipoProcesso {
+  VESTIBULAR
+  ENEM
+  SEGUNDA_GRADUACAO
+  TRANSFERENCIA_EXTERNA
+  TRANSFERENCIA_INTERNA
+}
+
+enum StatusProcesso {
+  ABERTO
+  ENCERRADO
+  CANCELADO
+}
+
+enum StatusInscricao {
+  INSCRITO
+  EM_ANALISE
+  APROVADO
+  REPROVADO
+  MATRICULADO
+  DESISTENTE
 }
