@@ -68,9 +68,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         display: 'flex', alignItems: 'center', padding: '0 12px',
         gap: 8, zIndex: 20,
       }}>
-        <Image src="/assets/logoBranca.png.png" alt="FIURJ"
-          width={90} height={30} style={{ objectFit: 'contain' }} unoptimized />
-
         {/* Spacer */}
         <div style={{ flex: 1 }} />
 
@@ -140,10 +137,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }}
           >
             <div style={{
-              width: 34, height: 34, flexShrink: 0,
+              width: 36, height: 36, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <SvgIcon d="M4 6h16M4 12h16M4 18h16" size={20} />
+              <Image src="/logo.png" alt="FIURJ" width={36} height={36} style={{ objectFit: 'contain' }} unoptimized />
             </div>
             {sidebarOpen && (
               <span style={{
