@@ -83,10 +83,12 @@ export default function CensoPage() {
   const [resumo, setResumo] = useState<Resumo | null>(null);
   const [loading, setLoading] = useState(true);
   const [exportLoading, setExportLoading] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     apiFetch<Resumo>('/relatorios/censo/resumo')
       .then(setResumo)
+      .catch((e: any) => setError(e?.message ?? 'Erro ao carregar dados do Censo'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -99,6 +101,7 @@ export default function CensoPage() {
   }
 
   if (loading) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando dados do Censo...</div>;
+  if (error) return <div style={{ padding: 40, color: '#ef4444' }}>Erro: {error}</div>;
   if (!resumo) return null;
 
   const yr = new Date().getFullYear();
