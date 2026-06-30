@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: 'FIURJ — Plataforma Acadêmica',
   description: 'Sistema de gestão acadêmica da Faculdade Instituto Rio de Janeiro',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
 };
 
 // Injeta o tema ANTES da pintura inicial, evitando flash
