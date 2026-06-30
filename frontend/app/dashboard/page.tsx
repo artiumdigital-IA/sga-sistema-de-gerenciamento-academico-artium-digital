@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { getToken } from '@/lib/auth';
+import { apiFetch } from '@/lib/api';
 import Image from 'next/image';
 
 /* ─── Tipos ─── */
@@ -155,35 +156,60 @@ function DashCard({
 }
 
 /* ─── Grade Horária ─── */
+interface Oferta {
+  id: string;
+  horario?: string;
+  sala?: string;
+  turno: string;
+  vagas: number;
+  disciplina: { nome: string; cargaHoraria: number };
+  professor: { nome: string };
+  periodoLetivo: { ano: number; semestre: number; status: string };
+}
+
+const TURNO_LABEL: Record<string, string> = {
+  MANHA: 'Manhã', TARDE: 'Tarde', NOITE: 'Noite', INTEGRAL: 'Integral',
+};
+
 function GradeHoraria() {
+  const [ofertas, setOfertas] = useState<Oferta[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch<Oferta[]>('/ofertas')
+      .then(data => {
+        // prioriza periodo EM_ANDAMENTO, senão pega o mais recente
+        const ativos = data.filter(o => o.periodoLetivo?.status === 'EM_ANDAMENTO');
+        setOfertas(ativos.length > 0 ? ativos : data.slice(0, 10));
+      })
+      .catch(() => setOfertas([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{ padding: '16px 14px', fontSize: 12, color: 'var(--gray-400)' }}>Carregando...</div>;
+  if (ofertas.length === 0) return <div style={{ padding: '16px 14px', fontSize: 12, color: 'var(--gray-400)' }}>Nenhuma oferta no período ativo.</div>;
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
         <thead>
           <tr>
-            <th style={thStyle}>Período</th>
-            <th style={thStyle}>Horário</th>
-            {HORARIO_DIAS.map(d => <th key={d} style={thStyle}>{d}</th>)}
+            {['Disciplina','Professor','Turno','Horário','Sala','Vagas'].map(h => (
+              <th key={h} style={thStyle}>{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {HORARIO_PERIODOS.map((p, i) => {
-            const isBreak = p.nome.startsWith('Inter') || p.nome === 'RBS';
-            return (
-              <tr key={i} style={{ background: isBreak ? 'var(--gray-50)' : 'var(--white)' }}>
-                <td style={{ ...tdStyle, fontWeight: 600, color: isBreak ? 'var(--gray-400)' : 'var(--gray-700)' }}>{p.nome}</td>
-                <td style={{ ...tdStyle, color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>{p.inicio}–{p.fim}</td>
-                {HORARIO_DIAS.map((d, di) => {
-                  const aula = HORARIO_GRADE[p.nome]?.[di];
-                  return (
-                    <td key={d} style={{ ...tdStyle, color: 'var(--blue-mid)', fontWeight: aula ? 500 : 400 }}>
-                      {aula || (isBreak ? <span style={{ color: 'var(--gray-300)' }}>—</span> : '')}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
+          {ofertas.map((o, i) => (
+            <tr key={o.id} style={{ background: i % 2 === 0 ? 'var(--white)' : 'var(--gray-50)' }}>
+              <td style={{ ...tdStyle, fontWeight: 500, color: 'var(--gray-700)' }}>{o.disciplina?.nome ?? '—'}</td>
+              <td style={tdStyle}>{o.professor?.nome ?? '—'}</td>
+              <td style={tdStyle}>{TURNO_LABEL[o.turno] ?? o.turno}</td>
+              <td style={{ ...tdStyle, color: 'var(--blue-mid)' }}>{o.horario ?? '—'}</td>
+              <td style={tdStyle}>{o.sala ?? '—'}</td>
+              <td style={tdStyle}>{o.vagas}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
@@ -250,32 +276,69 @@ function BoletimDiario() {
 }
 
 /* ─── Calendário Acadêmico ─── */
+interface PeriodoLetivo {
+  id: string;
+  ano: number;
+  semestre: number;
+  dataInicio: string;
+  dataFim: string;
+  status: string;
+}
+
+const PERIODO_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  EM_ANDAMENTO: { bg: '#d4edda', color: '#1a7a3c' },
+  PLANEJADO:    { bg: '#dbeafe', color: '#1e40af' },
+  ENCERRADO:    { bg: '#f3f4f6', color: '#6b7280' },
+};
+
+const PERIODO_STATUS_LABEL: Record<string, string> = {
+  EM_ANDAMENTO: 'Em andamento',
+  PLANEJADO:    'Planejado',
+  ENCERRADO:    'Encerrado',
+};
+
 function CalendarioAcademico() {
+  const [periodos, setPeriodos] = useState<PeriodoLetivo[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch<PeriodoLetivo[]>('/periodos')
+      .then(data => setPeriodos(data))
+      .catch(() => setPeriodos([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const fmt = (iso: string) => {
+    try { return new Date(iso).toLocaleDateString('pt-BR'); } catch { return iso; }
+  };
+
+  if (loading) return <div style={{ padding: '16px 14px', fontSize: 12, color: 'var(--gray-400)' }}>Carregando...</div>;
+  if (periodos.length === 0) return <div style={{ padding: '16px 14px', fontSize: 12, color: 'var(--gray-400)' }}>Nenhum período cadastrado.</div>;
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
         <thead>
           <tr>
-            {['Evento','Local','Categoria','Tipo','Início','Fim'].map(h => (
+            {['Período','Semestre','Situação','Início','Fim'].map(h => (
               <th key={h} style={thStyle}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {CALENDARIO_EVENTOS.map((ev, i) => {
-            const c = CAT_COLORS[ev.cat] ?? { bg: 'var(--gray-100)', color: 'var(--gray-500)' };
+          {periodos.map((p, i) => {
+            const c = PERIODO_STATUS_COLORS[p.status] ?? { bg: 'var(--gray-100)', color: 'var(--gray-500)' };
             return (
-              <tr key={i} style={{ background: i % 2 === 0 ? 'var(--white)' : 'var(--gray-50)' }}>
-                <td style={{ ...tdStyle, fontWeight: 500, color: 'var(--gray-700)' }}>{ev.evento}</td>
-                <td style={tdStyle}>{ev.local}</td>
+              <tr key={p.id} style={{ background: i % 2 === 0 ? 'var(--white)' : 'var(--gray-50)' }}>
+                <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--gray-700)' }}>{p.ano}</td>
+                <td style={tdStyle}>{p.semestre}º Semestre</td>
                 <td style={tdStyle}>
                   <span style={{ background: c.bg, color: c.color, padding: '2px 6px', borderRadius: 3, fontSize: 10.5, fontWeight: 600 }}>
-                    {ev.cat}
+                    {PERIODO_STATUS_LABEL[p.status] ?? p.status}
                   </span>
                 </td>
-                <td style={tdStyle}>{ev.tipo}</td>
-                <td style={tdStyle}>{ev.inicio}</td>
-                <td style={tdStyle}>{ev.fim}</td>
+                <td style={tdStyle}>{fmt(p.dataInicio)}</td>
+                <td style={tdStyle}>{fmt(p.dataFim)}</td>
               </tr>
             );
           })}
