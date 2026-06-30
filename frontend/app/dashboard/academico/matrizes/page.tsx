@@ -49,9 +49,9 @@ function MatrizModal({ matriz, cursos, onClose, onSave }: {
     setSaving(true);
     try {
       if (matriz) {
-        await apiFetch(`/matrizes-curriculares/${matriz.id}`, { method: 'PATCH', body: JSON.stringify(form) });
+        await apiFetch(`/matrizes/${matriz.id}`, { method: 'PATCH', body: JSON.stringify(form) });
       } else {
-        await apiFetch('/matrizes-curriculares', { method: 'POST', body: JSON.stringify(form) });
+        await apiFetch('/matrizes', { method: 'POST', body: JSON.stringify(form) });
       }
       onSave();
       onClose();
@@ -117,7 +117,7 @@ export default function MatrizesPage() {
     setError('');
     try {
       const [m, c] = await Promise.all([
-        apiFetch<MatrizCurricular[]>('/matrizes-curriculares'),
+        apiFetch<MatrizCurricular[]>('/matrizes'),
         apiFetch<Curso[]>('/cursos'),
       ]);
       setMatrizes(m);
@@ -135,7 +135,7 @@ export default function MatrizesPage() {
     if (!confirm('Excluir esta matriz?')) return;
     setDeleting(id);
     try {
-      await apiFetch(`/matrizes-curriculares/${id}`, { method: 'DELETE' });
+      await apiFetch(`/matrizes/${id}`, { method: 'DELETE' });
       setMatrizes(m => m.filter(x => x.id !== id));
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Erro ao excluir');

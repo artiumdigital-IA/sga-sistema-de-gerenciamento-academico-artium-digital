@@ -246,7 +246,7 @@ export default function AlunosPage() {
       const [a, c, m] = await Promise.all([
         apiFetch<Aluno[]>('/alunos'),
         apiFetch<Curso[]>('/cursos'),
-        apiFetch<MatrizCurricular[]>('/matrizes-curriculares'),
+        apiFetch<MatrizCurricular[]>('/matrizes'),
       ]);
       setAlunos(a); setCursos(c); setMatrizes(m);
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Erro ao carregar');

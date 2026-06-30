@@ -170,7 +170,7 @@ export default function DisciplinasPage() {
       const [d, c, m] = await Promise.all([
         apiFetch<Disciplina[]>('/disciplinas'),
         apiFetch<Curso[]>('/cursos'),
-        apiFetch<Matriz[]>('/matrizes-curriculares'),
+        apiFetch<Matriz[]>('/matrizes'),
       ]);
       setDisciplinas(d);
       setCursos(c);

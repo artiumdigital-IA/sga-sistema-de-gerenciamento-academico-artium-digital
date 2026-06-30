@@ -226,7 +226,7 @@ export default function OfertasPage() {
         apiFetch<Oferta[]>('/ofertas'),
         apiFetch<PeriodoLetivo[]>('/periodos-letivos'),
         apiFetch<Disciplina[]>('/disciplinas'),
-        apiFetch<Matriz[]>('/matrizes-curriculares'),
+        apiFetch<Matriz[]>('/matrizes'),
         apiFetch<Curso[]>('/cursos'),
         apiFetch<Professor[]>('/professores'),
       ]);
