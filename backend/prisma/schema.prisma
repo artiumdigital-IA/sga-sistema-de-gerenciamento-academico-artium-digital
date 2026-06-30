@@ -278,6 +278,7 @@ model Usuario {
   aluno     Aluno?     @relation(fields: [alunoId],     references: [id])
   professor Professor? @relation(fields: [professorId], references: [id])
   auditorias Auditoria[]
+  avisos     Aviso[]
 
   @@map("usuarios")
 }
@@ -614,4 +615,25 @@ enum StatusParcela {
   PAGO
   VENCIDO
   CANCELADO
+}
+
+// ── Avisos ──────────────────────────────────────────────────────
+model Aviso {
+  id         String   @id @default(uuid())
+  titulo     String
+  texto      String
+  tag        TagAviso @default(GERAL)
+  autorNome  String
+  autorId    String?
+  usuario    Usuario? @relation(fields: [autorId], references: [id])
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("avisos")
+}
+
+enum TagAviso {
+  GERAL
+  IMPORTANTE
+  APENAS_EQUIPE
 }

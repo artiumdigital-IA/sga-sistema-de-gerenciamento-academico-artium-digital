@@ -217,8 +217,50 @@ function GradeHoraria() {
 }
 
 /* ─── Boletim Diário ─── */
+interface AvisoItem {
+  id: string;
+  titulo: string;
+  texto: string;
+  tag: 'GERAL' | 'IMPORTANTE' | 'APENAS_EQUIPE';
+  autorNome: string;
+  criadoEm: string;
+}
+
+const AVISO_TAG_LABEL: Record<string, string> = {
+  GERAL: 'GERAL', IMPORTANTE: 'IMPORTANTE', APENAS_EQUIPE: 'APENAS EQUIPE',
+};
+
 function BoletimDiario() {
   const [activeTab, setActiveTab] = useState(0);
+  const [avisos, setAvisos] = useState<AvisoItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch<AvisoItem[]>('/avisos')
+      .then(data => setAvisos(data))
+      .catch(() => setAvisos([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  function fmtTime(iso: string) {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 86400000 && d.getDate() === now.getDate()) {
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+    if (diff < 172800000) return 'Ontem';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  }
+
+  function initials(name: string) {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  const AVATAR_COLORS = ['#e17076','#5e9bd6','#6fcf97','#f2994a','#7e3af2','#0694a2'];
+
   return (
     <div>
       {/* sub-tabs */}
@@ -238,29 +280,40 @@ function BoletimDiario() {
       {/* items */}
       {activeTab === 0 ? (
         <div>
-          {BOLETIM_ITEMS.map((item, i) => {
-            const tag = TAG_COLORS[item.tag] ?? { bg: 'var(--gray-100)', color: 'var(--gray-500)' };
+          {loading && (
+            <div style={{ padding: '16px 14px', fontSize: 12, color: 'var(--gray-400)' }}>Carregando...</div>
+          )}
+          {!loading && avisos.length === 0 && (
+            <div style={{ padding: '24px 14px', textAlign: 'center', color: 'var(--gray-400)', fontSize: 12 }}>
+              Nenhum aviso publicado.
+            </div>
+          )}
+          {avisos.map((item, i) => {
+            const tagKey = item.tag;
+            const tag = TAG_COLORS[AVISO_TAG_LABEL[tagKey]] ?? { bg: 'var(--gray-100)', color: 'var(--gray-500)' };
+            const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
             return (
-              <div key={i} style={{
+              <div key={item.id} style={{
                 display: 'flex', gap: 10, padding: '10px 14px',
                 borderBottom: '1px solid var(--gray-100)', alignItems: 'flex-start',
               }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: '50%',
-                  background: item.color, color: '#fff', fontSize: 10, fontWeight: 700,
+                  background: avatarColor, color: '#fff', fontSize: 10, fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>{item.initials}</div>
+                }}>{initials(item.autorNome)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 3 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)' }}>{item.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)' }}>{item.autorNome}</span>
                     <span style={{
                       fontSize: 9, fontWeight: 700, letterSpacing: '.4px',
                       background: tag.bg, color: tag.color,
                       padding: '1px 5px', borderRadius: 3,
-                    }}>{item.tag}</span>
-                    <span style={{ fontSize: 10, color: 'var(--gray-400)', marginLeft: 'auto' }}>{item.time}</span>
+                    }}>{AVISO_TAG_LABEL[tagKey]}</span>
+                    <span style={{ fontSize: 10, color: 'var(--gray-400)', marginLeft: 'auto' }}>{fmtTime(item.criadoEm)}</span>
                   </div>
-                  <p style={{ fontSize: 12, color: 'var(--gray-500)', lineHeight: 1.5, margin: 0 }}>{item.text}</p>
+                  <p style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--gray-700)', margin: '0 0 2px' }}>{item.titulo}</p>
+                  <p style={{ fontSize: 12, color: 'var(--gray-500)', lineHeight: 1.5, margin: 0 }}>{item.texto}</p>
                 </div>
               </div>
             );

@@ -24,7 +24,7 @@ const SIDEBAR_ITEMS = [
   { label: 'Contratos', d: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z', href: '/dashboard/financeiro/contratos' },
   { label: 'Censo',      d: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z', href: '/dashboard/relatorios/censo' },
   { label: 'Usuários',    d: 'M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm10-10V7a4 4 0 0 0-8 0v4h8z',                                                    href: '/dashboard/admin/usuarios' },
-  { label: 'Avisos',      d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',                                                                                                href: null },
+  { label: 'Avisos',      d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',                                                                                                href: '/dashboard/secretaria/avisos' },
   { label: 'Bem-estar',   d: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',                         href: null },
 ];
 
