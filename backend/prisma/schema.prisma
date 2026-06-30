@@ -108,6 +108,7 @@ model PeriodoLetivo {
 
   ofertas             Oferta[]
   processosSeletivos  ProcessoSeletivo[]
+  contratos           ContratoMatricula[]
 
   @@unique([ano, semestre])
   @@map("periodos_letivos")
@@ -168,6 +169,7 @@ model Aluno {
   matriculas       MatriculaDisciplina[]
   consentimentos   ConsentimentoLgpd[]
   requerimentos    Requerimento[]
+  contratos        ContratoMatricula[]
 
   @@map("alunos")
 }
@@ -551,5 +553,58 @@ enum StatusRequerimento {
   EM_ANALISE
   DEFERIDO
   INDEFERIDO
+  CANCELADO
+}
+
+// ── Financeiro ──────────────────────────────────────────────────────────────
+
+model ContratoMatricula {
+  id              String         @id @default(uuid())
+  alunoId         String
+  aluno           Aluno          @relation(fields: [alunoId], references: [id])
+  periodoLetivoId String
+  periodoLetivo   PeriodoLetivo  @relation(fields: [periodoLetivoId], references: [id])
+  valorTotal      Decimal        @db.Decimal(10, 2)
+  numeroParcelas  Int
+  diaVencimento   Int            // 1–28
+  status          StatusContrato @default(ATIVO)
+  observacoes     String?        @db.Text
+  criadoEm       DateTime       @default(now())
+  atualizadoEm   DateTime       @updatedAt
+
+  parcelas Parcela[]
+
+  @@map("contratos_matricula")
+}
+
+model Parcela {
+  id             String        @id @default(uuid())
+  contratoId     String
+  contrato       ContratoMatricula @relation(fields: [contratoId], references: [id])
+  numero         Int
+  valor          Decimal       @db.Decimal(10, 2)
+  dataVencimento DateTime      @db.Date
+  dataPagamento  DateTime?     @db.Date
+  valorPago      Decimal?      @db.Decimal(10, 2)
+  status         StatusParcela @default(PENDENTE)
+  formaPagamento String?
+  observacoes    String?
+  criadoEm      DateTime      @default(now())
+  atualizadoEm  DateTime      @updatedAt
+
+  @@map("parcelas")
+}
+
+enum StatusContrato {
+  ATIVO
+  SUSPENSO
+  CANCELADO
+  ENCERRADO
+}
+
+enum StatusParcela {
+  PENDENTE
+  PAGO
+  VENCIDO
   CANCELADO
 }
