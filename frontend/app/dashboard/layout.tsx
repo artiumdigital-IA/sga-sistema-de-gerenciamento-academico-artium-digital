@@ -44,6 +44,7 @@ function SvgIcon({ d, size = 18 }: { d: string; size?: number }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<JwtUser | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -53,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   const topH = 44;
-  const sideW = 52;
+  const sideW = sidebarOpen ? 210 : 52;
   const rightW = 220;
   const botH = 38;
 
@@ -120,35 +121,79 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ── Corpo ── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Sidebar esquerdo */}
+        {/* Sidebar esquerdo — expansível */}
         <div style={{
           width: sideW, flexShrink: 0, background: 'var(--blue-dark)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          paddingTop: 6, gap: 2, overflowY: 'auto',
+          display: 'flex', flexDirection: 'column',
+          transition: 'width 0.22s ease',
+          overflow: 'hidden',
         }}>
-          {SIDEBAR_ITEMS.map((item) => {
-            const isActive = item.href
-              ? (item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href))
-              : false;
-            return (
-              <button
-                key={item.label}
-                title={item.label}
-                onClick={() => item.href && router.push(item.href)}
-                style={{
-                  width: 40, height: 40, border: 'none', borderRadius: 6,
-                  cursor: item.href ? 'pointer' : 'default',
-                  background: isActive ? 'var(--red)' : 'transparent',
-                  color: isActive ? '#fff' : item.href ? 'rgba(255,255,255,.65)' : 'rgba(255,255,255,.3)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                onMouseEnter={e => { if (!isActive && item.href) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.12)'; }}
-                onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-              >
-                <SvgIcon d={item.d} size={18} />
-              </button>
-            );
-          })}
+          {/* Logo / toggle */}
+          <button
+            onClick={() => setSidebarOpen(o => !o)}
+            title={sidebarOpen ? 'Recolher menu' : 'Expandir menu'}
+            style={{
+              flexShrink: 0, height: 48, width: '100%', border: 'none',
+              background: 'transparent', cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+              paddingLeft: 10, gap: 10, overflow: 'hidden',
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, flexShrink: 0, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.18)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ color: '#fff', fontWeight: 800, fontSize: 15, letterSpacing: -0.5 }}>U</span>
+            </div>
+            {sidebarOpen && (
+              <span style={{
+                color: '#fff', fontWeight: 700, fontSize: 13,
+                whiteSpace: 'nowrap', overflow: 'hidden',
+              }}>FIURJ</span>
+            )}
+          </button>
+
+          {/* Divisor */}
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', marginBottom: 4 }} />
+
+          {/* Itens de navegação */}
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {SIDEBAR_ITEMS.map((item) => {
+              const isActive = item.href
+                ? (item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href))
+                : false;
+              return (
+                <button
+                  key={item.label}
+                  title={sidebarOpen ? undefined : item.label}
+                  onClick={() => item.href && router.push(item.href)}
+                  style={{
+                    width: '100%', height: 40, border: 'none',
+                    borderRadius: 0,
+                    cursor: item.href ? 'pointer' : 'default',
+                    background: isActive ? 'var(--red)' : 'transparent',
+                    color: isActive ? '#fff' : item.href ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.3)',
+                    display: 'flex', alignItems: 'center',
+                    paddingLeft: 11, gap: 12,
+                    whiteSpace: 'nowrap', overflow: 'hidden',
+                    textAlign: 'left',
+                  }}
+                  onMouseEnter={e => { if (!isActive && item.href) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.12)'; }}
+                  onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = isActive ? 'var(--red)' : 'transparent'; }}
+                >
+                  <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20 }}>
+                    <SvgIcon d={item.d} size={18} />
+                  </span>
+                  {sidebarOpen && (
+                    <span style={{ fontSize: 12.5, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.label}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Conteudo principal */}
