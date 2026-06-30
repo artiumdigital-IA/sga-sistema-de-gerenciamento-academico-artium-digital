@@ -164,7 +164,7 @@ export default function RequerimentosPage() {
   const td: React.CSSProperties = { padding: '8px 12px', fontSize: 13, borderBottom: '1px solid #f3f4f6' };
 
   return (
-    <div style={{ maxWidth: 1000 }}>
+    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Requerimentos</h2>
         <button onClick={() => setShowNovo(true)}

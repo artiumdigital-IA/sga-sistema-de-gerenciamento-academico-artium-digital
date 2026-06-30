@@ -21,7 +21,7 @@ export default function DocumentosPage() {
   }
 
   return (
-    <div style={{ maxWidth: 700 }}>
+    <div style={{ maxWidth: 700, margin: '0 auto' }}>
       <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 600 }}>Documentos</h2>
       <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>Busque o aluno para gerar a declaração de matrícula.</p>
 
