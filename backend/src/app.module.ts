@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { EnrollmentModule } from './enrollment/enrollment.module';
 import { RegistryModule } from './registry/registry.module';
+import { ReportingModule } from './reporting/reporting.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 
@@ -21,6 +22,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     UsuariosModule,
     EnrollmentModule,
     RegistryModule,
+    ReportingModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
