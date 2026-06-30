@@ -179,7 +179,7 @@ export default function ContratosPage() {
   const totalVencido = (c: Contrato) => c.parcelas.filter(p => p.status === 'VENCIDO').reduce((s, p) => s + p.valor, 0);
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px' }}>
       {showNovo && <ModalNovoContrato onClose={() => setShowNovo(false)} onSaved={() => { setShowNovo(false); load(); }} />}
       {pagarParcela && <ModalPagar parcela={pagarParcela} onClose={() => setPagarParcela(null)} onSaved={() => { setPagarParcela(null); load(); }} />}
 

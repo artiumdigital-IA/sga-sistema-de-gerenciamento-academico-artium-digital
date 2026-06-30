@@ -107,7 +107,7 @@ export default function CensoPage() {
   const yr = new Date().getFullYear();
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>
           <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 600 }}>Censo da Educacao Superior - INEP</h2>

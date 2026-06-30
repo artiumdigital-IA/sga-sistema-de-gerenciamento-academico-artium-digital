@@ -110,7 +110,7 @@ export default function HistoricoAlunoPage() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px' }}>
       <button style={{ ...BTN('ghost'), marginBottom: 16, fontSize: 12 }}
         onClick={() => router.push('/dashboard/academico/alunos')}>
         ← Voltar para Alunos

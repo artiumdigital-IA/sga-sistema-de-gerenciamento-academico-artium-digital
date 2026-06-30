@@ -41,7 +41,7 @@ function ModalConverter({ inscricao, processoId, onClose, onDone }: {
   useEffect(() => {
     // buscar matrizes do curso do processo — precisamos do cursoId
     // vamos buscar via processo
-    apiFetch<Matriz[]>('/matrizes-curriculares').then(ms => {
+    apiFetch<Matriz[]>('/matrizes').then(ms => {
       setMatrizes(ms);
       if (ms.length > 0) setMatrizId(ms[0].id);
     }).catch(() => {});
@@ -124,7 +124,7 @@ export default function InscricoesPage() {
   if (!processo) return null;
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button onClick={() => router.push('/dashboard/ingresso/processos')}
           style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer' }}>← Voltar</button>

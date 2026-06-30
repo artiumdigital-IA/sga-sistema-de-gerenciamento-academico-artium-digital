@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
-      background: 'var(--gray-50)', fontFamily: 'var(--font-body)' }}>
+      background: '#fff', fontFamily: 'var(--font-body)' }}>
 
       {/* ── TopNav ── */}
       <div style={{
@@ -152,7 +152,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Conteudo principal */}
-        <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: 0 }}>
           {children}
         </div>
 

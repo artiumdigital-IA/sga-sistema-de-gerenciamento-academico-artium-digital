@@ -199,7 +199,7 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px' }}>
 
       {/* cabecalho */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>

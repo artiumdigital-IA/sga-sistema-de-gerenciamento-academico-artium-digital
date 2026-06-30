@@ -86,7 +86,7 @@ export default function HistoricoPage() {
   const pendentes = historico.matriculas.filter(m => !m.resultado || m.resultado.situacao === 'PENDENTE_EXAME').length;
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button onClick={() => router.push('/dashboard/academico/alunos')}
           style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', color: '#374151' }}>
