@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 
-// ── tipos ──────────────────────────────────────────────────────────────
 type Sexo = 'MASCULINO' | 'FEMININO' | 'NAO_DECLARADO';
 type CorRaca = 'BRANCA' | 'PRETA' | 'PARDA' | 'AMARELA' | 'INDIGENA' | 'NAO_DECLARADO';
 type FormaIngresso = 'VESTIBULAR' | 'ENEM' | 'TRANSFERENCIA_EXTERNA' | 'TRANSFERENCIA_INTERNA' | 'PORTADOR_DIPLOMA' | 'CONVENIO' | 'OUTRO';
@@ -14,22 +13,13 @@ interface Curso { id: string; nome: string; }
 interface MatrizCurricular { id: string; versao: string; cursoId: string; }
 
 interface Aluno {
-  id: string;
-  ra: string;
-  nome: string;
-  cpf: string;
-  dataNascimento: string;
-  sexo: Sexo;
-  corRaca: CorRaca;
-  nacionalidade: string;
-  formaIngresso: FormaIngresso;
-  dataIngresso: string;
-  situacaoVinculo: SituacaoVinculo;
-  email: string;
-  telefone?: string;
-  cursoId: string;
-  matrizCurricularId: string;
-  curso?: { nome: string };
+  id: string; ra: string; nome: string; cpf: string; dataNascimento: string;
+  sexo: Sexo; corRaca: CorRaca; nacionalidade: string;
+  formaIngresso: FormaIngresso; dataIngresso: string;
+  situacaoVinculo: SituacaoVinculo; email: string; telefone?: string;
+  cep?: string; logradouro?: string; numero?: string; complemento?: string;
+  bairro?: string; uf?: string; municipio?: string;
+  cursoId: string; matrizCurricularId: string; curso?: { nome: string };
 }
 
 type FormData = Omit<Aluno, 'id' | 'curso'>;
@@ -46,31 +36,29 @@ const VINCULO_LABEL: Record<SituacaoVinculo, string> = {
   EVADIDO: 'Evadido', TRANSFERIDO_OUT: 'Transferido', FALECIDO: 'Falecido',
 };
 const VINCULO_COLOR: Record<SituacaoVinculo, { bg: string; color: string }> = {
-  CURSANDO: { bg: '#d1fae5', color: '#065f46' },
-  TRANCADO: { bg: '#fef3c7', color: '#92400e' },
-  FORMADO: { bg: '#dbeafe', color: '#1e40af' },
-  EVADIDO: { bg: '#fee2e2', color: '#991b1b' },
-  TRANSFERIDO_OUT: { bg: '#f3e8ff', color: '#6b21a8' },
-  FALECIDO: { bg: '#f3f4f6', color: '#374151' },
+  CURSANDO: { bg: '#d1fae5', color: '#065f46' }, TRANCADO: { bg: '#fef3c7', color: '#92400e' },
+  FORMADO: { bg: '#dbeafe', color: '#1e40af' }, EVADIDO: { bg: '#fee2e2', color: '#991b1b' },
+  TRANSFERIDO_OUT: { bg: '#f3e8ff', color: '#6b21a8' }, FALECIDO: { bg: '#f3f4f6', color: '#374151' },
 };
+const UF_LIST = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 const EMPTY: FormData = {
   ra: '', nome: '', cpf: '', dataNascimento: '', sexo: 'NAO_DECLARADO',
   corRaca: 'NAO_DECLARADO', nacionalidade: 'Brasileira',
   formaIngresso: 'VESTIBULAR', dataIngresso: '', situacaoVinculo: 'CURSANDO',
   email: '', telefone: '', cursoId: '', matrizCurricularId: '',
+  cep: '', logradouro: '', numero: '', complemento: '', bairro: '', uf: '', municipio: '',
 };
 
-const BTN = (variant: 'primary' | 'danger' | 'ghost') => ({
+const BTN = (v: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
-  background: variant === 'primary' ? '#1a56db' : variant === 'danger' ? '#e02424' : 'transparent',
-  color: variant === 'ghost' ? '#374151' : '#fff',
-  ...(variant === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  background: v === 'primary' ? '#1a56db' : v === 'danger' ? '#e02424' : 'transparent',
+  color: v === 'ghost' ? '#374151' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
 });
-const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const };
-const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
 
-// ── componentes auxiliares (fora do modal para evitar remount no render) ──
 function G({ cols, children }: { cols: string; children: React.ReactNode }) {
   return <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 12 }}>{children}</div>;
 }
@@ -78,102 +66,155 @@ function F({ label, children }: { label: string; children: React.ReactNode }) {
   return <div><label style={LABEL}>{label}</label>{children}</div>;
 }
 function SEL({ value, onChange, opts }: { value: string; onChange: (v: string) => void; opts: Record<string, string> }) {
-  return (
-    <select style={INPUT} value={value} onChange={e => onChange(e.target.value)}>
-      {Object.entries(opts).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-    </select>
-  );
+  return <select style={INPUT} value={value} onChange={e => onChange(e.target.value)}>{Object.entries(opts).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>;
 }
 
-// ── modal ──────────────────────────────────────────────────────────────
+// ── Modal ──────────────────────────────────────────────────────────────────
 function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
-  aluno: Aluno | null;
-  cursos: Curso[];
-  matrizes: MatrizCurricular[];
-  onClose: () => void;
-  onSave: () => void;
+  aluno: Aluno | null; cursos: Curso[]; matrizes: MatrizCurricular[];
+  onClose: () => void; onSave: () => void;
 }) {
+  const [tab, setTab] = useState<'dados' | 'endereco'>('dados');
   const [form, setForm] = useState<FormData>(
-    aluno
-      ? { ra: aluno.ra, nome: aluno.nome, cpf: aluno.cpf,
-          dataNascimento: aluno.dataNascimento?.slice(0, 10) ?? '',
-          sexo: aluno.sexo, corRaca: aluno.corRaca, nacionalidade: aluno.nacionalidade,
-          formaIngresso: aluno.formaIngresso, dataIngresso: aluno.dataIngresso?.slice(0, 10) ?? '',
-          situacaoVinculo: aluno.situacaoVinculo, email: aluno.email,
-          telefone: aluno.telefone ?? '', cursoId: aluno.cursoId, matrizCurricularId: aluno.matrizCurricularId }
-      : EMPTY
+    aluno ? {
+      ra: aluno.ra, nome: aluno.nome, cpf: aluno.cpf,
+      dataNascimento: aluno.dataNascimento?.slice(0, 10) ?? '',
+      sexo: aluno.sexo, corRaca: aluno.corRaca, nacionalidade: aluno.nacionalidade,
+      formaIngresso: aluno.formaIngresso, dataIngresso: aluno.dataIngresso?.slice(0, 10) ?? '',
+      situacaoVinculo: aluno.situacaoVinculo, email: aluno.email,
+      telefone: aluno.telefone ?? '', cursoId: aluno.cursoId, matrizCurricularId: aluno.matrizCurricularId,
+      cep: aluno.cep ?? '', logradouro: aluno.logradouro ?? '', numero: aluno.numero ?? '',
+      complemento: aluno.complemento ?? '', bairro: aluno.bairro ?? '',
+      uf: aluno.uf ?? '', municipio: aluno.municipio ?? '',
+    } : EMPTY
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [cepLoading, setCepLoading] = useState(false);
 
   const set = (k: keyof FormData, v: string) => setForm(f => ({ ...f, [k]: v }));
-
   const matrizesDoC = matrizes.filter(m => m.cursoId === form.cursoId);
 
+  async function buscarCep() {
+    const cep = form.cep?.replace(/\D/g, '');
+    if (!cep || cep.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setForm(f => ({
+          ...f,
+          logradouro: data.logradouro ?? f.logradouro,
+          bairro: data.bairro ?? f.bairro,
+          municipio: data.localidade ?? f.municipio,
+          uf: data.uf ?? f.uf,
+          complemento: data.complemento ?? f.complemento,
+        }));
+      }
+    } catch { /* silently fail */ } finally { setCepLoading(false); }
+  }
+
   async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setSaving(true);
+    e.preventDefault(); setError(''); setSaving(true);
     try {
       const body = { ...form, telefone: form.telefone || undefined };
-      if (aluno) {
-        await apiFetch(`/alunos/${aluno.id}`, { method: 'PATCH', body: JSON.stringify(body) });
-      } else {
-        await apiFetch('/alunos', { method: 'POST', body: JSON.stringify(body) });
-      }
-      onSave();
-      onClose();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar');
-    } finally {
-      setSaving(false);
-    }
+      if (aluno) await apiFetch(`/alunos/${aluno.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      else await apiFetch('/alunos', { method: 'POST', body: JSON.stringify(body) });
+      onSave(); onClose();
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Erro ao salvar');
+    } finally { setSaving(false); }
   }
+
+  const tabStyle = (t: string): React.CSSProperties => ({
+    padding: '8px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+    borderBottom: tab === t ? '2px solid #1a56db' : '2px solid transparent',
+    color: tab === t ? '#1a56db' : '#6b7280', background: 'transparent',
+  });
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 600, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
-        <h2 style={{ margin: '0 0 20px', fontSize: 17, fontWeight: 700 }}>{aluno ? 'Editar Aluno' : 'Novo Aluno'}</h2>
+      <div style={{ background: '#fff', borderRadius: 10, width: 620, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+        <div style={{ padding: '20px 28px 0' }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700 }}>{aluno ? 'Editar Aluno' : 'Novo Aluno'}</h2>
+          <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: 20 }}>
+            <button style={tabStyle('dados')} onClick={() => setTab('dados')}>Dados Pessoais</button>
+            <button style={tabStyle('endereco')} onClick={() => setTab('endereco')}>Endereço</button>
+          </div>
+        </div>
 
-        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <G cols="1fr 1fr">
-            <F label="RA *"><input style={INPUT} value={form.ra} required onChange={e => set('ra', e.target.value)} placeholder="Ex: 20260001" /></F>
-            <F label="Nome completo *"><input style={INPUT} value={form.nome} required onChange={e => set('nome', e.target.value)} /></F>
-          </G>
-          <G cols="1fr 1fr">
-            <F label="CPF *"><input style={INPUT} value={form.cpf} required onChange={e => set('cpf', e.target.value)} placeholder="000.000.000-00" /></F>
-            <F label="Data de nascimento *"><input style={INPUT} type="date" value={form.dataNascimento} required onChange={e => set('dataNascimento', e.target.value)} /></F>
-          </G>
-          <G cols="1fr 1fr">
-            <F label="Sexo (Censo)"><SEL value={form.sexo} onChange={v => set('sexo', v)} opts={SEXO_LABEL} /></F>
-            <F label="Cor/raça (Censo)"><SEL value={form.corRaca} onChange={v => set('corRaca', v)} opts={COR_LABEL} /></F>
-          </G>
-          <F label="Nacionalidade *"><input style={INPUT} value={form.nacionalidade} required onChange={e => set('nacionalidade', e.target.value)} /></F>
-          <G cols="1fr 1fr">
-            <F label="Forma de ingresso (Censo)"><SEL value={form.formaIngresso} onChange={v => set('formaIngresso', v)} opts={INGRESSO_LABEL} /></F>
-            <F label="Data de ingresso *"><input style={INPUT} type="date" value={form.dataIngresso} required onChange={e => set('dataIngresso', e.target.value)} /></F>
-          </G>
-          <F label="Situação de vínculo (Censo)"><SEL value={form.situacaoVinculo} onChange={v => set('situacaoVinculo', v)} opts={VINCULO_LABEL} /></F>
-          <G cols="1fr 1fr">
-            <F label="E-mail *"><input style={INPUT} type="email" value={form.email} required onChange={e => set('email', e.target.value)} /></F>
-            <F label="Telefone"><input style={INPUT} value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="(21) 99999-9999" /></F>
-          </G>
-          <F label="Curso *">
-            <select style={INPUT} value={form.cursoId} required
-              onChange={e => set('cursoId', e.target.value)}>
-              <option value="">Selecione...</option>
-              {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
-          </F>
-          <F label="Matriz curricular *">
-            <select style={INPUT} value={form.matrizCurricularId} required
-              onChange={e => set('matrizCurricularId', e.target.value)}
-              disabled={!form.cursoId}>
-              <option value="">Selecione o curso primeiro...</option>
-              {matrizesDoC.map(m => <option key={m.id} value={m.id}>Versão {m.versao}</option>)}
-            </select>
-          </F>
+        <form onSubmit={submit} style={{ padding: '0 28px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {tab === 'dados' && <>
+            <G cols="1fr 1fr">
+              <F label="RA *"><input style={INPUT} value={form.ra} required onChange={e => set('ra', e.target.value)} placeholder="Ex: 20260001" /></F>
+              <F label="Nome completo *"><input style={INPUT} value={form.nome} required onChange={e => set('nome', e.target.value)} /></F>
+            </G>
+            <G cols="1fr 1fr">
+              <F label="CPF *"><input style={INPUT} value={form.cpf} required onChange={e => set('cpf', e.target.value)} placeholder="000.000.000-00" /></F>
+              <F label="Data de nascimento *"><input style={INPUT} type="date" value={form.dataNascimento} required onChange={e => set('dataNascimento', e.target.value)} /></F>
+            </G>
+            <G cols="1fr 1fr">
+              <F label="Sexo (Censo)"><SEL value={form.sexo} onChange={v => set('sexo', v)} opts={SEXO_LABEL} /></F>
+              <F label="Cor/raça (Censo)"><SEL value={form.corRaca} onChange={v => set('corRaca', v)} opts={COR_LABEL} /></F>
+            </G>
+            <F label="Nacionalidade *"><input style={INPUT} value={form.nacionalidade} required onChange={e => set('nacionalidade', e.target.value)} /></F>
+            <G cols="1fr 1fr">
+              <F label="Forma de ingresso (Censo)"><SEL value={form.formaIngresso} onChange={v => set('formaIngresso', v)} opts={INGRESSO_LABEL} /></F>
+              <F label="Data de ingresso *"><input style={INPUT} type="date" value={form.dataIngresso} required onChange={e => set('dataIngresso', e.target.value)} /></F>
+            </G>
+            <F label="Situação de vínculo (Censo)"><SEL value={form.situacaoVinculo} onChange={v => set('situacaoVinculo', v)} opts={VINCULO_LABEL} /></F>
+            <G cols="1fr 1fr">
+              <F label="E-mail *"><input style={INPUT} type="email" value={form.email} required onChange={e => set('email', e.target.value)} /></F>
+              <F label="Telefone"><input style={INPUT} value={form.telefone} onChange={e => set('telefone', e.target.value)} placeholder="(21) 99999-9999" /></F>
+            </G>
+            <F label="Curso *">
+              <select style={INPUT} value={form.cursoId} required onChange={e => set('cursoId', e.target.value)}>
+                <option value="">Selecione...</option>
+                {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </F>
+            <F label="Matriz curricular *">
+              <select style={INPUT} value={form.matrizCurricularId} required onChange={e => set('matrizCurricularId', e.target.value)} disabled={!form.cursoId}>
+                <option value="">Selecione o curso primeiro...</option>
+                {matrizesDoC.map(m => <option key={m.id} value={m.id}>Versão {m.versao}</option>)}
+              </select>
+            </F>
+          </>}
+
+          {tab === 'endereco' && <>
+            <F label="CEP">
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input style={{ ...INPUT, flex: 1 }} value={form.cep} placeholder="00000-000"
+                  onChange={e => set('cep', e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); buscarCep(); } }} />
+                <button type="button"
+                  style={{ padding: '7px 14px', border: '1px solid #1a56db', borderRadius: 5, background: '#fff', color: '#1a56db', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}
+                  onClick={buscarCep} disabled={cepLoading}>
+                  {cepLoading ? '...' : 'Pesquisar CEP'}
+                </button>
+              </div>
+            </F>
+            <F label="Logradouro">
+              <input style={INPUT} value={form.logradouro} placeholder="Pesquise o CEP acima ou preencha manualmente"
+                onChange={e => set('logradouro', e.target.value)} />
+            </F>
+            <G cols="1fr 2fr">
+              <F label="Número"><input style={INPUT} value={form.numero} onChange={e => set('numero', e.target.value)} /></F>
+              <F label="Complemento"><input style={INPUT} value={form.complemento} placeholder="Apto, Bloco, Sala..." onChange={e => set('complemento', e.target.value)} /></F>
+            </G>
+            <F label="Bairro"><input style={INPUT} value={form.bairro} onChange={e => set('bairro', e.target.value)} /></F>
+            <G cols="1fr 2fr">
+              <F label="UF">
+                <select style={INPUT} value={form.uf} onChange={e => set('uf', e.target.value)}>
+                  <option value="">--</option>
+                  {UF_LIST.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                </select>
+              </F>
+              <F label="Município"><input style={INPUT} value={form.municipio} onChange={e => set('municipio', e.target.value)} /></F>
+            </G>
+          </>}
 
           {error && <p style={{ color: '#e02424', fontSize: 13, margin: 0 }}>{error}</p>}
 
@@ -187,7 +228,7 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
   );
 }
 
-// ── página principal ───────────────────────────────────────────────────
+// ── Página principal ───────────────────────────────────────────────────────
 export default function AlunosPage() {
   const router = useRouter();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
@@ -200,22 +241,16 @@ export default function AlunosPage() {
   const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const [a, c, m] = await Promise.all([
         apiFetch<Aluno[]>('/alunos'),
         apiFetch<Curso[]>('/cursos'),
         apiFetch<MatrizCurricular[]>('/matrizes-curriculares'),
       ]);
-      setAlunos(a);
-      setCursos(c);
-      setMatrizes(m);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar');
-    } finally {
-      setLoading(false);
-    }
+      setAlunos(a); setCursos(c); setMatrizes(m);
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Erro ao carregar');
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -226,17 +261,13 @@ export default function AlunosPage() {
     try {
       await apiFetch(`/alunos/${id}`, { method: 'DELETE' });
       setAlunos(a => a.filter(x => x.id !== id));
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Erro ao excluir');
-    } finally {
-      setDeleting(null);
-    }
+    } catch (err: unknown) { alert(err instanceof Error ? err.message : 'Erro ao excluir');
+    } finally { setDeleting(null); }
   }
 
   const filtered = alunos.filter(a =>
     a.nome.toLowerCase().includes(search.toLowerCase()) ||
-    a.ra.includes(search) ||
-    a.cpf.includes(search) ||
+    a.ra.includes(search) || a.cpf.includes(search) ||
     a.email.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -264,14 +295,14 @@ export default function AlunosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                {['RA', 'Nome', 'CPF', 'Curso', 'Ingresso', 'Situação', '', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                {['RA', 'Nome', 'CPF', 'Curso', 'Ingresso', 'Situação', '', ''].map((h, i) => (
+                  <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
+                <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
                   {search ? 'Nenhum resultado.' : 'Nenhum aluno cadastrado ainda.'}
                 </td></tr>
               )}
@@ -293,15 +324,13 @@ export default function AlunosPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(a)}>Editar</button>
-                        <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }}
-                          disabled={deleting === a.id} onClick={() => deleteAluno(a.id)}>
+                        <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }} disabled={deleting === a.id} onClick={() => deleteAluno(a.id)}>
                           {deleting === a.id ? '...' : 'Excluir'}
                         </button>
                       </div>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
-                      <button
-                        style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #1a56db', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#1a56db', fontWeight: 500 }}
+                      <button style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #1a56db', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#1a56db', fontWeight: 500 }}
                         onClick={() => router.push(`/dashboard/academico/historico/${a.id}`)}>
                         Histórico →
                       </button>
@@ -315,13 +344,8 @@ export default function AlunosPage() {
       )}
 
       {modal !== null && (
-        <AlunoModal
-          aluno={modal === 'new' ? null : modal}
-          cursos={cursos}
-          matrizes={matrizes}
-          onClose={() => setModal(null)}
-          onSave={load}
-        />
+        <AlunoModal aluno={modal === 'new' ? null : modal} cursos={cursos} matrizes={matrizes}
+          onClose={() => setModal(null)} onSave={load} />
       )}
     </div>
   );

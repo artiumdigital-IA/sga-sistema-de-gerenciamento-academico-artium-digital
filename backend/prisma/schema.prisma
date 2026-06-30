@@ -159,6 +159,13 @@ model Aluno {
   situacaoVinculo    SituacaoVinculo @default(CURSANDO) // [CENSO]
   email              String          @unique
   telefone           String?
+  cep                String?
+  logradouro         String?
+  numero             String?
+  complemento        String?
+  bairro             String?
+  uf                 String?         @db.Char(2)
+  municipio          String?
 
   criadoEm   DateTime @default(now())
   atualizadoEm DateTime @updatedAt
