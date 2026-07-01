@@ -547,6 +547,8 @@ function EditarPerfilModal({ perfil, onClose, onSaved }: {
         atualizado = await apiUpload<MeuPerfil>('/usuarios/me/foto', formData);
       }
       onSaved(atualizado);
+      // Avisa o layout (avatar/nome na barra superior) para recarregar o perfil.
+      window.dispatchEvent(new CustomEvent('fiurj:perfil-atualizado'));
     } catch (e: any) {
       setErro(e.message ?? 'Erro ao salvar perfil.');
     } finally {

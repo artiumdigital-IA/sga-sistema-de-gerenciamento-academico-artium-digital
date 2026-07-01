@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { getToken, parseJwt, logout, type JwtUser } from '@/lib/auth';
+import { apiFetch, apiFileUrl } from '@/lib/api';
 import { RightPanel } from '@/components/dashboard/RightPanel';
 
 const SIDEBAR_ITEMS = [
@@ -46,12 +47,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<JwtUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [nomeExibido, setNomeExibido] = useState<string | null>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     const t = getToken();
     if (t) setUser(parseJwt(t));
+  }, []);
+
+  function carregarPerfil() {
+    apiFetch<{ nome: string | null; fotoUrl: string | null }>('/usuarios/me')
+      .then(p => { setNomeExibido(p.nome); setFotoUrl(p.fotoUrl); })
+      .catch(() => {});
+  }
+
+  // Carrega nome/foto reais do usuário (a barra superior não vem no JWT)
+  useEffect(() => { carregarPerfil(); }, []);
+
+  // Atualiza a foto/nome do topo em tempo real quando o usuário edita o
+  // perfil em Minha Conta, sem precisar recarregar a página.
+  useEffect(() => {
+    const onPerfilAtualizado = () => carregarPerfil();
+    window.addEventListener('fiurj:perfil-atualizado', onPerfilAtualizado);
+    return () => window.removeEventListener('fiurj:perfil-atualizado', onPerfilAtualizado);
   }, []);
 
   useEffect(() => {
@@ -137,12 +157,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             width: 28, height: 28, borderRadius: '50%',
             background: 'rgba(255,255,255,.18)', overflow: 'hidden',
           }}>
-            <Image src="/assets/perfil.png" alt="perfil"
+            <Image src={apiFileUrl(fotoUrl) ?? '/assets/perfil.png'} alt="perfil" key={fotoUrl ?? 'default'}
               width={28} height={28} style={{ objectFit: 'cover' }} unoptimized />
           </div>
           <div style={{ lineHeight: 1.2 }}>
             <div style={{ fontSize: 11.5, fontWeight: 600, color: '#fff' }}>
-              {user?.email?.split('@')[0] ?? 'Usuário'}
+              {nomeExibido || user?.email?.split('@')[0] || 'Usuário'}
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,.6)' }}>
               {PERFIL_LABEL[user?.perfil ?? ''] ?? user?.perfil ?? ''}
