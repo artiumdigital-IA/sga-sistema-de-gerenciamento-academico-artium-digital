@@ -83,6 +83,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         display: 'flex', alignItems: 'center', padding: '0 12px',
         gap: 8, zIndex: 20,
       }}>
+        {/* Logo / toggle sidebar */}
+        <button
+          onClick={() => setSidebarOpen(o => !o)}
+          title={sidebarOpen ? 'Recolher menu' : 'Expandir menu'}
+          style={{
+            flexShrink: 0, width: 32, height: 32, border: 'none',
+            background: 'transparent', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Image src="/logo.png" alt="FIURJ" width={28} height={28} style={{ objectFit: 'contain' }} unoptimized />
+        </button>
+
         {/* Spacer */}
         <div style={{ flex: 1 }} />
 
@@ -154,36 +167,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           transition: 'width 0.22s ease',
           overflow: 'hidden',
         }}>
-          {/* Logo / toggle */}
-          <button
-            onClick={() => setSidebarOpen(o => !o)}
-            title={sidebarOpen ? 'Recolher menu' : 'Expandir menu'}
-            style={{
-              flexShrink: 0, height: 48, width: '100%', border: 'none',
-              background: 'transparent', cursor: 'pointer',
-              display: 'flex', alignItems: 'center',
-              paddingLeft: 10, gap: 10, overflow: 'hidden',
-            }}
-          >
-            <div style={{
-              width: 36, height: 36, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Image src="/logo.png" alt="FIURJ" width={36} height={36} style={{ objectFit: 'contain' }} unoptimized />
-            </div>
-            {sidebarOpen && (
-              <span style={{
-                color: '#fff', fontWeight: 700, fontSize: 13,
-                whiteSpace: 'nowrap', overflow: 'hidden',
-              }}>FIURJ</span>
-            )}
-          </button>
-
-          {/* Divisor */}
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', marginBottom: 4 }} />
-
           {/* Itens de navegação */}
-          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {SIDEBAR_ITEMS.map((item) => {
               const isActive = item.href
                 ? (item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href))
