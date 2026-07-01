@@ -10,7 +10,7 @@ type FormaIngresso = 'VESTIBULAR' | 'ENEM' | 'TRANSFERENCIA_EXTERNA' | 'TRANSFER
 type SituacaoVinculo = 'CURSANDO' | 'TRANCADO' | 'FORMADO' | 'EVADIDO' | 'TRANSFERIDO_OUT' | 'FALECIDO';
 
 interface Curso { id: string; nome: string; }
-interface MatrizCurricular { id: string; versao: string; cursoId: string; }
+interface MatrizCurricular { id: string; versao: string; cursoId: string; anoVigencia: number; }
 
 interface Aluno {
   id: string; ra: string; nome: string; cpf: string; dataNascimento: string;
@@ -177,9 +177,14 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
             </F>
             <F label="Matriz curricular *">
               <select style={INPUT} value={form.matrizCurricularId} required onChange={e => set('matrizCurricularId', e.target.value)} disabled={!form.cursoId}>
-                <option value="">Selecione o curso primeiro...</option>
-                {matrizesDoC.map(m => <option key={m.id} value={m.id}>Versão {m.versao}</option>)}
+                <option value="">{form.cursoId ? (matrizesDoC.length === 0 ? 'Nenhuma matriz cadastrada para este curso' : 'Selecione a matriz...') : 'Selecione o curso primeiro...'}</option>
+                {matrizesDoC.map(m => <option key={m.id} value={m.id}>Versão {m.versao} ({m.anoVigencia})</option>)}
               </select>
+              {form.cursoId && matrizesDoC.length === 0 && (
+                <span style={{ fontSize: 11, color: '#e02424', marginTop: 3, display: 'block' }}>
+                  Cadastre uma matriz em Acadêmico → Matrizes antes de criar o aluno.
+                </span>
+              )}
             </F>
           </>}
 

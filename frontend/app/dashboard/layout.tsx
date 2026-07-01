@@ -45,6 +45,7 @@ function SvgIcon({ d, size = 18 }: { d: string; size?: number }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<JwtUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -52,6 +53,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const t = getToken();
     if (t) setUser(parseJwt(t));
   }, []);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  };
 
   const topH = 44;
   const sideW = sidebarOpen ? 210 : 52;
@@ -88,6 +103,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <SvgIcon d={d} size={16} />
           </button>
         ))}
+
+        {/* Fullscreen */}
+        <button onClick={toggleFullscreen} title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'} style={{
+          width: 30, height: 30, border: 'none', borderRadius: 4, cursor: 'pointer',
+          background: 'transparent', color: 'rgba(255,255,255,.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.12)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+        >
+          <SvgIcon d={isFullscreen
+            ? 'M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3'
+            : 'M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3'} size={16} />
+        </button>
 
         {/* Avatar + logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 4 }}>
