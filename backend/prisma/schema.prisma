@@ -268,6 +268,11 @@ model Usuario {
   mfaSegredo  String?       // TOTP secret — nunca expor via API
   status      UsuarioStatus @default(ATIVO)
 
+  // Perfil pessoal (auto-servico via /usuarios/me)
+  nome        String?
+  telefone    String?
+  fotoUrl     String?
+
   // Relações opcionais: um usuário é ou aluno ou professor (nunca os dois)
   alunoId     String?       @unique
   professorId String?       @unique

@@ -12,6 +12,7 @@ import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { ResetSenhaDto } from './dto/reset-senha.dto';
 import { MinhaSenhaDto } from './dto/minha-senha.dto';
+import { UpdateMeuPerfilDto } from './dto/update-meu-perfil.dto';
 
 const SAFE_SELECT = {
   id: true,
@@ -19,6 +20,9 @@ const SAFE_SELECT = {
   perfil: true,
   status: true,
   mfaAtivo: true,
+  nome: true,
+  telefone: true,
+  fotoUrl: true,
   alunoId: true,
   professorId: true,
   criadoEm: true,
@@ -143,6 +147,52 @@ export class UsuariosService {
     });
 
     return { message: 'Senha redefinida com sucesso.' };
+  }
+
+  async meuPerfil(usuarioId: string) {
+    return this.findOne(usuarioId);
+  }
+
+  async atualizarMeuPerfil(usuarioId: string, dto: UpdateMeuPerfilDto) {
+    const antes = await this.findOne(usuarioId);
+
+    const usuario = await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: {
+        nome: dto.nome,
+        telefone: dto.telefone,
+      },
+      select: SAFE_SELECT,
+    });
+
+    await this.audit.log({
+      usuarioId,
+      acao: 'UPDATE',
+      entidade: 'Usuario',
+      entidadeId: usuarioId,
+      dadosAntes: { nome: antes.nome, telefone: antes.telefone },
+      dadosDepois: { nome: usuario.nome, telefone: usuario.telefone },
+    });
+
+    return usuario;
+  }
+
+  async atualizarMinhaFoto(usuarioId: string, fotoUrl: string) {
+    const usuario = await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { fotoUrl },
+      select: SAFE_SELECT,
+    });
+
+    await this.audit.log({
+      usuarioId,
+      acao: 'UPDATE',
+      entidade: 'Usuario',
+      entidadeId: usuarioId,
+      dadosDepois: { fotoUrl },
+    });
+
+    return usuario;
   }
 
   async alterarMinhaSenha(usuarioId: string, dto: MinhaSenhaDto) {

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { getToken } from '@/lib/auth';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiUpload, apiFileUrl } from '@/lib/api';
 import Image from 'next/image';
 
 /* ─── Tipos ─── */
@@ -402,20 +402,58 @@ function CalendarioAcademico() {
 }
 
 /* ─── Minha Conta ─── */
+interface MeuPerfil {
+  id: string;
+  email: string;
+  perfil: string;
+  status: string;
+  mfaAtivo: boolean;
+  nome: string | null;
+  telefone: string | null;
+  fotoUrl: string | null;
+}
+
+const CARGO_LABEL: Record<string, string> = {
+  ADMIN: 'Administrador do Sistema', SECRETARIA: 'Secretaria Acadêmica',
+  FINANCEIRO: 'Financeiro', PROFESSOR: 'Professor', ALUNO: 'Aluno',
+};
+
 function MinhaConta() {
+  const [perfil, setPerfil] = useState<MeuPerfil | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [editando, setEditando] = useState(false);
+
+  function carregar() {
+    setLoading(true);
+    apiFetch<MeuPerfil>('/usuarios/me')
+      .then(data => { setPerfil(data); setErro(null); })
+      .catch(e => setErro(e.message ?? 'Erro ao carregar perfil.'))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { carregar(); }, []);
+
+  if (loading) return <div style={{ padding: 24, fontSize: 12.5, color: 'var(--gray-400)' }}>Carregando…</div>;
+  if (erro || !perfil) return <div style={{ padding: 24, fontSize: 12.5, color: 'var(--red)' }}>{erro ?? 'Não foi possível carregar seu perfil.'}</div>;
+
+  const nomeExibido = perfil.nome || perfil.email.split('@')[0];
+  const cargo = CARGO_LABEL[perfil.perfil] ?? perfil.perfil;
+  const fotoSrc = apiFileUrl(perfil.fotoUrl) ?? '/assets/perfil.png';
+
   return (
     <div style={{ padding: '16px 16px' }}>
       {/* Profile header */}
       <div style={{ background: 'var(--white)', borderRadius: 6, border: '1px solid var(--gray-200)', padding: '16px 20px', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Image src="/assets/perfil.png" alt="Perfil" width={60} height={60}
+          <Image src={fotoSrc} alt="Perfil" width={60} height={60} key={fotoSrc}
             style={{ borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--gray-200)' }} unoptimized />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gray-700)' }}>Hideki Yokoyama</div>
-            <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>Administrador do Sistema · FIURJ</div>
-            <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>fiurjids@gmail.com</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gray-700)' }}>{nomeExibido}</div>
+            <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>{cargo} · FIURJ</div>
+            <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>{perfil.email}</div>
           </div>
-          <button style={{ padding: '6px 12px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 12, cursor: 'pointer', color: 'var(--gray-600)' }}>
+          <button onClick={() => setEditando(true)} style={{ padding: '6px 12px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 12, cursor: 'pointer', color: 'var(--gray-600)' }}>
             Editar Perfil
           </button>
         </div>
@@ -425,16 +463,16 @@ function MinhaConta() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 14 }}>
         {[
           { title: 'Dados Pessoais', fields: [
-            ['Nome completo', 'Hideki Yokoyama'],
-            ['E-mail', 'fiurjids@gmail.com'],
-            ['Cargo', 'Administrador do Sistema'],
-            ['Telefone', '(21) 99999-0000'],
+            ['Nome completo', nomeExibido],
+            ['E-mail', perfil.email],
+            ['Cargo', cargo],
+            ['Telefone', perfil.telefone || '—'],
             ['Unidade', 'FIURJ — Campus Central'],
           ]},
           { title: 'Segurança', fields: [
             ['Senha', '••••••••'],
-            ['2FA', 'Desativado'],
-            ['Notif. por e-mail', 'Ativado'],
+            ['2FA', perfil.mfaAtivo ? 'Ativado' : 'Desativado'],
+            ['Status da conta', perfil.status === 'ATIVO' ? 'Ativo' : perfil.status],
           ]},
           { title: 'Preferências', fields: [
             ['Idioma', 'Português (Brasil)'],
@@ -454,6 +492,126 @@ function MinhaConta() {
             </div>
           </div>
         ))}
+      </div>
+
+      {editando && (
+        <EditarPerfilModal
+          perfil={perfil}
+          onClose={() => setEditando(false)}
+          onSaved={(atualizado) => { setPerfil(atualizado); setEditando(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Modal: Editar Perfil ───
+   Componente definido no nível de módulo (fora de MinhaConta) para evitar
+   remount a cada render do pai, que causaria perda de foco nos inputs. */
+function EditarPerfilModal({ perfil, onClose, onSaved }: {
+  perfil: MeuPerfil;
+  onClose: () => void;
+  onSaved: (p: MeuPerfil) => void;
+}) {
+  const [nome, setNome] = useState(perfil.nome ?? '');
+  const [telefone, setTelefone] = useState(perfil.telefone ?? '');
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(apiFileUrl(perfil.fotoUrl));
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function onEscolherFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      setErro('A imagem deve ter no máximo 3MB.');
+      return;
+    }
+    setErro(null);
+    setFotoFile(file);
+    setPreview(URL.createObjectURL(file));
+  }
+
+  async function salvar() {
+    setSalvando(true);
+    setErro(null);
+    try {
+      let atualizado = await apiFetch<MeuPerfil>('/usuarios/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ nome: nome.trim(), telefone: telefone.trim() }),
+      });
+      if (fotoFile) {
+        const formData = new FormData();
+        formData.append('foto', fotoFile);
+        atualizado = await apiUpload<MeuPerfil>('/usuarios/me/foto', formData);
+      }
+      onSaved(atualizado);
+    } catch (e: any) {
+      setErro(e.message ?? 'Erro ao salvar perfil.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 100,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--white)', borderRadius: 8, width: 380, maxWidth: '92vw',
+        padding: 20, boxShadow: '0 8px 30px rgba(0,0,0,.2)',
+      }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-700)', marginBottom: 16 }}>Editar Perfil</div>
+
+        {/* Foto */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+          <div style={{ position: 'relative', width: 72, height: 72 }}>
+            <Image src={preview ?? '/assets/perfil.png'} alt="Preview" width={72} height={72}
+              style={{ borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--gray-200)' }} unoptimized />
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp"
+            onChange={onEscolherFoto} style={{ display: 'none' }} />
+          <button onClick={() => fileInputRef.current?.click()} style={{
+            padding: '5px 10px', border: '1px solid var(--gray-300)', borderRadius: 4,
+            background: 'transparent', fontSize: 11.5, cursor: 'pointer', color: 'var(--gray-600)',
+          }}>
+            Trocar foto
+          </button>
+        </div>
+
+        {/* Campos */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+          <label style={{ fontSize: 11.5, color: 'var(--gray-500)' }}>
+            Nome completo
+            <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome completo"
+              style={{ width: '100%', marginTop: 4, padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 12.5, boxSizing: 'border-box' }} />
+          </label>
+          <label style={{ fontSize: 11.5, color: 'var(--gray-500)' }}>
+            Telefone
+            <input value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(21) 99999-0000"
+              style={{ width: '100%', marginTop: 4, padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 12.5, boxSizing: 'border-box' }} />
+          </label>
+        </div>
+
+        {erro && <div style={{ fontSize: 11.5, color: 'var(--red)', marginBottom: 10 }}>{erro}</div>}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose} disabled={salvando} style={{
+            padding: '7px 14px', border: '1px solid var(--gray-300)', borderRadius: 4,
+            background: 'transparent', fontSize: 12, cursor: 'pointer', color: 'var(--gray-600)',
+          }}>
+            Cancelar
+          </button>
+          <button onClick={salvar} disabled={salvando} style={{
+            padding: '7px 14px', border: 'none', borderRadius: 4,
+            background: 'var(--blue-dark)', fontSize: 12, cursor: 'pointer', color: '#fff',
+            opacity: salvando ? 0.7 : 1,
+          }}>
+            {salvando ? 'Salvando…' : 'Salvar'}
+          </button>
+        </div>
       </div>
     </div>
   );

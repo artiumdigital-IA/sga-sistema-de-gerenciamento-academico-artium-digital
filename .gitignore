@@ -55,3 +55,7 @@ Thumbs.db
 
 # ── Sentry ────────────────────────────────────────────────────────────────────
 .sentryclirc
+
+# ── Uploads locais (fotos de perfil, etc.) ────────────────────────────────────
+# Persistidos via volume Docker em produção — nunca versionar o conteúdo
+backend/uploads/

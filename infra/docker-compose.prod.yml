@@ -46,6 +46,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - backend_uploads:/app/uploads
     networks:
       - fiurj_net
     ports:
@@ -71,6 +73,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  backend_uploads:
 
 networks:
   fiurj_net:
