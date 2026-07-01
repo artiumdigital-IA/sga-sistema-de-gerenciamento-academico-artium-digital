@@ -491,6 +491,8 @@ export default function DashboardPage() {
   const [cards, setCards] = useState(INITIAL_CARDS);
   const dragId = useRef<string | null>(null);
   const [stats, setStats] = useState<Stats>({ cursos: 0, alunos: 0, professores: 0, loading: true });
+  const [banner, setBanner] = useState<{ id: string; titulo: string; texto: string } | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
     const token = getToken();
@@ -510,6 +512,19 @@ export default function DashboardPage() {
       });
     }).catch(() => setStats(s => ({ ...s, loading: false })));
   }, []);
+
+  // Faixa de aviso no topo — puxa o aviso IMPORTANTE mais recente do módulo Avisos
+  // (Secretaria > Avisos). Editável por lá, sem precisar mexer em código.
+  useEffect(() => {
+    apiFetch<Array<{ id: string; titulo: string; texto: string; tag: string }>>('/avisos')
+      .then(data => {
+        const maisRecente = data.find(a => a.tag === 'IMPORTANTE');
+        setBanner(maisRecente ? { id: maisRecente.id, titulo: maisRecente.titulo, texto: maisRecente.texto } : null);
+      })
+      .catch(() => setBanner(null));
+  }, []);
+
+  useEffect(() => { setBannerDismissed(false); }, [banner?.id]);
 
   /* Drag & drop */
   function onDragStart(e: React.DragEvent, id: string) {
@@ -543,19 +558,21 @@ export default function DashboardPage() {
 
   return (
     <div>
-      {/* ── Alert banner ── */}
-      <div style={{
-        background: '#fff3cd', borderBottom: '1px solid #ffeaa7',
-        padding: '7px 16px', fontSize: 11.5, color: '#856404',
-        display: 'flex', alignItems: 'center', gap: 8,
-      }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-        <strong>Aviso:</strong> O Portal dos Responsáveis está em manutenção. Previsão de retorno: 24/06 às 09h.
-        <button style={{ marginLeft: 'auto', border: 'none', background: 'none', fontSize: 14, color: '#856404', cursor: 'pointer', lineHeight: 1 }}>×</button>
-      </div>
+      {/* ── Alert banner — dinâmico, vem do módulo Avisos (tag IMPORTANTE) ── */}
+      {banner && !bannerDismissed && (
+        <div style={{
+          background: '#fff3cd', borderBottom: '1px solid #ffeaa7',
+          padding: '7px 16px', fontSize: 11.5, color: '#856404',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <strong>{banner.titulo}:</strong> {banner.texto}
+          <button onClick={() => setBannerDismissed(true)} style={{ marginLeft: 'auto', border: 'none', background: 'none', fontSize: 14, color: '#856404', cursor: 'pointer', lineHeight: 1 }}>×</button>
+        </div>
+      )}
 
       {/* ── Sub-header (tabs principais) ── */}
       <div style={{
