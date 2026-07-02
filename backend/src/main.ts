@@ -9,9 +9,11 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Garante que a pasta de uploads exista (fotos de perfil, etc.)
+  // Garante que as pastas de uploads existam (fotos de perfil, documentos digitalizados, etc.)
   const uploadsDir = join(process.cwd(), 'uploads', 'avatars');
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+  const documentosDir = join(process.cwd(), 'uploads', 'documentos');
+  if (!existsSync(documentosDir)) mkdirSync(documentosDir, { recursive: true });
 
   // Serve arquivos estaticos (uploads) — fora do prefixo /api/v1
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });

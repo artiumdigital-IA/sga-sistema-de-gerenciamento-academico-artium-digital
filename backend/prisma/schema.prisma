@@ -74,6 +74,7 @@ model Disciplina {
   ofertas          Oferta[]
   prerequisitos    DisciplinaPrerequisito[]   @relation("disciplina")
   dependentes      DisciplinaPrerequisito[]   @relation("prerequisito")
+  equiparacoes     MateriaEquiparada[]
 
   @@unique([matrizCurricularId, codigo])
   @@map("disciplinas")
@@ -178,6 +179,9 @@ model Aluno {
   requerimentos    Requerimento[]
   contratos        ContratoMatricula[]
   fichaSaude       FichaSaude?
+  documentos       DocumentoAluno[]
+  equiparacoes     MateriaEquiparada[]
+  historicoSituacao HistoricoSituacaoVinculo[]
 
   @@map("alunos")
 }
@@ -691,4 +695,86 @@ enum TipoContaBancaria {
   CORRENTE
   POUPANCA
   PAGAMENTO
+}
+
+// ── Digitalização de Documentos ────────────────────────────────
+model DocumentoAluno {
+  id          String   @id @default(uuid())
+  alunoId     String
+  aluno       Aluno    @relation(fields: [alunoId], references: [id])
+  tipo        String   // ex.: RG, CPF, Comprovante de Residência, Histórico Escolar, Diploma, Outro
+  nomeArquivo String
+  url         String
+  tamanho     Int      // bytes
+
+  criadoEm DateTime @default(now())
+
+  @@map("documentos_aluno")
+}
+
+// ── Unidades ────────────────────────────────────────────────────
+// Catálogo simples de referência (não é multi-tenancy — os dados continuam
+// todos numa base única; achado da Kirsch confirmou 2 unidades cadastradas:
+// FIURJ Campos Centro e UAL Lisboa).
+model Unidade {
+  id     String  @id @default(uuid())
+  nome   String
+  cidade String?
+  uf     String? @db.Char(2)
+  ativa  Boolean @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("unidades")
+}
+
+// ── Receitas (catálogo financeiro) ───────────────────────────────
+model CategoriaReceita {
+  id        String  @id @default(uuid())
+  nome      String
+  descricao String?
+  ativa     Boolean @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("categorias_receita")
+}
+
+// ── Matérias Equiparadas ─────────────────────────────────────────
+// Registro de aproveitamento de disciplina cursada em outra instituição/
+// curso (transferência, portador de diploma). Documental — não gera
+// MatriculaDisciplina/Oferta automaticamente; não entra no cálculo de CR.
+model MateriaEquiparada {
+  id                 String     @id @default(uuid())
+  alunoId            String
+  aluno              Aluno      @relation(fields: [alunoId], references: [id])
+  disciplinaId       String
+  disciplina         Disciplina @relation(fields: [disciplinaId], references: [id])
+  instituicaoOrigem  String
+  disciplinaOrigem   String
+  cargaHorariaOrigem Int?
+  dataAprovacao      DateTime   @db.Date
+  observacoes        String?    @db.Text
+
+  criadoEm DateTime @default(now())
+
+  @@map("materias_equiparadas")
+}
+
+// ── Histórico de Mudança de Situação de Vínculo ─────────────────
+model HistoricoSituacaoVinculo {
+  id               String          @id @default(uuid())
+  alunoId          String
+  aluno            Aluno           @relation(fields: [alunoId], references: [id])
+  situacaoAnterior SituacaoVinculo
+  situacaoNova     SituacaoVinculo
+  motivo           String?
+  data             DateTime        @db.Date
+  usuarioId        String?
+
+  criadoEm DateTime @default(now())
+
+  @@map("historico_situacao_vinculo")
 }

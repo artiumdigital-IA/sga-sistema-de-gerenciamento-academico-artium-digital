@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AvaliacaoService } from './avaliacao.service';
 import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
 import { UpdateAvaliacaoDto } from './dto/update-avaliacao.dto';
+import { ImportarAvaliacoesDto } from './dto/importar-avaliacoes.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
@@ -25,6 +26,13 @@ export class AvaliacaoController {
   @ApiQuery({ name: 'matriculaDisciplinaId', required: false })
   findAll(@Query('matriculaDisciplinaId') mid?: string) {
     return this.service.findAll(mid);
+  }
+
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.PROFESSOR)
+  @Post('importar')
+  @ApiOperation({ summary: 'Importar planilha de notas (RA, tipo, nota, peso) para uma oferta' })
+  importar(@Body() dto: ImportarAvaliacoesDto, @Request() req: { user?: { id?: string } }) {
+    return this.service.importarPlanilha(dto, req.user?.id);
   }
 
   @Get(':id')

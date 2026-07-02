@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { AlunoService } from './aluno.service';
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
+import { MudarSituacaoDto } from './dto/mudar-situacao.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
@@ -57,6 +58,19 @@ export class AlunoController {
   @ApiOperation({ summary: 'Histórico acadêmico + CR do aluno' })
   historico(@Param('id') id: string) {
     return this.service.historico(id);
+  }
+
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Post(':id/mudar-situacao')
+  @ApiOperation({ summary: 'Registrar mudança de situação de vínculo (com motivo/data/histórico)' })
+  mudarSituacao(@Param('id') id: string, @Body() dto: MudarSituacaoDto, @Request() req: any) {
+    return this.service.mudarSituacao(id, dto, req.user?.id);
+  }
+
+  @Get(':id/historico-situacao')
+  @ApiOperation({ summary: 'Histórico de mudanças de situação de vínculo do aluno' })
+  historicoSituacao(@Param('id') id: string) {
+    return this.service.historicoSituacao(id);
   }
 
 }

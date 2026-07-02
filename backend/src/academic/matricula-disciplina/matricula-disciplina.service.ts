@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateMatriculaDisciplinaDto } from './dto/create-matricula-disciplina.dto';
 import { UpdateMatriculaDisciplinaDto } from './dto/update-matricula-disciplina.dto';
+import { TransferirTurmaDto } from './dto/transferir-turma.dto';
 
 @Injectable()
 export class MatriculaDisciplinaService {
@@ -163,6 +164,66 @@ export class MatriculaDisciplinaService {
       dadosDepois: matricula,
     });
     return matricula;
+  }
+
+  /**
+   * Transferência de Turma — move o aluno de uma oferta pra outra da MESMA disciplina,
+   * preservando a matrícula (histórico de avaliações/resultado permanece ligado ao mesmo registro).
+   * Equivalente ao "Transferência de Turma" do Kirsch.
+   */
+  async transferirTurma(id: string, dto: TransferirTurmaDto, usuarioId?: string) {
+    const matricula = await this.prisma.matriculaDisciplina.findUnique({
+      where: { id },
+      include: { oferta: { include: { disciplina: true } }, aluno: { select: { id: true, nome: true, ra: true } } },
+    });
+    if (!matricula) throw new NotFoundException(`Matrícula "${id}" não encontrada.`);
+
+    if (matricula.ofertaId === dto.novaOfertaId) {
+      throw new BadRequestException('O aluno já está matriculado nesta turma.');
+    }
+
+    const novaOferta = await this.prisma.oferta.findUnique({
+      where: { id: dto.novaOfertaId },
+      include: { disciplina: true, periodoLetivo: true, _count: { select: { matriculas: true } } },
+    });
+    if (!novaOferta) throw new BadRequestException('Turma de destino não encontrada.');
+
+    if (novaOferta.disciplinaId !== matricula.oferta.disciplinaId) {
+      throw new BadRequestException(
+        'A turma de destino precisa ser da mesma disciplina. Para trocar de disciplina, cancele a matrícula e crie uma nova.',
+      );
+    }
+
+    if (novaOferta._count.matriculas >= novaOferta.vagas) {
+      throw new BadRequestException(
+        `Turma de destino sem vagas disponíveis (${novaOferta.vagas} vagas, ${novaOferta._count.matriculas} matriculados).`,
+      );
+    }
+
+    const conflito = await this.prisma.matriculaDisciplina.findUnique({
+      where: { alunoId_ofertaId: { alunoId: matricula.alunoId, ofertaId: dto.novaOfertaId } },
+    });
+    if (conflito) throw new ConflictException('Aluno já possui matrícula nessa turma de destino.');
+
+    const atualizada = await this.prisma.matriculaDisciplina.update({
+      where: { id },
+      data: { ofertaId: dto.novaOfertaId },
+      include: {
+        aluno: { select: { id: true, ra: true, nome: true } },
+        oferta: { include: { disciplina: true, periodoLetivo: true } },
+      },
+    });
+
+    await this.audit.log({
+      usuarioId,
+      acao: 'TRANSFERENCIA_TURMA',
+      entidade: 'MatriculaDisciplina',
+      entidadeId: id,
+      dadosAntes: { ofertaId: matricula.ofertaId, turma: matricula.oferta, motivo: dto.motivo ?? null },
+      dadosDepois: { ofertaId: dto.novaOfertaId, turma: novaOferta },
+    });
+
+    return atualizada;
   }
 
   async remove(id: string, usuarioId?: string) {

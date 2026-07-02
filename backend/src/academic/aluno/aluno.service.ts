@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
+import { MudarSituacaoDto } from './dto/mudar-situacao.dto';
 
 @Injectable()
 export class AlunoService {
@@ -175,6 +176,53 @@ export class AlunoService {
       .sort((x, y) => y.cr - x.cr);
 
     return linhas.map((l, i) => ({ posicao: i + 1, ...l }));
+  }
+
+  /**
+   * Mudança de Situação de Vínculo — registra a mudança em `HistoricoSituacaoVinculo`
+   * (motivo, data, quem fez) e atualiza `Aluno.situacaoVinculo`.
+   * Equivalente ao "Mudança de Situação" do Kirsch (menu Secretaria).
+   */
+  async mudarSituacao(id: string, dto: MudarSituacaoDto, usuarioId?: string) {
+    const aluno = await this.findOne(id);
+
+    const [historico, atualizado] = await this.prisma.$transaction([
+      this.prisma.historicoSituacaoVinculo.create({
+        data: {
+          alunoId: id,
+          situacaoAnterior: aluno.situacaoVinculo,
+          situacaoNova: dto.situacaoNova,
+          motivo: dto.motivo,
+          data: new Date(dto.data),
+          usuarioId,
+        },
+      }),
+      this.prisma.aluno.update({
+        where: { id },
+        data: { situacaoVinculo: dto.situacaoNova },
+      }),
+    ]);
+
+    if (usuarioId) {
+      await this.audit.log({
+        usuarioId,
+        acao: 'MUDANCA_SITUACAO',
+        entidade: 'aluno',
+        entidadeId: id,
+        dadosAntes: { situacaoVinculo: aluno.situacaoVinculo },
+        dadosDepois: { situacaoVinculo: dto.situacaoNova, motivo: dto.motivo, data: dto.data },
+      });
+    }
+
+    return { aluno: atualizado, historico };
+  }
+
+  async historicoSituacao(id: string) {
+    await this.findOne(id);
+    return this.prisma.historicoSituacaoVinculo.findMany({
+      where: { alunoId: id },
+      orderBy: { data: 'desc' },
+    });
   }
 
   /**

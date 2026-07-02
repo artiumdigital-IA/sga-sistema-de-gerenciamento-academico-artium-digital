@@ -6,10 +6,12 @@ import { ParcelaController } from './parcela/parcela.controller';
 import { ParcelaService } from './parcela/parcela.service';
 import { ContaBancariaController } from './conta-bancaria/conta-bancaria.controller';
 import { ContaBancariaService } from './conta-bancaria/conta-bancaria.service';
+import { CategoriaReceitaController } from './categoria-receita/categoria-receita.controller';
+import { CategoriaReceitaService } from './categoria-receita/categoria-receita.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [ContratoController, ParcelaController, ContaBancariaController],
-  providers: [ContratoService, ParcelaService, ContaBancariaService],
+  controllers: [ContratoController, ParcelaController, ContaBancariaController, CategoriaReceitaController],
+  providers: [ContratoService, ParcelaService, ContaBancariaService, CategoriaReceitaService],
 })
 export class FinancialModule {}

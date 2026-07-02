@@ -10,6 +10,8 @@ import { MatriculaDisciplinaModule } from './matricula-disciplina/matricula-disc
 import { AvaliacaoModule } from './avaliacao/avaliacao.module';
 import { ResultadoDisciplinaModule } from './resultado-disciplina/resultado-disciplina.module';
 import { FichaSaudeModule } from './ficha-saude/ficha-saude.module';
+import { UnidadeModule } from './unidade/unidade.module';
+import { MateriaEquiparadaModule } from './materia-equiparada/materia-equiparada.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { FichaSaudeModule } from './ficha-saude/ficha-saude.module';
     AvaliacaoModule,
     ResultadoDisciplinaModule,
     FichaSaudeModule,
+    UnidadeModule,
+    MateriaEquiparadaModule,
   ],
   exports: [
     CursoModule,
@@ -37,6 +41,8 @@ import { FichaSaudeModule } from './ficha-saude/ficha-saude.module';
     AvaliacaoModule,
     ResultadoDisciplinaModule,
     FichaSaudeModule,
+    UnidadeModule,
+    MateriaEquiparadaModule,
   ],
 })
 export class AcademicModule {}

@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { MatriculaDisciplinaService } from './matricula-disciplina.service';
 import { CreateMatriculaDisciplinaDto } from './dto/create-matricula-disciplina.dto';
 import { UpdateMatriculaDisciplinaDto } from './dto/update-matricula-disciplina.dto';
+import { TransferirTurmaDto } from './dto/transferir-turma.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
@@ -48,6 +49,13 @@ export class MatriculaDisciplinaController {
   @ApiOperation({ summary: 'Atualizar status da matrícula' })
   update(@Param('id') id: string, @Body() dto: UpdateMatriculaDisciplinaDto, @Request() req: any) {
     return this.service.update(id, dto, req.user?.id);
+  }
+
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Post(':id/transferir')
+  @ApiOperation({ summary: 'Transferir aluno de turma (mesma disciplina)' })
+  transferir(@Param('id') id: string, @Body() dto: TransferirTurmaDto, @Request() req: any) {
+    return this.service.transferirTurma(id, dto, req.user?.id);
   }
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
