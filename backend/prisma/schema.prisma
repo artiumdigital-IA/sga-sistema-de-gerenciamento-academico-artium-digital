@@ -909,3 +909,19 @@ model ObservacaoFinanceira {
 
   @@map("observacoes_financeiras")
 }
+
+// ── Ramais (catálogo institucional exibido no modal "Ramais" do BottomBar;
+// gerenciado por ADMIN em Utilitários > Ramais). Leitura livre pra qualquer
+// autenticado, escrita restrita a ADMIN (feito no controller, não aqui).
+model Ramal {
+  id     String  @id @default(uuid())
+  nome   String
+  setor  String?
+  numero String
+  ativo  Boolean @default(true)
+
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("ramais")
+}

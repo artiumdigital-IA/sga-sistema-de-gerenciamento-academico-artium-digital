@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { getToken, parseJwt, logout, type JwtUser } from '@/lib/auth';
 import { apiFetch, apiFileUrl } from '@/lib/api';
 import { RightPanel } from '@/components/dashboard/RightPanel';
+import { RamaisModal } from '@/components/dashboard/RamaisModal';
 
 const SIDEBAR_ITEMS = [
   { label: 'Painel',      d: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',                                                                                                                       href: '/dashboard' },
@@ -49,6 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [nomeExibido, setNomeExibido] = useState<string | null>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [ramaisOpen, setRamaisOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -255,6 +257,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {label}
           </button>
         ))}
+        <button onClick={() => setRamaisOpen(true)} style={{
+          height: 26, padding: '0 10px', border: '1px solid var(--gray-200)',
+          borderRadius: 3, background: 'transparent', cursor: 'pointer',
+          fontSize: 11.5, color: 'var(--gray-600)',
+        }}>
+          Ramais
+        </button>
         <div style={{ flex: 1 }} />
         <div style={{
           height: 6, width: 140, background: 'var(--gray-200)', borderRadius: 3, overflow: 'hidden',
@@ -263,6 +272,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <span style={{ fontSize: 10.5, color: 'var(--gray-400)' }}>62% concluido</span>
       </div>
+
+      <RamaisModal open={ramaisOpen} onClose={() => setRamaisOpen(false)} />
     </div>
   );
 }
