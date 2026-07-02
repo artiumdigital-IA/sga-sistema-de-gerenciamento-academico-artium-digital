@@ -69,7 +69,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
   { title: 'Utilitários', items: [
     { label: 'Calculadora', href: null },
     { label: 'Visualizar Relatórios', href: '/dashboard/relatorios/censo' },
-    { label: 'Alteração de Senha', href: null },
+    { label: 'Alteração de Senha', href: '/dashboard?view=conta' },
     { label: 'Exporta Moodle', href: null },
   ]},
 ];

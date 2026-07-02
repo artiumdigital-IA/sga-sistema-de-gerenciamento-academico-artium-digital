@@ -423,6 +423,7 @@ function MinhaConta() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
+  const [alterandoSenha, setAlterandoSenha] = useState(false);
 
   function carregar() {
     setLoading(true);
@@ -484,9 +485,15 @@ function MinhaConta() {
             <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--gray-100)', fontWeight: 600, fontSize: 12.5, color: 'var(--gray-700)' }}>{card.title}</div>
             <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {card.fields.map(([label, val]) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
                   <span style={{ color: 'var(--gray-400)' }}>{label}</span>
-                  <span style={{ color: 'var(--gray-700)', fontWeight: 500 }}>{val}</span>
+                  {label === 'Senha' ? (
+                    <button onClick={() => setAlterandoSenha(true)} style={{ padding: '3px 8px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 11, cursor: 'pointer', color: 'var(--blue-dark)', fontWeight: 600 }}>
+                      Alterar
+                    </button>
+                  ) : (
+                    <span style={{ color: 'var(--gray-700)', fontWeight: 500 }}>{val}</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -500,6 +507,10 @@ function MinhaConta() {
           onClose={() => setEditando(false)}
           onSaved={(atualizado) => { setPerfil(atualizado); setEditando(false); }}
         />
+      )}
+
+      {alterandoSenha && (
+        <AlterarSenhaModal onClose={() => setAlterandoSenha(false)} />
       )}
     </div>
   );
@@ -619,6 +630,101 @@ function EditarPerfilModal({ perfil, onClose, onSaved }: {
   );
 }
 
+/* ─── Modal: Alterar Senha ─── */
+function AlterarSenhaModal({ onClose }: { onClose: () => void }) {
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [sucesso, setSucesso] = useState(false);
+
+  async function salvar() {
+    setErro(null);
+    if (!senhaAtual) { setErro('Informe sua senha atual.'); return; }
+    if (novaSenha.length < 8) { setErro('A nova senha deve ter pelo menos 8 caracteres.'); return; }
+    if (novaSenha !== confirmarSenha) { setErro('A confirmação não confere com a nova senha.'); return; }
+    setSalvando(true);
+    try {
+      await apiFetch('/usuarios/me/senha', {
+        method: 'PATCH',
+        body: JSON.stringify({ senhaAtual, novaSenha }),
+      });
+      setSucesso(true);
+    } catch (e: any) {
+      setErro(e.message ?? 'Erro ao alterar senha.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 100,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--white)', borderRadius: 8, width: 360, maxWidth: '92vw',
+        padding: 20, boxShadow: '0 8px 30px rgba(0,0,0,.2)',
+      }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-700)', marginBottom: 16 }}>Alterar Senha</div>
+
+        {sucesso ? (
+          <>
+            <div style={{ fontSize: 12.5, color: 'var(--gray-600)', marginBottom: 16 }}>Senha alterada com sucesso.</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={onClose} style={{
+                padding: '7px 14px', border: 'none', borderRadius: 4,
+                background: 'var(--blue-dark)', fontSize: 12, cursor: 'pointer', color: '#fff',
+              }}>
+                Fechar
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+              <label style={{ fontSize: 11.5, color: 'var(--gray-500)' }}>
+                Senha atual
+                <input type="password" value={senhaAtual} onChange={e => setSenhaAtual(e.target.value)}
+                  style={{ width: '100%', marginTop: 4, padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 12.5, boxSizing: 'border-box' }} />
+              </label>
+              <label style={{ fontSize: 11.5, color: 'var(--gray-500)' }}>
+                Nova senha (mínimo 8 caracteres)
+                <input type="password" value={novaSenha} onChange={e => setNovaSenha(e.target.value)}
+                  style={{ width: '100%', marginTop: 4, padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 12.5, boxSizing: 'border-box' }} />
+              </label>
+              <label style={{ fontSize: 11.5, color: 'var(--gray-500)' }}>
+                Confirmar nova senha
+                <input type="password" value={confirmarSenha} onChange={e => setConfirmarSenha(e.target.value)}
+                  style={{ width: '100%', marginTop: 4, padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 12.5, boxSizing: 'border-box' }} />
+              </label>
+            </div>
+
+            {erro && <div style={{ fontSize: 11.5, color: 'var(--red)', marginBottom: 10 }}>{erro}</div>}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={onClose} disabled={salvando} style={{
+                padding: '7px 14px', border: '1px solid var(--gray-300)', borderRadius: 4,
+                background: 'transparent', fontSize: 12, cursor: 'pointer', color: 'var(--gray-600)',
+              }}>
+                Cancelar
+              </button>
+              <button onClick={salvar} disabled={salvando} style={{
+                padding: '7px 14px', border: 'none', borderRadius: 4,
+                background: 'var(--blue-dark)', fontSize: 12, cursor: 'pointer', color: '#fff',
+                opacity: salvando ? 0.7 : 1,
+              }}>
+                {salvando ? 'Salvando…' : 'Salvar'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── CARDS data ─── */
 const INITIAL_CARDS = [
   {
@@ -646,7 +752,11 @@ const INITIAL_CARDS = [
 
 /* ─── Página principal ─── */
 export default function DashboardPage() {
-  const [activeView, setActiveView] = useState<ActiveView>('painel');
+  const [activeView, setActiveView] = useState<ActiveView>(() => {
+    if (typeof window === 'undefined') return 'painel';
+    const v = new URLSearchParams(window.location.search).get('view');
+    return v === 'conta' || v === 'comunidade' ? v : 'painel';
+  });
   const [colMode, setColMode] = useState<'1' | '2'>('2');
   const [cards, setCards] = useState(INITIAL_CARDS);
   const dragId = useRef<string | null>(null);
