@@ -11,46 +11,75 @@ export class AlunoService {
     private readonly audit: AuditService,
   ) {}
 
-  private gerarRa(): string {
-    const ano = new Date().getFullYear();
-    const seq = Math.floor(Math.random() * 90000) + 10000;
-    return `${ano}${seq}`;
+  /**
+   * Gera o próximo RA sequencial do ano corrente: AAAA0001, AAAA0002, ...
+   * Busca o maior RA já emitido com o prefixo do ano e incrementa.
+   */
+  private async gerarRa(): Promise<string> {
+    const prefixo = `${new Date().getFullYear()}`;
+    const ultimo = await this.prisma.aluno.findFirst({
+      where: { ra: { startsWith: prefixo } },
+      orderBy: { ra: 'desc' },
+      select: { ra: true },
+    });
+    let proximoSeq = 1;
+    if (ultimo) {
+      const seqAtual = parseInt(ultimo.ra.slice(prefixo.length), 10);
+      if (!isNaN(seqAtual)) proximoSeq = seqAtual + 1;
+    }
+    return `${prefixo}${String(proximoSeq).padStart(4, '0')}`;
   }
 
   async create(dto: CreateAlunoDto, usuarioId?: string) {
     const cpfExist = await this.prisma.aluno.findFirst({ where: { cpf: dto.cpf } });
     if (cpfExist) throw new ConflictException('CPF ja cadastrado.');
 
-    const aluno = await this.prisma.aluno.create({
-      data: {
-        cursoId: dto.cursoId,
-        matrizCurricularId: dto.matrizCurricularId,
-        ra: dto.ra ?? this.gerarRa(),
-        nome: dto.nome,
-        cpf: dto.cpf,
-        dataNascimento: new Date(dto.dataNascimento),
-        sexo: dto.sexo,
-        corRaca: dto.corRaca,
-        nacionalidade: dto.nacionalidade ?? 'BRASILEIRA',
-        formaIngresso: dto.formaIngresso,
-        dataIngresso: new Date(dto.dataIngresso),
-        situacaoVinculo: dto.situacaoVinculo,
-        email: dto.email,
-        telefone: dto.telefone,
-        cep: dto.cep,
-        logradouro: dto.logradouro,
-        numero: dto.numero,
-        complemento: dto.complemento,
-        bairro: dto.bairro,
-        uf: dto.uf,
-        municipio: dto.municipio,
-        ...(dto.usuarioId ? { usuario: { connect: { id: dto.usuarioId } } } : {}),
-      },
-    });
-    if (usuarioId) {
-      await this.audit.log({ usuarioId, acao: 'CREATE', entidade: 'aluno', entidadeId: aluno.id, dadosDepois: aluno });
+    // Até 5 tentativas: cobre a rara corrida entre dois cadastros simultâneos
+    // gerando o mesmo próximo RA (constraint única em `ra` barra o segundo insert).
+    const maxTentativas = dto.ra ? 1 : 5;
+    let ultimoErro: unknown;
+
+    for (let tentativa = 0; tentativa < maxTentativas; tentativa++) {
+      const ra = dto.ra ?? await this.gerarRa();
+      try {
+        const aluno = await this.prisma.aluno.create({
+          data: {
+            cursoId: dto.cursoId,
+            matrizCurricularId: dto.matrizCurricularId,
+            ra,
+            nome: dto.nome,
+            cpf: dto.cpf,
+            dataNascimento: new Date(dto.dataNascimento),
+            sexo: dto.sexo,
+            corRaca: dto.corRaca,
+            nacionalidade: dto.nacionalidade ?? 'BRASILEIRA',
+            formaIngresso: dto.formaIngresso,
+            dataIngresso: new Date(dto.dataIngresso),
+            situacaoVinculo: dto.situacaoVinculo,
+            email: dto.email,
+            telefone: dto.telefone,
+            cep: dto.cep,
+            logradouro: dto.logradouro,
+            numero: dto.numero,
+            complemento: dto.complemento,
+            bairro: dto.bairro,
+            uf: dto.uf,
+            municipio: dto.municipio,
+            ...(dto.usuarioId ? { usuario: { connect: { id: dto.usuarioId } } } : {}),
+          },
+        });
+        if (usuarioId) {
+          await this.audit.log({ usuarioId, acao: 'CREATE', entidade: 'aluno', entidadeId: aluno.id, dadosDepois: aluno });
+        }
+        return aluno;
+      } catch (e: any) {
+        ultimoErro = e;
+        const isRaConflict = e?.code === 'P2002' && e?.meta?.target?.includes?.('ra');
+        if (dto.ra || !isRaConflict) throw e;
+        // RA gerado colidiu (corrida rara) — tenta de novo com o próximo número
+      }
     }
-    return aluno;
+    throw ultimoErro;
   }
 
   async findAll(cursoId?: string) {

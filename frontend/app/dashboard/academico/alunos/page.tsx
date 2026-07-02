@@ -118,7 +118,8 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(''); setSaving(true);
     try {
-      const body = { ...form, telefone: form.telefone || undefined };
+      const body: Partial<FormData> = { ...form, telefone: form.telefone || undefined };
+      if (!aluno) delete body.ra; // RA é gerado automaticamente pelo backend em novos alunos
       if (aluno) await apiFetch(`/alunos/${aluno.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       else await apiFetch('/alunos', { method: 'POST', body: JSON.stringify(body) });
       onSave(); onClose();
@@ -148,7 +149,9 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
 
           {tab === 'dados' && <>
             <G cols="1fr 1fr">
-              <F label="RA *"><input style={INPUT} value={form.ra} required onChange={e => set('ra', e.target.value)} placeholder="Ex: 20260001" /></F>
+              <F label={aluno ? 'RA' : 'RA (gerado automaticamente)'}>
+                <input style={{ ...INPUT, background: '#f3f4f6', color: '#6b7280' }} value={aluno ? form.ra : 'Será gerado ao salvar'} disabled />
+              </F>
               <F label="Nome completo *"><input style={INPUT} value={form.nome} required onChange={e => set('nome', e.target.value)} /></F>
             </G>
             <G cols="1fr 1fr">
