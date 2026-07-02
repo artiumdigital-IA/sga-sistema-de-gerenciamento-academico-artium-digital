@@ -182,6 +182,9 @@ model Aluno {
   documentos       DocumentoAluno[]
   equiparacoes     MateriaEquiparada[]
   historicoSituacao HistoricoSituacaoVinculo[]
+  protocolos       Protocolo[]
+  ocorrencias      Ocorrencia[]
+  observacoesFinanceiras ObservacaoFinanceira[]
 
   @@map("alunos")
 }
@@ -224,9 +227,29 @@ model MatriculaDisciplina {
   oferta    Oferta              @relation(fields: [ofertaId],  references: [id])
   avaliacoes Avaliacao[]
   resultado  ResultadoDisciplina?
+  registrosFrequencia RegistroFrequencia[]
 
   @@unique([alunoId, ofertaId])
   @@map("matriculas_disciplinas")
+}
+
+// ── Frequência diária (achado do spike Kirsch: Secretaria > Manutenção de
+// Frequência lança presença/falta aula-a-aula, não só o total consolidado
+// no fim do período) ─────────────────────────────────────────────────────
+model RegistroFrequencia {
+  id                    String   @id @default(uuid())
+  matriculaDisciplinaId String
+  matriculaDisciplina   MatriculaDisciplina @relation(fields: [matriculaDisciplinaId], references: [id])
+  data                  DateTime @db.Date
+  quantidadeAulas       Int
+  faltas                Int
+  observacao            String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([matriculaDisciplinaId, data])
+  @@map("registros_frequencia")
 }
 
 model Avaliacao {
@@ -289,6 +312,8 @@ model Usuario {
   professor Professor? @relation(fields: [professorId], references: [id])
   auditorias Auditoria[]
   avisos     Aviso[]
+  mensagensEnviadas  Mensagem[] @relation("MensagensEnviadas")
+  mensagensRecebidas Mensagem[] @relation("MensagensRecebidas")
 
   @@map("usuarios")
 }
@@ -777,4 +802,110 @@ model HistoricoSituacaoVinculo {
   criadoEm DateTime @default(now())
 
   @@map("historico_situacao_vinculo")
+}
+
+// ── Protocolo (achado do spike Kirsch: menu "Protocolo") ────────
+// Registro genérico de protocolo administrativo — mais amplo que Requerimento
+// (que tem tipo fixo); Protocolo pode ou não estar ligado a um aluno.
+model TipoProtocolo {
+  id    String  @id @default(uuid())
+  nome  String
+  ativo Boolean @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  protocolos Protocolo[]
+
+  @@map("tipos_protocolo")
+}
+
+model Protocolo {
+  id                String          @id @default(uuid())
+  numero            String          @unique
+  tipoId            String
+  tipo              TipoProtocolo   @relation(fields: [tipoId], references: [id])
+  alunoId           String?
+  aluno             Aluno?          @relation(fields: [alunoId], references: [id])
+  assunto           String
+  descricao         String?         @db.Text
+  status            StatusProtocolo @default(ABERTO)
+  dataAbertura       DateTime       @default(now())
+  dataConclusao      DateTime?
+  usuarioAberturaId String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("protocolos")
+}
+
+enum StatusProtocolo {
+  ABERTO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+// ── Ocorrências (achado do spike Kirsch: menu "Ocorrências") ────
+// Registro disciplinar/de ocorrência do aluno.
+model MotivoOcorrencia {
+  id    String  @id @default(uuid())
+  nome  String
+  ativo Boolean @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  ocorrencias Ocorrencia[]
+
+  @@map("motivos_ocorrencia")
+}
+
+model Ocorrencia {
+  id        String           @id @default(uuid())
+  alunoId   String
+  aluno     Aluno            @relation(fields: [alunoId], references: [id])
+  motivoId  String
+  motivo    MotivoOcorrencia @relation(fields: [motivoId], references: [id])
+  descricao String?          @db.Text
+  data      DateTime         @db.Date
+  usuarioId String?
+
+  criadoEm DateTime @default(now())
+
+  @@map("ocorrencias")
+}
+
+// ── Mensagens (achado do spike Kirsch: menu "Portais" — Compor Mensagens /
+// Manutenção de Mensagens Enviadas). Mensagem direcionada admin/secretaria
+// -> usuário específico; diferente de Aviso (mural geral pra todos).
+model Mensagem {
+  id             String   @id @default(uuid())
+  remetenteId    String
+  remetente      Usuario  @relation("MensagensEnviadas", fields: [remetenteId], references: [id])
+  destinatarioId String
+  destinatario   Usuario  @relation("MensagensRecebidas", fields: [destinatarioId], references: [id])
+  assunto        String
+  corpo          String   @db.Text
+  lida           Boolean  @default(false)
+
+  criadoEm DateTime @default(now())
+
+  @@map("mensagens")
+}
+
+// ── Observações Financeiras (achado do spike Kirsch: menu "CReceber" —
+// Observações Financeiras). Nota livre do financeiro/secretaria por aluno.
+model ObservacaoFinanceira {
+  id         String   @id @default(uuid())
+  alunoId    String
+  aluno      Aluno    @relation(fields: [alunoId], references: [id])
+  observacao String   @db.Text
+  data       DateTime @default(now())
+  usuarioId  String?
+
+  criadoEm DateTime @default(now())
+
+  @@map("observacoes_financeiras")
 }

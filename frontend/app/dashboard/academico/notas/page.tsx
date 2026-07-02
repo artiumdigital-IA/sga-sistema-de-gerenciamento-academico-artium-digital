@@ -144,11 +144,23 @@ function ModalConsolidar({ matricula, onClose, onUpdate }: { matricula: Matricul
   const [totalAulas, setTotalAulas] = useState('');
   const [faltas, setFaltas] = useState('');
   const [salvando, setSalvando] = useState(false);
+  const [buscandoFreq, setBuscandoFreq] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [erro, setErro] = useState('');
 
   const freq = totalAulas && faltas && Number(totalAulas) > 0
     ? (((Number(totalAulas) - Number(faltas)) / Number(totalAulas)) * 100).toFixed(1) : null;
+
+  async function calcularDaFrequenciaLancada() {
+    setBuscandoFreq(true); setErro('');
+    try {
+      const r = await apiFetch<{ totalAulas: number; totalFaltas: number; diasLancados: number }>(`/frequencia/resumo-matricula/${matricula.id}`);
+      if (r.diasLancados === 0) { setErro('Nenhum dia de frequência lançado ainda pra essa turma.'); return; }
+      setTotalAulas(String(r.totalAulas));
+      setFaltas(String(r.totalFaltas));
+    } catch (e: any) { setErro(e.message ?? 'Erro ao buscar frequência lançada'); }
+    finally { setBuscandoFreq(false); }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErro(''); setSalvando(true);
@@ -182,6 +194,9 @@ function ModalConsolidar({ matricula, onClose, onUpdate }: { matricula: Matricul
           </>
         ) : (
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <button type="button" style={{ ...BTN_G, alignSelf: 'flex-start', fontSize: 12, padding: '5px 10px' }} disabled={buscandoFreq} onClick={calcularDaFrequenciaLancada}>
+              {buscandoFreq ? 'Buscando...' : '↺ Calcular da frequência diária lançada'}
+            </button>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Total de aulas ministradas *</label>
               <input style={INPUT} type="number" min="1" value={totalAulas} onChange={e => setTotalAulas(e.target.value)} required />

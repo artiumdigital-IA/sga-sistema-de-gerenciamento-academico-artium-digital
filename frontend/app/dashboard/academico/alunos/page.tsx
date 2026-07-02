@@ -359,6 +359,14 @@ export default function AlunosPage() {
                           onClick={() => router.push(`/dashboard/academico/situacao/${a.id}`)}>
                           Situação
                         </button>
+                        <button style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #be123c', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#be123c', fontWeight: 500 }}
+                          onClick={() => router.push(`/dashboard/academico/ocorrencias/${a.id}`)}>
+                          Ocorrências
+                        </button>
+                        <button style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #059669', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#059669', fontWeight: 500 }}
+                          onClick={() => router.push(`/dashboard/financeiro/observacoes/${a.id}`)}>
+                          Obs. Financeira
+                        </button>
                       </div>
                     </td>
                   </tr>

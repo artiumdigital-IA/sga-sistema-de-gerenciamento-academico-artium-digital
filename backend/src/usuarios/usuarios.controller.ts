@@ -55,9 +55,9 @@ export class UsuariosController {
     return this.service.create(dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Get()
-  @ApiOperation({ summary: 'Listar todos os usuarios (ADMIN)' })
+  @ApiOperation({ summary: 'Listar todos os usuarios (ADMIN/SECRETARIA — SECRETARIA precisa pra escolher destinatário de Mensagens)' })
   findAll() {
     return this.service.findAll();
   }
