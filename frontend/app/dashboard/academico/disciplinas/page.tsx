@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 
 // ── tipos ──────────────────────────────────────────────────────────────
@@ -154,6 +155,7 @@ function DisciplinaModal({ disciplina, cursos, matrizes, onClose, onSave }: {
 
 // ── página ─────────────────────────────────────────────────────────────
 export default function DisciplinasPage() {
+  const router = useRouter();
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [matrizes, setMatrizes] = useState<Matriz[]>([]);
@@ -253,6 +255,8 @@ export default function DisciplinasPage() {
                   <td style={{ padding: '10px 14px' }}>{d.creditos}</td>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
+                      <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }}
+                        onClick={() => router.push(`/dashboard/academico/disciplinas/${d.id}`)}>Pré-requisitos</button>
                       <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(d)}>Editar</button>
                       <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }}
                         disabled={deleting === d.id} onClick={() => deletar(d.id)}>

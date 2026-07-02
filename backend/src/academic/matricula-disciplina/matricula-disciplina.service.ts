@@ -83,6 +83,53 @@ export class MatriculaDisciplinaService {
     });
   }
 
+  /**
+   * Mapão — relatório de notas/frequência de todos os alunos matriculados em uma oferta.
+   * Equivalente ao "Relatório Notas/Disciplinas (Mapão)" do Kirsch.
+   */
+  async mapao(ofertaId: string) {
+    const oferta = await this.prisma.oferta.findUnique({
+      where: { id: ofertaId },
+      include: { disciplina: true, periodoLetivo: true, professor: true },
+    });
+    if (!oferta) throw new NotFoundException(`Oferta "${ofertaId}" não encontrada.`);
+
+    const matriculas = await this.prisma.matriculaDisciplina.findMany({
+      where: { ofertaId },
+      include: {
+        aluno: { select: { id: true, ra: true, nome: true } },
+        avaliacoes: true,
+        resultado: true,
+      },
+      orderBy: { aluno: { nome: 'asc' } },
+    });
+
+    return {
+      oferta: {
+        id: oferta.id,
+        disciplina: oferta.disciplina.nome,
+        codigo: oferta.disciplina.codigo,
+        cargaHoraria: oferta.disciplina.cargaHoraria,
+        periodo: { ano: oferta.periodoLetivo.ano, semestre: oferta.periodoLetivo.semestre },
+        professor: oferta.professor?.nome ?? null,
+        turno: oferta.turno,
+        vagas: oferta.vagas,
+      },
+      alunos: matriculas.map((m: any) => ({
+        matriculaId: m.id,
+        aluno: m.aluno,
+        isDependencia: m.isDependencia,
+        status: m.status,
+        avaliacoes: m.avaliacoes.map((a: any) => ({ tipo: a.tipo, nota: a.nota, peso: a.peso })),
+        mediaFinal: m.resultado?.mediaFinal ?? null,
+        faltas: m.resultado?.faltas ?? null,
+        frequenciaPercentual: m.resultado?.frequenciaPercentual ?? null,
+        situacao: m.resultado?.situacao ?? null,
+      })),
+      geradoEm: new Date().toISOString(),
+    };
+  }
+
   async findOne(id: string) {
     const m = await this.prisma.matriculaDisciplina.findUnique({
       where: { id },

@@ -1,15 +1,77 @@
 'use client';
 import { useState } from 'react';
-import { RpanelGroup } from './RpanelGroup';
+import { RpanelGroup, type RpanelItem } from './RpanelGroup';
 import { MessagesPanel } from './MessagesPanel';
 
-const RPANEL_GROUPS = [
-  { title: 'Arquivos', items: ['Cadastro de Alunos','Ficha de Saude','Digitalizacao de Documentos','Cursos','Materias','Professores','Unidades','Unidade de Ensino','Contas Financeiras','Receitas','Contas Bancarias','Calendario Feriados','Cadastro de Usuarios','Consultar Arquivo de Log'] },
-  { title: 'Coordenacao', items: ['Consulta posicao do Aluno','Pre-requisito','Materias Equiparadas','Grade Curricular Fixa','Formacao de Cursos','Formacao de Turmas','Datas dos Bimestres','Horario de Aulas','INEP','Ranking de Alunos'] },
-  { title: 'Secretaria', items: ['Ingresso no Curso Superior','Inscricao','Manutencao Historico Escolar','Transferencia de Turma','Mudanca de Situacao','Diario de Classe','Emissao de Boletim','Relatorio Notas/Disciplinas','Mala Direta / Declaracoes'] },
-  { title: 'Notas e Frequencia', items: ['Lancamento de Notas e Frequencia por Pauta','Lancamento de Notas por Aluno','Lancamento de Frequencia','Gerar Planilha de Notas','Importacao Planilha Excel','Calculo de Resultados'] },
-  { title: 'Financeiro', items: ['Consulta posicao do Aluno','Lancamento Conta Corrente','Plano de Pagamentos','Ficha Financeira','Tesouraria','Acordo/Parcelamento','Cadastro de Bolsistas','Emissao de Titulos','Relatorios','Contabilidade'] },
-  { title: 'Utilitarios', items: ['Calculadora','Visualizar Relatorios','Alteracao de Senha','Exporta Moodle'] },
+// Mapeamento "Barra Rápida" (nomenclatura/estrutura de menu da Kirsch, levantada no spike de
+// migração) -> telas equivalentes já existentes na plataforma nova. href: null = ainda não
+// construído aqui (fica visível, porém desabilitado, pra deixar claro o que falta).
+const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
+  { title: 'Arquivos', items: [
+    { label: 'Cadastro de Alunos', href: '/dashboard/academico/alunos' },
+    { label: 'Ficha de Saúde', href: null },
+    { label: 'Digitalização de Documentos', href: null },
+    { label: 'Cursos', href: '/dashboard/academico/cursos' },
+    { label: 'Matérias', href: '/dashboard/academico/disciplinas' },
+    { label: 'Professores', href: '/dashboard/academico/professores' },
+    { label: 'Unidades', href: null },
+    { label: 'Unidade de Ensino', href: null },
+    { label: 'Contas Financeiras', href: '/dashboard/financeiro/contratos' },
+    { label: 'Receitas', href: null },
+    { label: 'Contas Bancárias', href: null },
+    { label: 'Calendário/Feriados', href: '/dashboard/academico/periodos' },
+    { label: 'Cadastro de Usuários', href: '/dashboard/admin/usuarios' },
+    { label: 'Consultar Arquivo de Log', href: null },
+  ]},
+  { title: 'Coordenação', items: [
+    { label: 'Consulta posição do Aluno', href: '/dashboard/academico/alunos' },
+    { label: 'Pré-requisito', href: '/dashboard/academico/disciplinas' },
+    { label: 'Matérias Equiparadas', href: null },
+    { label: 'Grade Curricular Fixa', href: '/dashboard/academico/matrizes' },
+    { label: 'Formação de Cursos', href: '/dashboard/academico/matrizes' },
+    { label: 'Formação de Turmas', href: '/dashboard/academico/ofertas' },
+    { label: 'Datas dos Bimestres', href: '/dashboard/academico/periodos' },
+    { label: 'Horário de Aulas', href: '/dashboard/academico/ofertas' },
+    { label: 'INEP', href: '/dashboard/relatorios/censo' },
+    { label: 'Ranking de Alunos', href: null },
+  ]},
+  { title: 'Secretaria', items: [
+    { label: 'Ingresso no Curso Superior', href: '/dashboard/ingresso/processos' },
+    { label: 'Inscrição', href: '/dashboard/ingresso/candidatos' },
+    { label: 'Manutenção Histórico Escolar', href: '/dashboard/academico/alunos' },
+    { label: 'Transferência de Turma', href: null },
+    { label: 'Mudança de Situação', href: null },
+    { label: 'Diário de Classe', href: '/dashboard/academico/notas' },
+    { label: 'Emissão de Boletim', href: '/dashboard/secretaria/documentos' },
+    { label: 'Relatório Notas/Disciplinas', href: '/dashboard/academico/mapao' },
+    { label: 'Mala Direta / Declarações', href: '/dashboard/secretaria/documentos' },
+  ]},
+  { title: 'Notas e Frequência', items: [
+    { label: 'Lançamento de Notas e Frequência por Pauta', href: '/dashboard/academico/notas' },
+    { label: 'Lançamento de Notas por Aluno', href: '/dashboard/academico/notas' },
+    { label: 'Lançamento de Frequência', href: '/dashboard/academico/notas' },
+    { label: 'Gerar Planilha de Notas', href: null },
+    { label: 'Importação Planilha Excel', href: null },
+    { label: 'Cálculo de Resultados', href: '/dashboard/academico/notas' },
+  ]},
+  { title: 'Financeiro', items: [
+    { label: 'Consulta posição do Aluno', href: '/dashboard/academico/alunos' },
+    { label: 'Lançamento Conta Corrente', href: null },
+    { label: 'Plano de Pagamentos', href: '/dashboard/financeiro/contratos' },
+    { label: 'Ficha Financeira', href: '/dashboard/financeiro/contratos' },
+    { label: 'Tesouraria', href: null },
+    { label: 'Acordo/Parcelamento', href: '/dashboard/financeiro/contratos' },
+    { label: 'Cadastro de Bolsistas', href: null },
+    { label: 'Emissão de Títulos', href: null },
+    { label: 'Relatórios', href: null },
+    { label: 'Contabilidade', href: null },
+  ]},
+  { title: 'Utilitários', items: [
+    { label: 'Calculadora', href: null },
+    { label: 'Visualizar Relatórios', href: '/dashboard/relatorios/censo' },
+    { label: 'Alteração de Senha', href: null },
+    { label: 'Exporta Moodle', href: null },
+  ]},
 ];
 
 export function RightPanel({ width = 220 }: { width?: number }) {

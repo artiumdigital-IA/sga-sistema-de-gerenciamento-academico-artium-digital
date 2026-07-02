@@ -31,6 +31,12 @@ export class MatriculaDisciplinaController {
     return this.service.findAll(alunoId, ofertaId);
   }
 
+  @Get('mapao/:ofertaId')
+  @ApiOperation({ summary: 'Mapão — notas e frequência de todos os alunos de uma oferta' })
+  mapao(@Param('ofertaId') ofertaId: string) {
+    return this.service.mapao(ofertaId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar matrícula por ID (inclui avaliações e resultado)' })
   findOne(@Param('id') id: string) {

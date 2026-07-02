@@ -19,6 +19,7 @@ import {
 import { DisciplinaService } from './disciplina.service';
 import { CreateDisciplinaDto } from './dto/create-disciplina.dto';
 import { UpdateDisciplinaDto } from './dto/update-disciplina.dto';
+import { AddPrerequisitoDto } from './dto/add-prerequisito.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
@@ -66,5 +67,36 @@ export class DisciplinaController {
   @ApiOperation({ summary: 'Remover disciplina' })
   remove(@Param('id') id: string, @Request() req: any) {
     return this.disciplinaService.remove(id, req.user?.id);
+  }
+
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Post(':id/prerequisitos')
+  @ApiOperation({ summary: 'Adicionar pré-requisito a uma disciplina' })
+  addPrerequisito(
+    @Param('id') id: string,
+    @Body() dto: AddPrerequisitoDto,
+    @Request() req: any,
+  ) {
+    return this.disciplinaService.addPrerequisito(
+      id,
+      dto.prerequisitoId,
+      req.user?.id,
+    );
+  }
+
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Delete(':id/prerequisitos/:prerequisitoId')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Remover pré-requisito de uma disciplina' })
+  removePrerequisito(
+    @Param('id') id: string,
+    @Param('prerequisitoId') prerequisitoId: string,
+    @Request() req: any,
+  ) {
+    return this.disciplinaService.removePrerequisito(
+      id,
+      prerequisitoId,
+      req.user?.id,
+    );
   }
 }

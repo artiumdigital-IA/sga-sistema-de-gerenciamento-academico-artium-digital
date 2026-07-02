@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -73,6 +74,9 @@ export class DisciplinaService {
         prerequisitos: {
           include: { prerequisito: { select: { id: true, codigo: true, nome: true } } },
         },
+        dependentes: {
+          include: { disciplina: { select: { id: true, codigo: true, nome: true } } },
+        },
       },
     });
     if (!disciplina) {
@@ -126,6 +130,109 @@ export class DisciplinaService {
       entidade: 'Disciplina',
       entidadeId: id,
       dadosAntes: antes,
+    });
+  }
+
+  /** Verifica se `alvoId` é alcançável a partir de `origemId` na cadeia de pré-requisitos
+   * (ou seja, se origemId depende, direta ou indiretamente, de alvoId). Usado pra barrar ciclos. */
+  private async dependeDe(origemId: string, alvoId: string): Promise<boolean> {
+    const visitados = new Set<string>();
+    let fila = [origemId];
+    while (fila.length) {
+      const vinculos = await this.prisma.disciplinaPrerequisito.findMany({
+        where: { disciplinaId: { in: fila } },
+        select: { prerequisitoId: true },
+      });
+      const proximos: string[] = [];
+      for (const v of vinculos) {
+        if (v.prerequisitoId === alvoId) return true;
+        if (!visitados.has(v.prerequisitoId)) {
+          visitados.add(v.prerequisitoId);
+          proximos.push(v.prerequisitoId);
+        }
+      }
+      fila = proximos;
+    }
+    return false;
+  }
+
+  async addPrerequisito(
+    disciplinaId: string,
+    prerequisitoId: string,
+    usuarioId?: string,
+  ) {
+    if (disciplinaId === prerequisitoId) {
+      throw new BadRequestException(
+        'Uma disciplina não pode ser pré-requisito de si mesma.',
+      );
+    }
+
+    const [disciplina, prerequisito] = await Promise.all([
+      this.prisma.disciplina.findUnique({ where: { id: disciplinaId } }),
+      this.prisma.disciplina.findUnique({ where: { id: prerequisitoId } }),
+    ]);
+    if (!disciplina) {
+      throw new NotFoundException(`Disciplina "${disciplinaId}" não encontrada.`);
+    }
+    if (!prerequisito) {
+      throw new NotFoundException(`Disciplina "${prerequisitoId}" não encontrada.`);
+    }
+
+    const existente = await this.prisma.disciplinaPrerequisito.findUnique({
+      where: {
+        disciplinaId_prerequisitoId: { disciplinaId, prerequisitoId },
+      },
+    });
+    if (existente) {
+      throw new ConflictException('Esse pré-requisito já está cadastrado.');
+    }
+
+    // Se o pré-requisito escolhido já depende (direta ou indiretamente) da própria
+    // disciplina, cadastrar o vínculo criaria um ciclo — bloqueia.
+    if (await this.dependeDe(prerequisitoId, disciplinaId)) {
+      throw new BadRequestException(
+        'Esse vínculo criaria uma dependência circular entre disciplinas.',
+      );
+    }
+
+    const vinculo = await this.prisma.disciplinaPrerequisito.create({
+      data: { disciplinaId, prerequisitoId },
+      include: { prerequisito: { select: { id: true, codigo: true, nome: true } } },
+    });
+
+    await this.audit.log({
+      usuarioId,
+      acao: 'CREATE',
+      entidade: 'DisciplinaPrerequisito',
+      entidadeId: vinculo.id,
+      dadosDepois: vinculo,
+    });
+
+    return vinculo;
+  }
+
+  async removePrerequisito(
+    disciplinaId: string,
+    prerequisitoId: string,
+    usuarioId?: string,
+  ) {
+    const vinculo = await this.prisma.disciplinaPrerequisito.findUnique({
+      where: {
+        disciplinaId_prerequisitoId: { disciplinaId, prerequisitoId },
+      },
+    });
+    if (!vinculo) {
+      throw new NotFoundException('Vínculo de pré-requisito não encontrado.');
+    }
+
+    await this.prisma.disciplinaPrerequisito.delete({ where: { id: vinculo.id } });
+
+    await this.audit.log({
+      usuarioId,
+      acao: 'DELETE',
+      entidade: 'DisciplinaPrerequisito',
+      entidadeId: vinculo.id,
+      dadosAntes: vinculo,
     });
   }
 }

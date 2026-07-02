@@ -23,7 +23,7 @@ export default function DocumentosPage() {
   return (
     <div style={{ padding: '24px 28px' }}>
       <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 600 }}>Documentos</h2>
-      <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>Busque o aluno para gerar a declaração de matrícula.</p>
+      <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>Busque o aluno para gerar a declaração de matrícula ou o boletim.</p>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <input
@@ -56,11 +56,18 @@ export default function DocumentosPage() {
                   <td style={{ padding: '8px 12px', fontSize: 13, borderBottom: '1px solid #f3f4f6' }}>{a.ra}</td>
                   <td style={{ padding: '8px 12px', fontSize: 13, borderBottom: '1px solid #f3f4f6', color: '#6b7280' }}>{a.curso?.nome ?? '—'}</td>
                   <td style={{ padding: '8px 12px', borderBottom: '1px solid #f3f4f6' }}>
-                    <button
-                      onClick={() => router.push(`/dashboard/secretaria/documentos/declaracao/${a.id}`)}
-                      style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #3b82f6', borderRadius: 4, cursor: 'pointer', background: '#eff6ff', color: '#2563eb' }}>
-                      Declaração de Matrícula
-                    </button>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => router.push(`/dashboard/secretaria/documentos/declaracao/${a.id}`)}
+                        style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #3b82f6', borderRadius: 4, cursor: 'pointer', background: '#eff6ff', color: '#2563eb' }}>
+                        Declaração de Matrícula
+                      </button>
+                      <button
+                        onClick={() => router.push(`/dashboard/secretaria/documentos/boletim/${a.id}`)}
+                        style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #16a34a', borderRadius: 4, cursor: 'pointer', background: '#f0fdf4', color: '#15803d' }}>
+                        Boletim
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
