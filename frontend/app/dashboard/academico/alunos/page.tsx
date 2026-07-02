@@ -338,10 +338,16 @@ export default function AlunosPage() {
                       </div>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
-                      <button style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #1a56db', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#1a56db', fontWeight: 500 }}
-                        onClick={() => router.push(`/dashboard/academico/historico/${a.id}`)}>
-                        Histórico →
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #1a56db', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#1a56db', fontWeight: 500 }}
+                          onClick={() => router.push(`/dashboard/academico/historico/${a.id}`)}>
+                          Histórico →
+                        </button>
+                        <button style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #dc2626', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#dc2626', fontWeight: 500 }}
+                          onClick={() => router.push(`/dashboard/academico/saude/${a.id}`)}>
+                          Saúde
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

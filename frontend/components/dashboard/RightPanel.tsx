@@ -9,7 +9,7 @@ import { MessagesPanel } from './MessagesPanel';
 const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
   { title: 'Arquivos', items: [
     { label: 'Cadastro de Alunos', href: '/dashboard/academico/alunos' },
-    { label: 'Ficha de Saúde', href: null },
+    { label: 'Ficha de Saúde', href: '/dashboard/academico/alunos' },
     { label: 'Digitalização de Documentos', href: null },
     { label: 'Cursos', href: '/dashboard/academico/cursos' },
     { label: 'Matérias', href: '/dashboard/academico/disciplinas' },
@@ -18,7 +18,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Unidade de Ensino', href: null },
     { label: 'Contas Financeiras', href: '/dashboard/financeiro/contratos' },
     { label: 'Receitas', href: null },
-    { label: 'Contas Bancárias', href: null },
+    { label: 'Contas Bancárias', href: '/dashboard/financeiro/contas-bancarias' },
     { label: 'Calendário/Feriados', href: '/dashboard/academico/periodos' },
     { label: 'Cadastro de Usuários', href: '/dashboard/admin/usuarios' },
     { label: 'Consultar Arquivo de Log', href: null },
@@ -33,7 +33,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Datas dos Bimestres', href: '/dashboard/academico/periodos' },
     { label: 'Horário de Aulas', href: '/dashboard/academico/ofertas' },
     { label: 'INEP', href: '/dashboard/relatorios/censo' },
-    { label: 'Ranking de Alunos', href: null },
+    { label: 'Ranking de Alunos', href: '/dashboard/academico/ranking' },
   ]},
   { title: 'Secretaria', items: [
     { label: 'Ingresso no Curso Superior', href: '/dashboard/ingresso/processos' },
@@ -67,7 +67,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Contabilidade', href: null },
   ]},
   { title: 'Utilitários', items: [
-    { label: 'Calculadora', href: null },
+    { label: 'Calculadora', href: '/dashboard/utilitarios/calculadora' },
     { label: 'Visualizar Relatórios', href: '/dashboard/relatorios/censo' },
     { label: 'Alteração de Senha', href: '/dashboard?view=conta' },
     { label: 'Exporta Moodle', href: null },

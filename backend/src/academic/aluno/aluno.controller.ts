@@ -27,6 +27,13 @@ export class AlunoController {
     return this.service.findAll(cursoId);
   }
 
+  @Get('ranking')
+  @ApiQuery({ name: 'cursoId', required: false })
+  @ApiOperation({ summary: 'Ranking de alunos por CR (opcional: filtrar por cursoId)' })
+  ranking(@Query('cursoId') cursoId?: string) {
+    return this.service.ranking(cursoId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar aluno por ID' })
   findOne(@Param('id') id: string) {

@@ -9,6 +9,7 @@ import { OfertaModule } from './oferta/oferta.module';
 import { MatriculaDisciplinaModule } from './matricula-disciplina/matricula-disciplina.module';
 import { AvaliacaoModule } from './avaliacao/avaliacao.module';
 import { ResultadoDisciplinaModule } from './resultado-disciplina/resultado-disciplina.module';
+import { FichaSaudeModule } from './ficha-saude/ficha-saude.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ResultadoDisciplinaModule } from './resultado-disciplina/resultado-disc
     MatriculaDisciplinaModule,
     AvaliacaoModule,
     ResultadoDisciplinaModule,
+    FichaSaudeModule,
   ],
   exports: [
     CursoModule,
@@ -34,6 +36,7 @@ import { ResultadoDisciplinaModule } from './resultado-disciplina/resultado-disc
     MatriculaDisciplinaModule,
     AvaliacaoModule,
     ResultadoDisciplinaModule,
+    FichaSaudeModule,
   ],
 })
 export class AcademicModule {}

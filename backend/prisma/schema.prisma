@@ -177,6 +177,7 @@ model Aluno {
   consentimentos   ConsentimentoLgpd[]
   requerimentos    Requerimento[]
   contratos        ContratoMatricula[]
+  fichaSaude       FichaSaude?
 
   @@map("alunos")
 }
@@ -641,4 +642,53 @@ enum TagAviso {
   GERAL
   IMPORTANTE
   APENAS_EQUIPE
+}
+
+// ── Ficha de Saúde ──────────────────────────────────────────────
+// Dado sensível (LGPD, art. 5º II) — acesso restrito a ADMIN/SECRETARIA,
+// nunca exposto a PROFESSOR/ALUNO via API.
+model FichaSaude {
+  id                        String   @id @default(uuid())
+  alunoId                   String   @unique
+  aluno                     Aluno    @relation(fields: [alunoId], references: [id])
+  tipoSanguineo             String?
+  alergias                  String?  @db.Text
+  medicamentosUso           String?  @db.Text
+  deficiencia               String?  // texto livre; ex.: "Auditiva, Visual" (achado da Kirsch)
+  planoSaude                String?
+  contatoEmergenciaNome     String?
+  contatoEmergenciaTelefone String?
+  observacoes               String?  @db.Text
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("fichas_saude")
+}
+
+// ── Contas Bancárias ────────────────────────────────────────────
+// Cadastro interno de contas da instituição (base pra conciliação futura
+// com Asaas na Fase 6b). Não é conta de aluno/fornecedor.
+model ContaBancaria {
+  id             String            @id @default(uuid())
+  banco          String
+  agencia        String
+  numeroConta    String
+  tipoConta      TipoContaBancaria @default(CORRENTE)
+  titular        String
+  cnpjCpfTitular String?
+  saldoInicial   Decimal           @default(0) @db.Decimal(12, 2)
+  ativa          Boolean           @default(true)
+  observacoes    String?           @db.Text
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("contas_bancarias")
+}
+
+enum TipoContaBancaria {
+  CORRENTE
+  POUPANCA
+  PAGAMENTO
 }

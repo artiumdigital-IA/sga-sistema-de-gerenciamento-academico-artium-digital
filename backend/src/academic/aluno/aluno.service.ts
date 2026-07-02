@@ -138,6 +138,46 @@ export class AlunoService {
     return { message: 'Aluno removido.' };
   }
   /**
+   * Ranking de alunos por CR (coeficiente de rendimento), opcionalmente filtrado por curso.
+   * Reaproveita a mesma regra de cálculo do histórico (calcularCR): só disciplinas APROVADO
+   * entram na conta, DP fica fora. Alunos sem nenhuma disciplina cursada não aparecem.
+   */
+  async ranking(cursoId?: string) {
+    const alunos = await this.prisma.aluno.findMany({
+      where: cursoId ? { cursoId } : undefined,
+      include: {
+        curso: { select: { nome: true } },
+        matriculas: {
+          include: {
+            oferta: { include: { disciplina: { select: { creditos: true } } } },
+            resultado: true,
+          },
+        },
+      },
+    });
+
+    const linhas = alunos
+      .map(a => {
+        const cr = this.calcularCR(a.matriculas);
+        const aprovadas = a.matriculas.filter(m => m.resultado?.situacao === 'APROVADO').length;
+        return {
+          id: a.id,
+          ra: a.ra,
+          nome: a.nome,
+          curso: a.curso.nome,
+          situacaoVinculo: a.situacaoVinculo,
+          cr,
+          aprovadas,
+          totalDisciplinas: a.matriculas.length,
+        };
+      })
+      .filter(l => l.totalDisciplinas > 0)
+      .sort((x, y) => y.cr - x.cr);
+
+    return linhas.map((l, i) => ({ posicao: i + 1, ...l }));
+  }
+
+  /**
    * Histórico acadêmico do aluno:
    * todas as matrículas com resultado consolidado + avaliações
    */
