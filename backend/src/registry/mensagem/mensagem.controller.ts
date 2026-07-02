@@ -2,12 +2,45 @@ import { Controller, Get, Post, Patch, Body, Param, Request } from '@nestjs/comm
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { MensagemService } from './mensagem.service';
 import { CreateMensagemDto } from './dto/create-mensagem.dto';
+import { EnviarConversaDto } from './dto/enviar-conversa.dto';
 
 @ApiTags('Mensagens')
 @ApiBearerAuth()
 @Controller('mensagens')
 export class MensagemController {
   constructor(private readonly service: MensagemService) {}
+
+  // ── Painel de comunicação (conversa 1-a-1, "Mensagens" na Barra Rápida) ──
+  // Rotas literais ('conversas', 'contatos') declaradas antes de 'conversas/:usuarioId'
+  // pra evitar o Nest casar errado (mesmo cuidado de sempre nesse projeto).
+
+  @Get('contatos')
+  @ApiOperation({ summary: 'Lista mínima de usuários pra iniciar uma nova conversa' })
+  contatos() {
+    return this.service.listarContatos();
+  }
+
+  @Get('conversas')
+  @ApiOperation({ summary: 'Minhas conversas (última mensagem + não lidas por contato)' })
+  conversas(@Request() req: { user?: { id?: string } }) {
+    return this.service.listarConversas(req.user!.id!);
+  }
+
+  @Get('conversas/:usuarioId')
+  @ApiOperation({ summary: 'Thread de mensagens com um usuário — marca como lidas ao abrir' })
+  async conversaCom(@Param('usuarioId') usuarioId: string, @Request() req: { user?: { id?: string } }) {
+    const thread = await this.service.mensagensCom(req.user!.id!, usuarioId);
+    await this.service.marcarConversaLida(req.user!.id!, usuarioId);
+    return thread;
+  }
+
+  @Post('conversas/:usuarioId')
+  @ApiOperation({ summary: 'Enviar mensagem numa conversa' })
+  enviarConversa(@Param('usuarioId') usuarioId: string, @Body() dto: EnviarConversaDto, @Request() req: { user?: { id?: string } }) {
+    return this.service.enviarConversa(req.user!.id!, usuarioId, dto);
+  }
+
+  // ── Compor/manutenção "broadcast" (tela dedicada em Secretaria > Mensagens) ──
 
   @Post()
   @ApiOperation({ summary: 'Compor mensagem direcionada a um usuário' })

@@ -1,14 +1,17 @@
-import { IsString, IsUUID } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateMensagemDto {
   @ApiProperty()
   @IsUUID()
   destinatarioId: string;
 
-  @ApiProperty({ example: 'Pendência de documentação' })
+  // Opcional: mensagens de conversa (chat) nao precisam de assunto. A tela de
+  // "Compor Mensagens" (broadcast, nao-conversa) continua podendo informar.
+  @ApiPropertyOptional({ example: 'Pendência de documentação' })
+  @IsOptional()
   @IsString()
-  assunto: string;
+  assunto?: string;
 
   @ApiProperty()
   @IsString()
