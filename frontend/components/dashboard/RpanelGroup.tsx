@@ -1,5 +1,4 @@
 'use client';
-import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export interface RpanelItem {
@@ -8,15 +7,15 @@ export interface RpanelItem {
   href: string | null;
 }
 
-export function RpanelGroup({ title, items }: { title: string; items: RpanelItem[] }) {
+export function RpanelGroup({ title, items, open, onToggle }: {
+  title: string; items: RpanelItem[]; open: boolean; onToggle: () => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const hasActive = items.some(i => i.href && pathname.startsWith(i.href));
-  const [open, setOpen] = useState(hasActive);
 
   return (
     <div style={{ borderBottom: '1px solid var(--gray-200)' }}>
-      <div onClick={() => setOpen(o => !o)} style={{
+      <div onClick={onToggle} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '8px 10px', cursor: 'pointer', fontSize: 11.5, fontWeight: 600,
         color: 'var(--gray-700)', userSelect: 'none',

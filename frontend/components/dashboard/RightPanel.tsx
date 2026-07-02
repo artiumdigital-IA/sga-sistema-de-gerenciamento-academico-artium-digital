@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { RpanelGroup, type RpanelItem } from './RpanelGroup';
 import { MessagesPanel } from './MessagesPanel';
 
@@ -132,6 +133,9 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
 
 export function RightPanel({ width = 220 }: { width?: number }) {
   const [tab, setTab] = useState<'barra' | 'msg'>('barra');
+  const pathname = usePathname();
+  const initialOpen = RPANEL_GROUPS.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
+  const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
 
   return (
     <div style={{
@@ -160,7 +164,11 @@ export function RightPanel({ width = 220 }: { width?: number }) {
       {/* Conteudo */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'barra'
-          ? RPANEL_GROUPS.map(g => <RpanelGroup key={g.title} title={g.title} items={g.items} />)
+          ? RPANEL_GROUPS.map(g => (
+              <RpanelGroup key={g.title} title={g.title} items={g.items}
+                open={openTitle === g.title}
+                onToggle={() => setOpenTitle(t => t === g.title ? null : g.title)} />
+            ))
           : <MessagesPanel />
         }
       </div>
