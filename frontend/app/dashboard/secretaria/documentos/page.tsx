@@ -72,6 +72,11 @@ export default function DocumentosPage() {
                         style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #7c3aed', borderRadius: 4, cursor: 'pointer', background: '#f5f3ff', color: '#6d28d9' }}>
                         Carteirinha
                       </button>
+                      <button
+                        onClick={() => router.push(`/dashboard/secretaria/documentos/historico-oficial/${a.id}`)}
+                        style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #d97706', borderRadius: 4, cursor: 'pointer', background: '#fffbeb', color: '#b45309' }}>
+                        Histórico Escolar
+                      </button>
                     </div>
                   </td>
                 </tr>

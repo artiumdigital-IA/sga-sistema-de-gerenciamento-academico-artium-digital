@@ -29,4 +29,10 @@ export class DocumentoController {
   getCarteirinha(@Param('alunoId') alunoId: string) {
     return this.service.getCarteirinha(alunoId);
   }
+
+  @Get('historico-oficial/:alunoId')
+  @ApiOperation({ summary: 'Dados para Histórico Escolar Oficial (por período, CR e integralização)' })
+  getHistoricoOficial(@Param('alunoId') alunoId: string) {
+    return this.service.getHistoricoOficial(alunoId);
+  }
 }

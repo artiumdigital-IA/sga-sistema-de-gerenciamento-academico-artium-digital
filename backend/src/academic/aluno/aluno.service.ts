@@ -249,13 +249,54 @@ export class AlunoService {
     });
 
     const cr = this.calcularCR(matriculas);
+    const integralizacao = this.calcularIntegralizacao(matriculas, aluno.curso.cargaHorariaTotal);
 
     return {
       aluno: { id: aluno.id, ra: aluno.ra, nome: aluno.nome, situacaoVinculo: aluno.situacaoVinculo },
       cr,
+      integralizacao,
       totalDisciplinas: matriculas.length,
       aprovadas: matriculas.filter(m => m.resultado?.situacao === 'APROVADO').length,
       matriculas,
+    };
+  }
+
+  /**
+   * Integralização = CH já cursada e aprovada / CH total exigida pelo curso.
+   * Regra confirmada com a secretaria (Jul/2026): soma a carga horária de cada
+   * DISCIPLINA distinta com pelo menos um resultado APROVADO, deduplicada por
+   * disciplinaId pra não contar a CH duas vezes quando o aluno reprovou e depois
+   * passou em DP (a CH da disciplina só integraliza uma vez, mesmo cursada 2x).
+   * Diferente do CR (que exclui DP do cálculo da média), a integralização INCLUI
+   * a CH de disciplinas aprovadas via DP: o que importa aqui é só "já cursou e
+   * passou", não a via pela qual passou.
+   * Dado sempre CALCULADO na hora a partir de MatriculaDisciplina + Curso.cargaHorariaTotal,
+   * nunca armazenado: evita ficar desatualizado se uma nota for corrigida depois.
+   */
+  private calcularIntegralizacao(
+    matriculas: Array<{
+      resultado: { situacao: string } | null;
+      oferta: { disciplina: { id: string; cargaHoraria: number } };
+    }>,
+    chTotalCurso: number,
+  ): { chIntegralizada: number; chTotalCurso: number; percentual: number; disciplinasIntegralizadas: number } {
+    const disciplinasAprovadas = new Map<string, number>();
+
+    for (const m of matriculas) {
+      if (m.resultado?.situacao !== 'APROVADO') continue;
+      disciplinasAprovadas.set(m.oferta.disciplina.id, m.oferta.disciplina.cargaHoraria);
+    }
+
+    const chIntegralizada = Array.from(disciplinasAprovadas.values()).reduce((soma, ch) => soma + ch, 0);
+    const percentual = chTotalCurso > 0
+      ? Math.round((chIntegralizada / chTotalCurso) * 1000) / 10
+      : 0;
+
+    return {
+      chIntegralizada,
+      chTotalCurso,
+      percentual: Math.min(percentual, 100),
+      disciplinasIntegralizadas: disciplinasAprovadas.size,
     };
   }
 

@@ -51,6 +51,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Emissão de Boletim', href: '/dashboard/secretaria/documentos' },
     { label: 'Relatório Notas/Disciplinas', href: '/dashboard/academico/mapao' },
     { label: 'Emissão de Carteirinha', href: '/dashboard/secretaria/documentos' },
+    { label: 'Emissão de Histórico Escolar', href: '/dashboard/secretaria/documentos' },
     { label: 'Carômetro', href: null },
     { label: 'Etiqueta', href: null },
     { label: 'Mala Direta / Declarações', href: '/dashboard/secretaria/documentos' },

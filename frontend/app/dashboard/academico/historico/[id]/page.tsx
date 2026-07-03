@@ -18,9 +18,16 @@ interface Matricula {
   avaliacoes: Avaliacao[];
   resultado: Resultado | null;
 }
+interface Integralizacao {
+  chIntegralizada: number;
+  chTotalCurso: number;
+  percentual: number;
+  disciplinasIntegralizadas: number;
+}
 interface Historico {
   aluno: { id: string; ra: string; nome: string; situacaoVinculo: string; };
   cr: number;
+  integralizacao: Integralizacao;
   totalDisciplinas: number;
   aprovadas: number;
   matriculas: Matricula[];
@@ -98,11 +105,30 @@ export default function HistoricoPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
         <StatCard label="CR" value={historico.cr > 0 ? historico.cr.toFixed(2) : '—'} color="#1a56db" />
         <StatCard label="Aprovadas" value={historico.aprovadas} color="#16a34a" />
         <StatCard label="Reprovadas" value={reprovadas} color="#dc2626" />
         <StatCard label="Em andamento" value={pendentes} color="#d97706" />
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '14px 16px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>Integralização do curso</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#1a56db' }}>
+            {historico.integralizacao.percentual}%
+            <span style={{ fontSize: 11, fontWeight: 400, color: '#6b7280', marginLeft: 6 }}>
+              ({historico.integralizacao.chIntegralizada}h / {historico.integralizacao.chTotalCurso}h — {historico.integralizacao.disciplinasIntegralizadas} disciplina{historico.integralizacao.disciplinasIntegralizadas !== 1 ? 's' : ''} aprovada{historico.integralizacao.disciplinasIntegralizadas !== 1 ? 's' : ''})
+            </span>
+          </span>
+        </div>
+        <div style={{ height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.min(historico.integralizacao.percentual, 100)}%`, background: historico.integralizacao.percentual >= 100 ? '#16a34a' : '#1a56db', borderRadius: 4 }} />
+        </div>
+        <p style={{ fontSize: 10.5, color: '#9ca3af', margin: '8px 0 0', lineHeight: 1.4 }}>
+          Soma a carga horária de cada disciplina distinta já aprovada (inclusive via DP, contada uma única vez)
+          sobre a carga horária total exigida pelo curso. Dado calculado a cada acesso, não armazenado.
+        </p>
       </div>
 
       {sortedPeriodos.length === 0 && (

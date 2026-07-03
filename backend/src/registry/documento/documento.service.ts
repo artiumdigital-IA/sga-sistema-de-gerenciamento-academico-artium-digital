@@ -158,4 +158,147 @@ export class DocumentoService {
       geradoEm: new Date().toISOString(),
     };
   }
+
+  /**
+   * Histórico Escolar Oficial — documento imprimível no layout dos modelos de referência
+   * trazidos pela secretaria (histórico real da Kirsch + modelo fictício de Direito, Jul/2026):
+   * cabeçalho institucional, dados do aluno, tabela por período (disciplina/professor/titulação/
+   * créditos/CH/média/resultado) com totais por período, e Média Global (CR) + Integralização
+   * no rodapé. CR e Integralização são recalculados aqui (mesma regra de
+   * `AlunoService.calcularCR`/`calcularIntegralizacao`) — dado sempre gerado na hora, nunca
+   * armazenado, pra nunca destoar de uma nota corrigida depois.
+   */
+  async getHistoricoOficial(alunoId: string) {
+    const aluno = await this.prisma.aluno.findUnique({
+      where: { id: alunoId },
+      include: {
+        curso: true,
+        matrizCurricular: true,
+      },
+    });
+    if (!aluno) throw new NotFoundException('Aluno não encontrado');
+
+    const matriculas = await this.prisma.matriculaDisciplina.findMany({
+      where: { alunoId },
+      include: {
+        oferta: {
+          include: {
+            disciplina: true,
+            periodoLetivo: true,
+            professor: { select: { nome: true, titulacao: true } },
+          },
+        },
+        resultado: true,
+      },
+      orderBy: { dataMatricula: 'asc' },
+    });
+
+    // Agrupa por período letivo (ano/semestre), ordenado cronologicamente
+    const periodosMap = new Map<string, {
+      periodoLetivoId: string; ano: number; semestre: string;
+      disciplinas: any[]; totalCreditos: number; totalCh: number;
+    }>();
+    for (const m of matriculas) {
+      const p = m.oferta.periodoLetivo;
+      const key = `${p.ano}-${p.semestre}`;
+      if (!periodosMap.has(key)) {
+        periodosMap.set(key, {
+          periodoLetivoId: p.id, ano: p.ano, semestre: p.semestre,
+          disciplinas: [], totalCreditos: 0, totalCh: 0,
+        });
+      }
+      const grupo = periodosMap.get(key)!;
+      grupo.disciplinas.push({
+        nome: m.oferta.disciplina.nome,
+        codigo: m.oferta.disciplina.codigo,
+        professor: m.oferta.professor?.nome ?? '—',
+        titulacao: m.oferta.professor?.titulacao ?? null,
+        creditos: m.oferta.disciplina.creditos,
+        cargaHoraria: m.oferta.disciplina.cargaHoraria,
+        mediaFinal: m.resultado?.mediaFinal ?? null,
+        situacao: m.resultado?.situacao ?? null,
+        isDependencia: m.isDependencia,
+        statusMatricula: m.status,
+      });
+      grupo.totalCreditos += m.oferta.disciplina.creditos;
+      grupo.totalCh += m.oferta.disciplina.cargaHoraria;
+    }
+    const periodos = Array.from(periodosMap.values()).sort((a, b) => a.ano - b.ano || a.semestre.localeCompare(b.semestre));
+
+    const cr = this.calcularCR(matriculas);
+    const integralizacao = this.calcularIntegralizacao(matriculas, aluno.curso.cargaHorariaTotal);
+
+    return {
+      aluno: {
+        id: aluno.id,
+        ra: aluno.ra,
+        nome: aluno.nome,
+        cpf: aluno.cpf,
+        dataNascimento: aluno.dataNascimento,
+        sexo: aluno.sexo,
+        nacionalidade: aluno.nacionalidade,
+        formaIngresso: aluno.formaIngresso,
+        dataIngresso: aluno.dataIngresso,
+        situacaoVinculo: aluno.situacaoVinculo,
+      },
+      curso: {
+        nome: aluno.curso.nome,
+        grau: aluno.curso.grau,
+        modalidade: aluno.curso.modalidade,
+        codigoEmec: aluno.curso.codigoEmec,
+        cargaHorariaTotal: aluno.curso.cargaHorariaTotal,
+      },
+      matriz: aluno.matrizCurricular
+        ? { versao: aluno.matrizCurricular.versao, anoVigencia: aluno.matrizCurricular.anoVigencia }
+        : null,
+      periodos,
+      cr,
+      integralizacao,
+      geradoEm: new Date().toISOString(),
+    };
+  }
+
+  /** Mesma regra de `AlunoService.calcularCR` — duplicada aqui pra manter o DocumentoService
+   * autocontido (padrão já usado pelos outros métodos desta classe: consulta direto via Prisma,
+   * sem depender de outro módulo). */
+  private calcularCR(matriculas: Array<{
+    isDependencia: boolean;
+    resultado: { mediaFinal: unknown; situacao: string } | null;
+    oferta: { disciplina: { creditos: number } };
+  }>): number {
+    let somaPonderada = 0;
+    let somaCreditos = 0;
+    for (const m of matriculas) {
+      if (m.isDependencia) continue;
+      if (!m.resultado || m.resultado.situacao !== 'APROVADO') continue;
+      const media = Number(m.resultado.mediaFinal);
+      const creditos = m.oferta.disciplina.creditos;
+      somaPonderada += media * creditos;
+      somaCreditos += creditos;
+    }
+    return somaCreditos > 0 ? Math.round((somaPonderada / somaCreditos) * 100) / 100 : 0;
+  }
+
+  /** Mesma regra de `AlunoService.calcularIntegralizacao` — ver nota acima. */
+  private calcularIntegralizacao(
+    matriculas: Array<{
+      resultado: { situacao: string } | null;
+      oferta: { disciplina: { id: string; cargaHoraria: number } };
+    }>,
+    chTotalCurso: number,
+  ): { chIntegralizada: number; chTotalCurso: number; percentual: number; disciplinasIntegralizadas: number } {
+    const disciplinasAprovadas = new Map<string, number>();
+    for (const m of matriculas) {
+      if (m.resultado?.situacao !== 'APROVADO') continue;
+      disciplinasAprovadas.set(m.oferta.disciplina.id, m.oferta.disciplina.cargaHoraria);
+    }
+    const chIntegralizada = Array.from(disciplinasAprovadas.values()).reduce((soma, ch) => soma + ch, 0);
+    const percentual = chTotalCurso > 0 ? Math.round((chIntegralizada / chTotalCurso) * 1000) / 10 : 0;
+    return {
+      chIntegralizada,
+      chTotalCurso,
+      percentual: Math.min(percentual, 100),
+      disciplinasIntegralizadas: disciplinasAprovadas.size,
+    };
+  }
 }
