@@ -30,6 +30,15 @@ interface StatusData {
     falhas24h: number;
     sucessos24h: number;
   };
+  sessoes: {
+    totalLogados: number;
+    totalUsuarios: number;
+    janelaSessaoMs: number;
+    usuarios: {
+      id: string; nome: string | null; email: string; perfil: string;
+      logado: boolean; ultimoLogin: string | null; tempoLogadoSegundos: number | null;
+    }[];
+  };
   auditoriaRecente: { id: string; acao: string; entidade: string; entidadeId: string | null; criadoEm: string; usuario: { email: string; nome?: string | null } | null }[];
   geradoEm: string;
 }
@@ -53,6 +62,9 @@ function formatUptime(segundos: number): string {
 }
 
 const PASTA_LABEL: Record<string, string> = { avatars: 'Fotos de perfil', documentos: 'Documentos de alunos' };
+const PERFIL_LABEL: Record<string, string> = {
+  ADMIN: 'Admin', SECRETARIA: 'Secretaria', FINANCEIRO: 'Financeiro', PROFESSOR: 'Professor', ALUNO: 'Aluno',
+};
 const LOGIN_MOTIVO_LABEL: Record<string, string> = {
   usuario_nao_encontrado: 'e-mail não cadastrado', usuario_inativo_ou_bloqueado: 'usuário inativo/bloqueado',
   senha_invalida: 'senha inválida', mfa_ausente: 'MFA não informado', mfa_invalido: 'código MFA inválido',
@@ -208,7 +220,7 @@ export default function PainelSistemaPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
         {/* Uploads */}
         <div style={CARD}>
           <h3 style={TITLE}>Armazenamento de Uploads</h3>
@@ -248,6 +260,42 @@ export default function PainelSistemaPage() {
               );
             })}
           </div>
+        </div>
+
+        {/* Usuários Logados */}
+        <div style={CARD}>
+          <h3 style={TITLE}>Usuários Logados</h3>
+          <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#065f46' }}>{data.sessoes.totalLogados}</div>
+              <div style={{ fontSize: 10.5, color: '#6b7280' }}>Logados agora</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#374151' }}>{data.sessoes.totalUsuarios}</div>
+              <div style={{ fontSize: 10.5, color: '#6b7280' }}>Usuários ativos</div>
+            </div>
+          </div>
+          <div style={{ maxHeight: 150, overflowY: 'auto' }}>
+            {data.sessoes.usuarios.length === 0 && <p style={{ fontSize: 11, color: '#9ca3af' }}>Nenhum usuário ativo.</p>}
+            {data.sessoes.usuarios.map(u => (
+              <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, padding: '3px 0', borderBottom: '1px solid #f3f4f6', gap: 8 }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <Dot ok={u.logado} /> {u.nome || u.email} <span style={{ color: '#9ca3af' }}>· {PERFIL_LABEL[u.perfil] ?? u.perfil}</span>
+                </span>
+                <span style={{ flexShrink: 0, color: u.logado ? '#065f46' : '#9ca3af' }}>
+                  {u.logado
+                    ? `há ${formatUptime(u.tempoLogadoSegundos ?? 0)}`
+                    : u.ultimoLogin
+                      ? `últ.: ${new Date(u.ultimoLogin).toLocaleDateString('pt-BR')} ${new Date(u.ultimoLogin).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+                      : 'nunca logou'}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 10, color: '#9ca3af', margin: '8px 0 0', lineHeight: 1.4 }}>
+            Aproximação: sem sessão no servidor (JWT puro), "logado" = fez login há menos tempo que a validade
+            do token. Não detecta logout manual antes do token expirar.
+          </p>
         </div>
       </div>
 

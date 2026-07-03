@@ -14,11 +14,12 @@ export class SystemService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getStatus() {
-    const [banco, contagens, auditoriaRecente, login] = await Promise.all([
+    const [banco, contagens, auditoriaRecente, login, sessoes] = await Promise.all([
       this.getBancoInfo(),
       this.getContagens(),
       this.getAuditoriaRecente(),
       this.getLoginInfo(),
+      this.getSessoesUsuarios(),
     ]);
 
     return {
@@ -29,6 +30,7 @@ export class SystemService {
       banco,
       contagens,
       login,
+      sessoes,
       auditoriaRecente,
       geradoEm: new Date().toISOString(),
     };
@@ -232,5 +234,81 @@ export class SystemService {
     ]);
 
     return { recentes, falhas24h, sucessos24h };
+  }
+
+  /**
+   * "Usuários logados" — aproximação, não é presença em tempo real. O sistema usa
+   * JWT sem sessão guardada no servidor (nenhuma tabela de sessões/refresh token),
+   * então não há como saber com certeza se um token ainda está sendo usado agora.
+   * A heurística: pega o login (`LOGIN` na Auditoria) mais recente de cada usuário;
+   * se esse login aconteceu há menos tempo que `JWT_EXPIRES_IN`, o token dele ainda
+   * não expirou — consideramos "logado" e mostramos há quanto tempo. Se já passou
+   * desse prazo (ou nunca logou), consideramos "offline" e mostramos a última vez
+   * que logou (ou "nunca" se não há registro). Não detecta logout manual antes do
+   * token expirar — o usuário pode ter clicado "Sair" e ainda aparecer como
+   * "logado" aqui até o token expirar de verdade.
+   */
+  private async getSessoesUsuarios() {
+    const sessaoMs = this.parseExpiresInMs(process.env.JWT_EXPIRES_IN ?? '1d');
+    const agora = Date.now();
+
+    const [usuarios, ultimosLogins] = await Promise.all([
+      this.prisma.usuario.findMany({
+        where: { status: 'ATIVO' },
+        select: { id: true, nome: true, email: true, perfil: true },
+        orderBy: { email: 'asc' },
+      }),
+      this.prisma.$queryRaw<{ usuarioId: string; ultimoLogin: Date }[]>`
+        SELECT DISTINCT ON ("usuarioId") "usuarioId", "criadoEm" as "ultimoLogin"
+        FROM auditorias
+        WHERE acao = 'LOGIN' AND "usuarioId" IS NOT NULL
+        ORDER BY "usuarioId", "criadoEm" DESC
+      `,
+    ]);
+
+    const ultimoLoginPorUsuario = new Map(ultimosLogins.map(l => [l.usuarioId, l.ultimoLogin]));
+
+    const sessoes = usuarios.map(u => {
+      const ultimoLogin = ultimoLoginPorUsuario.get(u.id) ?? null;
+      const desdeMs = ultimoLogin ? agora - new Date(ultimoLogin).getTime() : null;
+      const logado = desdeMs !== null && desdeMs < sessaoMs;
+      return {
+        id: u.id,
+        nome: u.nome,
+        email: u.email,
+        perfil: u.perfil,
+        logado,
+        ultimoLogin,
+        tempoLogadoSegundos: logado ? Math.round((desdeMs as number) / 1000) : null,
+      };
+    });
+
+    sessoes.sort((a, b) => {
+      if (a.logado !== b.logado) return a.logado ? -1 : 1;
+      if (a.logado) return (a.tempoLogadoSegundos ?? 0) - (b.tempoLogadoSegundos ?? 0);
+      const ta = a.ultimoLogin ? new Date(a.ultimoLogin).getTime() : 0;
+      const tb = b.ultimoLogin ? new Date(b.ultimoLogin).getTime() : 0;
+      return tb - ta;
+    });
+
+    return {
+      totalLogados: sessoes.filter(s => s.logado).length,
+      totalUsuarios: sessoes.length,
+      janelaSessaoMs: sessaoMs,
+      usuarios: sessoes,
+    };
+  }
+
+  /** Converte o formato de `JWT_EXPIRES_IN` (ex.: "1d", "24h", "30m", "3600") em
+   * milissegundos. Suporta os sufixos usados no `.env` deste projeto; sem sufixo,
+   * assume segundos (mesma convenção do `jsonwebtoken`). Cai num padrão de 24h se
+   * não conseguir interpretar o valor configurado. */
+  private parseExpiresInMs(valor: string): number {
+    const match = /^(\d+)\s*(ms|s|m|h|d)?$/i.exec(valor.trim());
+    if (!match) return 24 * 60 * 60 * 1000;
+    const numero = Number(match[1]);
+    const unidade = (match[2] ?? 's').toLowerCase();
+    const multiplicador: Record<string, number> = { ms: 1, s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+    return numero * (multiplicador[unidade] ?? 1000);
   }
 }
