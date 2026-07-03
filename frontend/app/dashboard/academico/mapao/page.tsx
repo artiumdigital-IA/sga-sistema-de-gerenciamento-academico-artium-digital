@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiFileUrl } from '@/lib/api';
+import { useBranding } from '@/lib/branding';
 
 interface Periodo { id: string; ano: number; semestre: string; status: string; }
 interface Oferta {
@@ -42,6 +43,8 @@ const BTN_P: React.CSSProperties = { padding: '7px 16px', borderRadius: 4, borde
 const BTN_G: React.CSSProperties = { padding: '7px 16px', borderRadius: 4, border: '1px solid #d1d5db', cursor: 'pointer', fontSize: 13, background: '#fff', color: '#374151' };
 
 export default function MapaoPage() {
+  const branding = useBranding();
+  const logoUrl = apiFileUrl(branding.logoUrl);
   const [periodos, setPeriodos] = useState<Periodo[]>([]);
   const [ofertas, setOfertas] = useState<Oferta[]>([]);
   const [selectedPeriodo, setSelectedPeriodo] = useState('');
@@ -106,7 +109,10 @@ export default function MapaoPage() {
 
           <div id="mapao-doc" style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 24 }}>
             <div style={{ textAlign: 'center', marginBottom: 16, borderBottom: '2px solid #000', paddingBottom: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: 1 }}>FIURJ — FACULDADE INSTITUTO UNIVERSITÁRIO DO RIO DE JANEIRO</div>
+              {logoUrl && (
+                <img src={logoUrl} alt={branding.nomeInstituicao} style={{ maxHeight: 44, maxWidth: 200, objectFit: 'contain', margin: '0 auto 8px' }} />
+              )}
+              <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: 1 }}>{branding.nomeCompleto}</div>
               <div style={{ fontSize: 12, marginTop: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Mapa de Notas e Frequência</div>
             </div>
 
@@ -169,7 +175,7 @@ export default function MapaoPage() {
             )}
 
             <p style={{ fontSize: 10.5, color: '#6b7280', marginTop: 16 }}>
-              Nota mínima de aprovação: 6,0. Frequência mínima exigida: 75%. Documento gerado eletronicamente em {new Date(data.geradoEm).toLocaleString('pt-BR')} pela plataforma acadêmica FIURJ.
+              Nota mínima de aprovação: 6,0. Frequência mínima exigida: 75%. Documento gerado eletronicamente em {new Date(data.geradoEm).toLocaleString('pt-BR')} pela plataforma acadêmica {branding.nomeInstituicao}.
             </p>
           </div>
         </>

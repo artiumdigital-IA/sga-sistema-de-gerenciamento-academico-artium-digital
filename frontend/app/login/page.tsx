@@ -4,9 +4,13 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { apiLogin, saveToken } from '@/lib/auth';
+import { apiFileUrl } from '@/lib/api';
+import { useBranding } from '@/lib/branding';
 
 export default function LoginPage() {
   const router = useRouter();
+  const branding = useBranding();
+  const logoUrl = apiFileUrl(branding.logoUrl);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [totpToken, setTotpToken] = useState('');
@@ -46,7 +50,7 @@ export default function LoginPage() {
       }}>
         <div style={{ position: 'absolute', left: 48, bottom: 48, maxWidth: 480, color: '#fff', zIndex: 1 }}>
           <div style={{ marginBottom: 24 }}>
-            <Image src="/assets/logoBranca.png.png" alt="FIURJ"
+            <Image src={logoUrl || '/assets/logoBranca.png.png'} alt={branding.nomeInstituicao}
               width={120} height={40} style={{ objectFit: 'contain' }} unoptimized />
           </div>
           <h2 style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.3, marginBottom: 10 }}>
@@ -77,7 +81,7 @@ export default function LoginPage() {
               Sistema de Gerenciamento Academico
             </div>
           </div>
-          <Image src="/assets/logoColorida.png.webp" alt="FIURJ"
+          <Image src={logoUrl || '/assets/logoColorida.png.webp'} alt={branding.nomeInstituicao}
             width={80} height={42} style={{ objectFit: 'contain' }} unoptimized />
         </div>
 
@@ -183,7 +187,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ marginTop: 'auto', fontSize: 10.5, color: 'var(--gray-300)', textAlign: 'center', paddingTop: 24 }}>
-          FIURJ - Sistema de Gerenciamento Academico
+          {branding.nomeInstituicao} - Sistema de Gerenciamento Academico
         </div>
       </div>
     </div>

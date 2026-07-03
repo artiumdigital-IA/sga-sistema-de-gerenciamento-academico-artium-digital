@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { apiFetch, apiFileUrl } from '@/lib/api';
+import { useBranding } from '@/lib/branding';
 
 type CarteirinhaData = {
   aluno: { id: string; nome: string; ra: string; cpf: string; dataNascimento: string; situacaoVinculo: string; fotoUrl: string | null };
@@ -14,6 +15,8 @@ const GRAU: Record<string, string> = { BACHARELADO: 'Bacharelado', LICENCIATURA:
 
 export default function CarteirinhaPage() {
   const { alunoId } = useParams<{ alunoId: string }>();
+  const branding = useBranding();
+  const logoUrl = apiFileUrl(branding.logoUrl);
   const [data, setData] = useState<CarteirinhaData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,9 +57,14 @@ export default function CarteirinhaPage() {
           boxShadow: '0 4px 16px rgba(0,0,0,.25)', padding: 16, boxSizing: 'border-box',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5 }}>FIURJ</div>
-              <div style={{ fontSize: 8, opacity: 0.8, maxWidth: 170 }}>Faculdade Instituto Universitário do Rio de Janeiro</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {logoUrl && (
+                <img src={logoUrl} alt={branding.nomeInstituicao} style={{ height: 20, maxWidth: 40, objectFit: 'contain' }} />
+              )}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5 }}>{branding.nomeInstituicao}</div>
+                <div style={{ fontSize: 8, opacity: 0.8, maxWidth: 170 }}>{branding.nomeCompleto.replace(`${branding.nomeInstituicao} — `, '')}</div>
+              </div>
             </div>
             <div style={{ fontSize: 8, textAlign: 'right', opacity: 0.85 }}>
               Carteira de<br />Identificação Estudantil
@@ -87,7 +95,7 @@ export default function CarteirinhaPage() {
             fontSize: 8, opacity: 0.8, borderTop: '1px solid rgba(255,255,255,.25)', paddingTop: 6,
           }}>
             <span>Válida até {validaAte}</span>
-            <span>fiurj.edu.br</span>
+            <span>{branding.nomeInstituicao}</span>
           </div>
         </div>
       </div>

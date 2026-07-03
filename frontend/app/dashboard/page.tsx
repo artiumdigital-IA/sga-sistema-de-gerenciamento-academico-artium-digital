@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { getToken } from '@/lib/auth';
 import { apiFetch, apiUpload, apiFileUrl } from '@/lib/api';
+import { useBranding } from '@/lib/branding';
 import Image from 'next/image';
 
 /* ─── Tipos ─── */
@@ -35,7 +36,7 @@ const BOLETIM_SUBTABS = ['Boletim','Ausência','Ocorrências','Agenda','Arquivos
 
 const BOLETIM_ITEMS = [
   { initials: 'MS', color: '#e17076', name: 'Maria Souza',    tag: 'GERAL',         text: 'Prova de Direito Constitucional remarcada para 25/06.',  time: '08:30' },
-  { initials: 'AT', color: '#5e9bd6', name: 'Admin. FIURJ',   tag: 'IMPORTANTE',    text: 'Reunião do Colegiado — sala 5A às 14h desta quinta-feira.', time: '09:00' },
+  { initials: 'AT', color: '#5e9bd6', name: 'Administração',   tag: 'IMPORTANTE',    text: 'Reunião do Colegiado — sala 5A às 14h desta quinta-feira.', time: '09:00' },
   { initials: 'RC', color: '#6fcf97', name: 'Coord. Pedagógico', tag: 'APENAS EQUIPE', text: 'Revisão dos índices de aprovação do 2º semestre.',       time: '10:15' },
   { initials: 'JB', color: '#f2994a', name: 'João Batista',   tag: 'GERAL',         text: 'Semana de Cultura e Diversidade: 13 a 17/06 no Pátio.', time: 'Ontem' },
 ];
@@ -419,6 +420,7 @@ const CARGO_LABEL: Record<string, string> = {
 };
 
 function MinhaConta() {
+  const branding = useBranding();
   const [perfil, setPerfil] = useState<MeuPerfil | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -451,7 +453,7 @@ function MinhaConta() {
             style={{ borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--gray-200)' }} unoptimized />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gray-700)' }}>{nomeExibido}</div>
-            <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>{cargo} · FIURJ</div>
+            <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>{cargo} · {branding.nomeInstituicao}</div>
             <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>{perfil.email}</div>
           </div>
           <button onClick={() => setEditando(true)} style={{ padding: '6px 12px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 12, cursor: 'pointer', color: 'var(--gray-600)' }}>
@@ -468,7 +470,7 @@ function MinhaConta() {
             ['E-mail', perfil.email],
             ['Cargo', cargo],
             ['Telefone', perfil.telefone || '—'],
-            ['Unidade', 'FIURJ — Campus Central'],
+            ['Unidade', `${branding.nomeInstituicao} — Campus Central`],
           ]},
           { title: 'Segurança', fields: [
             ['Senha', '••••••••'],

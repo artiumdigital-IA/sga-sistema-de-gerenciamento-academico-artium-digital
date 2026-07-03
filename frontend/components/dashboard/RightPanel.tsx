@@ -122,6 +122,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
   ]},
   { title: 'Utilitários', items: [
     { label: 'Painel do Sistema', href: '/dashboard/admin/sistema' },
+    { label: 'Identidade Visual', href: '/dashboard/admin/visual' },
     { label: 'Ramais', href: '/dashboard/utilitarios/ramais' },
     { label: 'Calculadora', href: '/dashboard/utilitarios/calculadora' },
     { label: 'Visualizar Relatórios', href: '/dashboard/relatorios/censo' },

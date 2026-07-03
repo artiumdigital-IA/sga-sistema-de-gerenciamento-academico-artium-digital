@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { getToken, parseJwt, logout, type JwtUser } from '@/lib/auth';
 import { apiFetch, apiFileUrl } from '@/lib/api';
+import { useBranding } from '@/lib/branding';
 import { RightPanel } from '@/components/dashboard/RightPanel';
 import { RamaisModal } from '@/components/dashboard/RamaisModal';
 
@@ -53,6 +54,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [ramaisOpen, setRamaisOpen] = useState(false);
   const [rightTab, setRightTab] = useState<'barra' | 'msg'>('barra');
   const [unreadCount, setUnreadCount] = useState(0);
+  const branding = useBranding();
+  const simboloUrl = apiFileUrl(branding.simboloUrl) || apiFileUrl(branding.logoUrl);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -146,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <Image src="/logo.png" alt="FIURJ" width={28} height={28} style={{ objectFit: 'contain' }} unoptimized />
+          <Image src={simboloUrl || '/logo.png'} alt={branding.nomeInstituicao} width={28} height={28} style={{ objectFit: 'contain' }} unoptimized />
         </button>
 
         {/* Spacer */}

@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiFileUrl } from '@/lib/api';
+import { useBranding } from '@/lib/branding';
 
 type DeclaracaoData = {
   aluno: { id: string; nome: string; ra: string; cpf: string; email: string; situacaoVinculo: string; dataIngresso: string };
@@ -17,6 +18,8 @@ const SEMESTRE: Record<string, string> = { S1: '1º semestre', S2: '2º semestre
 
 export default function DeclaracaoPage() {
   const { alunoId } = useParams<{ alunoId: string }>();
+  const branding = useBranding();
+  const logoUrl = apiFileUrl(branding.logoUrl);
   const [data, setData] = useState<DeclaracaoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,7 +56,10 @@ export default function DeclaracaoPage() {
       <div id="documento" style={{ background: '#fff', maxWidth: 720, margin: '0 auto', padding: '48px 56px', fontFamily: 'Times New Roman, serif', fontSize: 13, lineHeight: 1.8, color: '#000' }}>
         {/* Cabeçalho */}
         <div style={{ textAlign: 'center', marginBottom: 32, borderBottom: '2px solid #000', paddingBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 1 }}>FIURJ — FACULDADE INSTITUTO UNIVERSITÁRIO DO RIO DE JANEIRO</div>
+          {logoUrl && (
+            <img src={logoUrl} alt={branding.nomeInstituicao} style={{ maxHeight: 48, maxWidth: 220, objectFit: 'contain', margin: '0 auto 10px' }} />
+          )}
+          <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 1 }}>{branding.nomeCompleto}</div>
           <div style={{ fontSize: 12, marginTop: 4 }}>Credenciada pelo MEC | Secretaria Acadêmica</div>
         </div>
 
@@ -113,7 +119,7 @@ export default function DeclaracaoPage() {
         <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 48 }}>
           <div style={{ textAlign: 'center', width: 200 }}>
             <div style={{ borderTop: '1px solid #000', paddingTop: 8, fontSize: 12 }}>
-              Secretaria Acadêmica<br />FIURJ
+              Secretaria Acadêmica<br />{branding.nomeInstituicao}
             </div>
           </div>
           <div style={{ textAlign: 'center', width: 200 }}>
@@ -124,7 +130,7 @@ export default function DeclaracaoPage() {
         </div>
 
         <div style={{ marginTop: 48, fontSize: 10, color: '#6b7280', borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>
-          Documento gerado eletronicamente em {new Date(data.geradoEm).toLocaleString('pt-BR')} pela plataforma acadêmica FIURJ.
+          Documento gerado eletronicamente em {new Date(data.geradoEm).toLocaleString('pt-BR')} pela plataforma acadêmica {branding.nomeInstituicao}.
           Este documento não dispensa a assinatura manual quando exigido.
         </div>
       </div>
