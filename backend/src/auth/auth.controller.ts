@@ -14,7 +14,9 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'Login com e-mail/senha (+ MFA para Admin/Secretaria/Financeiro)' })
   async login(@Request() req: any, @Body('totpToken') totpToken?: string) {
-    return this.authService.login(req.user, totpToken);
+    const ip = req.ip ?? req.headers?.['x-forwarded-for'] ?? null;
+    const userAgent = req.headers?.['user-agent'] ?? null;
+    return this.authService.login(req.user, totpToken, ip, userAgent);
   }
 
   @UseGuards(AuthGuard('jwt'))

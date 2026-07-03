@@ -6,12 +6,14 @@ interface StatusData {
   backend: {
     nodeVersion: string; ambiente: string; uptimeSegundos: number;
     memoria: { rss: number; heapUsed: number; heapTotal: number };
+    cpu: { percentualUmNucleo: number | null; userMs: number; systemMs: number; janelaMs: number };
   };
   sistemaOperacional: {
     hostname: string; plataforma: string; arquitetura: string; cpus: number;
     loadAverage: number[]; memoriaTotalBytes: number; memoriaLivreBytes: number; memoriaUsadaPercentual: number | null;
   };
   disco: { totalBytes: number; livreBytes: number; usadoBytes: number; usadoPercentual: number | null } | null;
+  uploads: { porPasta: { pasta: string; arquivos: number; bytes: number }[]; totalArquivos: number; totalBytes: number };
   banco: {
     conectado: boolean; latenciaMs: number | null; versao: string | null;
     tamanhoBytes: number | null; conexoesAtivas: number | null; erro?: string;
@@ -22,6 +24,11 @@ interface StatusData {
     processosSeletivos: number; candidatos: number; contratos: number; avisos: number; auditoriasTotais: number;
     usuariosPorPerfil: { perfil: string; total: number }[];
     usuariosPorStatus: { status: string; total: number }[];
+  };
+  login: {
+    recentes: { id: string; acao: string; criadoEm: string; usuario: { email: string } | null; dadosDepois: any }[];
+    falhas24h: number;
+    sucessos24h: number;
   };
   auditoriaRecente: { id: string; acao: string; entidade: string; entidadeId: string | null; criadoEm: string; usuario: { email: string; nome?: string | null } | null }[];
   geradoEm: string;
@@ -44,6 +51,12 @@ function formatUptime(segundos: number): string {
   partes.push(`${m}min`);
   return partes.join(' ');
 }
+
+const PASTA_LABEL: Record<string, string> = { avatars: 'Fotos de perfil', documentos: 'Documentos de alunos' };
+const LOGIN_MOTIVO_LABEL: Record<string, string> = {
+  usuario_nao_encontrado: 'e-mail não cadastrado', usuario_inativo_ou_bloqueado: 'usuário inativo/bloqueado',
+  senha_invalida: 'senha inválida', mfa_ausente: 'MFA não informado', mfa_invalido: 'código MFA inválido',
+};
 
 const CARD: React.CSSProperties = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 };
 const TITLE: React.CSSProperties = { margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#374151', display: 'flex', alignItems: 'center', gap: 6 };
@@ -126,7 +139,9 @@ export default function PainelSistemaPage() {
           <div style={ROW}><span style={LABEL}>Ambiente</span><span>{data.backend.ambiente}</span></div>
           <div style={ROW}><span style={LABEL}>Node.js</span><span>{data.backend.nodeVersion}</span></div>
           <div style={ROW}><span style={LABEL}>Uptime</span><span>{formatUptime(data.backend.uptimeSegundos)}</span></div>
-          <div style={ROW}><span style={LABEL}>Memória (RSS)</span><span>{formatBytes(data.backend.memoria.rss)}</span></div>
+          <div style={ROW}><span style={LABEL}>CPU (processo)</span><span>{data.backend.cpu.percentualUmNucleo != null ? `${data.backend.cpu.percentualUmNucleo}%` : '—'}</span></div>
+          <Barra percentual={data.backend.cpu.percentualUmNucleo} />
+          <div style={{ ...ROW, marginTop: 6 }}><span style={LABEL}>Memória (RSS)</span><span>{formatBytes(data.backend.memoria.rss)}</span></div>
           <div style={ROW}><span style={LABEL}>Heap usado</span><span>{formatBytes(data.backend.memoria.heapUsed)} / {formatBytes(data.backend.memoria.heapTotal)}</span></div>
         </div>
 
@@ -190,6 +205,49 @@ export default function PainelSistemaPage() {
           {data.contagens.usuariosPorStatus.map(u => (
             <div key={u.status} style={ROW}><span style={LABEL}>{u.status}</span><span>{u.total}</span></div>
           ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+        {/* Uploads */}
+        <div style={CARD}>
+          <h3 style={TITLE}>Armazenamento de Uploads</h3>
+          <div style={ROW}><span style={LABEL}>Total</span><span style={{ fontWeight: 600 }}>{formatBytes(data.uploads.totalBytes)} ({data.uploads.totalArquivos} arquivo{data.uploads.totalArquivos !== 1 ? 's' : ''})</span></div>
+          {data.uploads.porPasta.map(p => (
+            <div key={p.pasta} style={ROW}>
+              <span style={LABEL}>{PASTA_LABEL[p.pasta] ?? p.pasta}</span>
+              <span>{formatBytes(p.bytes)} · {p.arquivos} arq.</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Segurança / Login */}
+        <div style={CARD}>
+          <h3 style={TITLE}>Segurança — Login</h3>
+          <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: data.login.falhas24h > 0 ? '#dc2626' : '#374151' }}>{data.login.falhas24h}</div>
+              <div style={{ fontSize: 10.5, color: '#6b7280' }}>Falhas (24h)</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#065f46' }}>{data.login.sucessos24h}</div>
+              <div style={{ fontSize: 10.5, color: '#6b7280' }}>Sucessos (24h)</div>
+            </div>
+          </div>
+          <div style={{ maxHeight: 150, overflowY: 'auto' }}>
+            {data.login.recentes.length === 0 && <p style={{ fontSize: 11, color: '#9ca3af' }}>Nenhum evento de login ainda.</p>}
+            {data.login.recentes.map(l => {
+              const ok = l.acao === 'LOGIN';
+              const email = l.usuario?.email ?? l.dadosDepois?.email ?? '—';
+              const motivo = !ok ? (LOGIN_MOTIVO_LABEL[l.dadosDepois?.motivo] ?? l.dadosDepois?.motivo) : null;
+              return (
+                <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, padding: '3px 0', borderBottom: '1px solid #f3f4f6' }}>
+                  <span style={{ color: ok ? '#065f46' : '#991b1b' }}>{ok ? '✓' : '✗'} {email}{motivo ? ` — ${motivo}` : ''}</span>
+                  <span style={{ color: '#9ca3af', flexShrink: 0, marginLeft: 8 }}>{new Date(l.criadoEm).toLocaleTimeString('pt-BR')}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

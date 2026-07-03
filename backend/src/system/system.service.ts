@@ -1,25 +1,34 @@
 import { Injectable } from '@nestjs/common';
 import * as os from 'os';
 import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class SystemService {
+  // Baseline pra calcular uso de CPU por janela (delta entre chamadas), já que
+  // `process.cpuUsage()` sozinho só dá o acumulado desde o início do processo.
+  private cpuBaseline = process.cpuUsage();
+  private cpuBaselineTimestamp = Date.now();
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getStatus() {
-    const [banco, contagens, auditoriaRecente] = await Promise.all([
+    const [banco, contagens, auditoriaRecente, login] = await Promise.all([
       this.getBancoInfo(),
       this.getContagens(),
       this.getAuditoriaRecente(),
+      this.getLoginInfo(),
     ]);
 
     return {
       backend: this.getBackendInfo(),
       sistemaOperacional: this.getOsInfo(),
       disco: this.getDiscoInfo(),
+      uploads: this.getUploadsInfo(),
       banco,
       contagens,
+      login,
       auditoriaRecente,
       geradoEm: new Date().toISOString(),
     };
@@ -32,6 +41,31 @@ export class SystemService {
       ambiente: process.env.NODE_ENV ?? 'development',
       uptimeSegundos: Math.round(process.uptime()),
       memoria: { rss: mem.rss, heapUsed: mem.heapUsed, heapTotal: mem.heapTotal },
+      cpu: this.getCpuInfo(),
+    };
+  }
+
+  /**
+   * Uso de CPU do processo Node desde a última chamada deste método (janela
+   * de ~20s, mesmo intervalo do polling do painel) — não é um "instantâneo"
+   * de verdade (Node não expõe isso nativamente), mas dá uma leitura útil de
+   * tendência: percentual de UM núcleo consumido na janela.
+   */
+  private getCpuInfo() {
+    const delta = process.cpuUsage(this.cpuBaseline);
+    const agora = Date.now();
+    const janelaMs = agora - this.cpuBaselineTimestamp;
+    const totalMs = (delta.user + delta.system) / 1000;
+    const percentualUmNucleo = janelaMs > 0 ? Math.round((totalMs / janelaMs) * 1000) / 10 : null;
+
+    this.cpuBaseline = process.cpuUsage();
+    this.cpuBaselineTimestamp = agora;
+
+    return {
+      percentualUmNucleo,
+      userMs: Math.round(delta.user / 1000),
+      systemMs: Math.round(delta.system / 1000),
+      janelaMs,
     };
   }
 
@@ -77,6 +111,40 @@ export class SystemService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Tamanho da pasta de uploads (fotos de perfil + documentos digitalizados de
+   * aluno), somando por subpasta. Não recursivo — os dois diretórios conhecidos
+   * (`avatars`, `documentos`) guardam arquivos direto, sem subpastas por usuário.
+   */
+  private getUploadsInfo() {
+    const base = path.join(process.cwd(), 'uploads');
+    const pastas = ['avatars', 'documentos'];
+    const porPasta: { pasta: string; arquivos: number; bytes: number }[] = [];
+    let totalArquivos = 0;
+    let totalBytes = 0;
+
+    for (const pasta of pastas) {
+      const dir = path.join(base, pasta);
+      let arquivos = 0;
+      let bytes = 0;
+      try {
+        if (fs.existsSync(dir)) {
+          for (const nome of fs.readdirSync(dir)) {
+            try {
+              const st = fs.statSync(path.join(dir, nome));
+              if (st.isFile()) { arquivos++; bytes += st.size; }
+            } catch { /* arquivo pode ter sido removido entre o readdir e o stat */ }
+          }
+        }
+      } catch { /* pasta inacessível — segue com zero */ }
+      porPasta.push({ pasta, arquivos, bytes });
+      totalArquivos += arquivos;
+      totalBytes += bytes;
+    }
+
+    return { porPasta, totalArquivos, totalBytes };
   }
 
   private async getBancoInfo() {
@@ -147,5 +215,22 @@ export class SystemService {
       orderBy: { criadoEm: 'desc' },
       include: { usuario: { select: { email: true, nome: true } } },
     });
+  }
+
+  /** Segurança: últimas tentativas de login (sucesso e falha) + contagem de falhas nas últimas 24h. */
+  private async getLoginInfo() {
+    const desde24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [recentes, falhas24h, sucessos24h] = await Promise.all([
+      this.prisma.auditoria.findMany({
+        where: { acao: { in: ['LOGIN', 'LOGIN_FALHA'] } },
+        orderBy: { criadoEm: 'desc' },
+        take: 10,
+        include: { usuario: { select: { email: true } } },
+      }),
+      this.prisma.auditoria.count({ where: { acao: 'LOGIN_FALHA', criadoEm: { gte: desde24h } } }),
+      this.prisma.auditoria.count({ where: { acao: 'LOGIN', criadoEm: { gte: desde24h } } }),
+    ]);
+
+    return { recentes, falhas24h, sucessos24h };
   }
 }
