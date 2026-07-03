@@ -8,10 +8,12 @@ import { ContaBancariaController } from './conta-bancaria/conta-bancaria.control
 import { ContaBancariaService } from './conta-bancaria/conta-bancaria.service';
 import { CategoriaReceitaController } from './categoria-receita/categoria-receita.controller';
 import { CategoriaReceitaService } from './categoria-receita/categoria-receita.service';
+import { BolsistaController } from './bolsista/bolsista.controller';
+import { BolsistaService } from './bolsista/bolsista.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [ContratoController, ParcelaController, ContaBancariaController, CategoriaReceitaController],
-  providers: [ContratoService, ParcelaService, ContaBancariaService, CategoriaReceitaService],
+  controllers: [ContratoController, ParcelaController, ContaBancariaController, CategoriaReceitaController, BolsistaController],
+  providers: [ContratoService, ParcelaService, ContaBancariaService, CategoriaReceitaService, BolsistaService],
 })
 export class FinancialModule {}

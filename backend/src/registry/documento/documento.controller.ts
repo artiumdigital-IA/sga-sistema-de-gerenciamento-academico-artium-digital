@@ -23,4 +23,10 @@ export class DocumentoController {
   ) {
     return this.service.getBoletim(alunoId, periodoLetivoId);
   }
+
+  @Get('carteirinha/:alunoId')
+  @ApiOperation({ summary: 'Dados para Emissão de Carteirinha do aluno' })
+  getCarteirinha(@Param('alunoId') alunoId: string) {
+    return this.service.getCarteirinha(alunoId);
+  }
 }

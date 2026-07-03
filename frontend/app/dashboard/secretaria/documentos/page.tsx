@@ -67,6 +67,11 @@ export default function DocumentosPage() {
                         style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #16a34a', borderRadius: 4, cursor: 'pointer', background: '#f0fdf4', color: '#15803d' }}>
                         Boletim
                       </button>
+                      <button
+                        onClick={() => router.push(`/dashboard/secretaria/documentos/carteirinha/${a.id}`)}
+                        style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #7c3aed', borderRadius: 4, cursor: 'pointer', background: '#f5f3ff', color: '#6d28d9' }}>
+                        Carteirinha
+                      </button>
                     </div>
                   </td>
                 </tr>

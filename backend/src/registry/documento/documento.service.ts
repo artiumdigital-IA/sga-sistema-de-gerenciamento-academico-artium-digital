@@ -131,4 +131,31 @@ export class DocumentoService {
       geradoEm: new Date().toISOString(),
     };
   }
+
+  /** "Emissão de Carteirinha" — dados básicos + foto (se houver, via Usuario.fotoUrl) */
+  async getCarteirinha(alunoId: string) {
+    const aluno = await this.prisma.aluno.findUnique({
+      where: { id: alunoId },
+      include: {
+        curso: { select: { nome: true, grau: true } },
+        usuario: { select: { fotoUrl: true } },
+      },
+    });
+    if (!aluno) throw new NotFoundException('Aluno não encontrado');
+
+    return {
+      aluno: {
+        id: aluno.id,
+        nome: aluno.nome,
+        ra: aluno.ra,
+        cpf: aluno.cpf,
+        dataNascimento: aluno.dataNascimento,
+        situacaoVinculo: aluno.situacaoVinculo,
+        fotoUrl: aluno.usuario?.fotoUrl ?? null,
+      },
+      curso: { nome: aluno.curso.nome, grau: aluno.curso.grau },
+      validaAte: new Date(new Date().getFullYear() + 1, 2, 31).toISOString(),
+      geradoEm: new Date().toISOString(),
+    };
+  }
 }

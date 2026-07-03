@@ -25,6 +25,7 @@ function ModalTransferir({ matricula, periodoId, onClose, onUpdate }: { matricul
   const [ofertasDestino, setOfertasDestino] = useState<Oferta[]>([]);
   const [novaOfertaId, setNovaOfertaId] = useState('');
   const [motivo, setMotivo] = useState('');
+  const [motivosSugeridos, setMotivosSugeridos] = useState<{ id: string; nome: string; ativo: boolean }[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -33,6 +34,10 @@ function ModalTransferir({ matricula, periodoId, onClose, onUpdate }: { matricul
       setOfertasDestino(all.filter(o => o.disciplina.id === matricula.oferta.disciplinaId && o.id !== matricula.oferta.id));
     }).catch(() => {});
   }, [periodoId, matricula]);
+
+  useEffect(() => {
+    apiFetch<{ id: string; nome: string; ativo: boolean }[]>('/motivos-transferencia').then(setMotivosSugeridos).catch(() => {});
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErro(''); setSalvando(true);
@@ -68,7 +73,10 @@ function ModalTransferir({ matricula, periodoId, onClose, onUpdate }: { matricul
           </div>
           <div>
             <label style={LABEL}>Motivo (opcional)</label>
-            <input style={INPUT} value={motivo} placeholder="Ex: conflito de horário" onChange={e => setMotivo(e.target.value)} />
+            <input style={INPUT} list="motivos-transferencia-list" value={motivo} placeholder="Ex: conflito de horário" onChange={e => setMotivo(e.target.value)} />
+            <datalist id="motivos-transferencia-list">
+              {motivosSugeridos.filter(m => m.ativo).map(m => <option key={m.id} value={m.nome} />)}
+            </datalist>
           </div>
           {erro && <p style={{ color: '#dc2626', fontSize: 12, margin: 0 }}>{erro}</p>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>

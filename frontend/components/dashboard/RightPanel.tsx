@@ -42,7 +42,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Manutenção Histórico Escolar', href: '/dashboard/academico/alunos' },
     { label: 'Transferência de Turma', href: '/dashboard/academico/transferencia' },
     { label: 'Mudança de Situação', href: '/dashboard/academico/alunos' },
-    { label: 'Motivos de Transferências & Cancelamentos', href: null },
+    { label: 'Motivos de Transferências & Cancelamentos', href: '/dashboard/secretaria/motivos-transferencia' },
     { label: 'Consulta Log de Inscrições', href: '/dashboard/admin/log' },
     { label: 'Ordenação Turmas', href: '/dashboard/academico/ofertas' },
     { label: 'Manutenção de Frequência', href: '/dashboard/academico/frequencia' },
@@ -50,7 +50,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Diário de Classe', href: '/dashboard/academico/notas' },
     { label: 'Emissão de Boletim', href: '/dashboard/secretaria/documentos' },
     { label: 'Relatório Notas/Disciplinas', href: '/dashboard/academico/mapao' },
-    { label: 'Emissão de Carteirinha', href: null },
+    { label: 'Emissão de Carteirinha', href: '/dashboard/secretaria/documentos' },
     { label: 'Carômetro', href: null },
     { label: 'Etiqueta', href: null },
     { label: 'Mala Direta / Declarações', href: '/dashboard/secretaria/documentos' },
@@ -65,7 +65,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Motivos Ocorrências', href: '/dashboard/secretaria/motivos-ocorrencia' },
     { label: 'Lançamento/Manutenção', href: '/dashboard/academico/alunos' },
     { label: 'Relatório de Ocorrências - CDR - por Aluno', href: '/dashboard/academico/alunos' },
-    { label: 'Resumo de Ocorrências por Turmas', href: null },
+    { label: 'Resumo de Ocorrências por Turmas', href: '/dashboard/academico/ocorrencias/resumo' },
   ]},
   { title: 'Portais', items: [
     { label: 'Compor/Manutenção Pauta por Professor', href: null },
@@ -92,7 +92,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Ficha Financeira', href: '/dashboard/financeiro/contratos' },
     { label: 'Tesouraria', href: null },
     { label: 'Acordo/Parcelamento', href: '/dashboard/financeiro/contratos' },
-    { label: 'Cadastro de Bolsistas', href: null },
+    { label: 'Cadastro de Bolsistas', href: '/dashboard/academico/alunos' },
     { label: 'Emissão de Títulos', href: null },
   ]},
   { title: 'CReceber', items: [
@@ -111,7 +111,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Resumo Financeiro por Turma', href: '/dashboard/relatorios/financeiro' },
     { label: 'Resumo Financeiro Receita', href: null },
     { label: 'Previsão Financeira Turma x Conta', href: null },
-    { label: 'Listagem de Alunos Bolsistas', href: null },
+    { label: 'Listagem de Alunos Bolsistas', href: '/dashboard/relatorios/bolsistas' },
     { label: 'Relatório DDM', href: null },
   ]},
   { title: 'Contabilidade', items: [
@@ -132,8 +132,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
   ]},
 ];
 
-export function RightPanel({ width = 220 }: { width?: number }) {
-  const [tab, setTab] = useState<'barra' | 'msg'>('barra');
+export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; tab: 'barra' | 'msg'; onTabChange: (t: 'barra' | 'msg') => void }) {
   const pathname = usePathname();
   const initialOpen = RPANEL_GROUPS.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
@@ -150,7 +149,7 @@ export function RightPanel({ width = 220 }: { width?: number }) {
         background: 'var(--gray-50)', flexShrink: 0,
       }}>
         {(['barra','msg'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
+          <button key={t} onClick={() => onTabChange(t)} style={{
             flex: 1, height: 36, border: 'none', cursor: 'pointer',
             background: tab === t ? 'var(--white)' : 'transparent',
             borderBottom: tab === t ? '2px solid var(--blue-dark)' : '2px solid transparent',

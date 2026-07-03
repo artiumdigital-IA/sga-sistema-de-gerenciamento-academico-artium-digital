@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { getToken, parseJwt, logout, type JwtUser } from '@/lib/auth';
@@ -51,6 +51,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [nomeExibido, setNomeExibido] = useState<string | null>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [ramaisOpen, setRamaisOpen] = useState(false);
+  const [rightTab, setRightTab] = useState<'barra' | 'msg'>('barra');
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -82,6 +84,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
+  // Contagem de mensagens não lidas pro badge do ícone de Mensagens no TopNav —
+  // independente da aba do painel direito estar aberta ou não, pra sempre avisar
+  // quando chega mensagem nova. Mesmo intervalo de polling do MessagesPanel (15s).
+  const carregarNaoLidas = useCallback(async () => {
+    try {
+      const conversas = await apiFetch<{ naoLidas: number }[]>('/mensagens/conversas');
+      setUnreadCount(conversas.reduce((soma, c) => soma + c.naoLidas, 0));
+    } catch { /* silencioso — nao interromper o layout por falha de rede pontual */ }
+  }, []);
+
+  useEffect(() => {
+    carregarNaoLidas();
+    const id = setInterval(carregarNaoLidas, 15000);
+    return () => clearInterval(id);
+  }, [carregarNaoLidas]);
+
+  // Zera o badge assim que o usuário abre a aba de Mensagens (as conversas
+  // individuais são marcadas como lidas ao abrir a thread; aqui só refletimos
+  // isso no ícone assim que ele troca de aba).
+  useEffect(() => {
+    if (rightTab === 'msg') carregarNaoLidas();
+  }, [rightTab, carregarNaoLidas]);
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen?.();
@@ -94,6 +119,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sideW = sidebarOpen ? 210 : 52;
   const rightW = 220;
   const botH = 38;
+
+  const ACOES_RAPIDAS = [
+    { d: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', onClick: () => router.push('/dashboard') },
+    { d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0', onClick: () => router.push('/dashboard/secretaria/avisos') },
+    { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', onClick: () => setRightTab('msg'), badge: unreadCount },
+  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
@@ -122,13 +153,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div style={{ flex: 1 }} />
 
         {/* Ações rápidas */}
-        {[
-          'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
-          'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
-          'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
-        ].map((d, i) => (
-          <button key={i} style={{
-            width: 30, height: 30, border: 'none', borderRadius: 4, cursor: 'pointer',
+        {ACOES_RAPIDAS.map(({ d, onClick, badge }, i) => (
+          <button key={i} onClick={onClick} style={{
+            position: 'relative', width: 30, height: 30, border: 'none', borderRadius: 4, cursor: 'pointer',
             background: 'transparent', color: 'rgba(255,255,255,.7)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
@@ -136,6 +163,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
           >
             <SvgIcon d={d} size={16} />
+            {!!badge && badge > 0 && (
+              <span style={{
+                position: 'absolute', top: 1, right: 1, minWidth: 14, height: 14, padding: '0 3px',
+                borderRadius: 999, background: 'var(--red, #dc2626)', color: '#fff',
+                fontSize: 9, fontWeight: 700, lineHeight: '14px', textAlign: 'center',
+                boxShadow: '0 0 0 1.5px var(--blue-dark)',
+              }}>
+                {badge > 9 ? '9+' : badge}
+              </span>
+            )}
           </button>
         ))}
 
@@ -234,7 +271,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Painel direito */}
-        <RightPanel width={rightW} />
+        <RightPanel width={rightW} tab={rightTab} onTabChange={setRightTab} />
       </div>
 
       {/* ── BottomBar ── */}

@@ -47,6 +47,7 @@ export default function SituacaoPage() {
   const [situacaoNova, setSituacaoNova] = useState<SituacaoVinculo>('CURSANDO');
   const [data, setData] = useState('');
   const [motivo, setMotivo] = useState('');
+  const [motivosSugeridos, setMotivosSugeridos] = useState<{ id: string; nome: string; ativo: boolean }[]>([]);
   const [salvando, setSalvando] = useState(false);
 
   const carregar = useCallback(async () => {
@@ -62,6 +63,10 @@ export default function SituacaoPage() {
   }, [alunoId]);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  useEffect(() => {
+    apiFetch<{ id: string; nome: string; ativo: boolean }[]>('/motivos-transferencia').then(setMotivosSugeridos).catch(() => {});
+  }, []);
 
   async function salvar() {
     if (!data) { alert('Informe a data da mudança.'); return; }
@@ -112,7 +117,10 @@ export default function SituacaoPage() {
           </div>
           <div>
             <label style={LABEL}>Motivo (opcional)</label>
-            <input style={INPUT} value={motivo} placeholder="Ex: trancamento a pedido — requerimento nº..." onChange={e => setMotivo(e.target.value)} />
+            <input style={INPUT} list="motivos-transferencia-list" value={motivo} placeholder="Ex: trancamento a pedido — requerimento nº..." onChange={e => setMotivo(e.target.value)} />
+            <datalist id="motivos-transferencia-list">
+              {motivosSugeridos.filter(m => m.ativo).map(m => <option key={m.id} value={m.nome} />)}
+            </datalist>
           </div>
         </div>
         <button style={BTN} disabled={salvando} onClick={salvar}>{salvando ? 'Salvando...' : 'Registrar mudança'}</button>

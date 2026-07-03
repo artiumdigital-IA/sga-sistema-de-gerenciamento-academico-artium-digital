@@ -10,6 +10,7 @@ import { OcorrenciaModule } from './ocorrencia/ocorrencia.module';
 import { MensagemModule } from './mensagem/mensagem.module';
 import { ObservacaoFinanceiraModule } from './observacao-financeira/observacao-financeira.module';
 import { RamalModule } from './ramal/ramal.module';
+import { MotivoTransferenciaModule } from './motivo-transferencia/motivo-transferencia.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RamalModule } from './ramal/ramal.module';
     MensagemModule,
     ObservacaoFinanceiraModule,
     RamalModule,
+    MotivoTransferenciaModule,
   ],
 })
 export class RegistryModule {}

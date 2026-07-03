@@ -18,6 +18,12 @@ export class OcorrenciaController {
     return this.service.create(dto, req.user?.id);
   }
 
+  @Get('resumo-turmas')
+  @ApiOperation({ summary: 'Resumo de Ocorrências por Turmas (aproximado por Curso) + ranking de alunos' })
+  resumoPorTurma() {
+    return this.service.resumoPorTurma();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar ocorrências (opcional: filtrar por alunoId)' })
   @ApiQuery({ name: 'alunoId', required: false })

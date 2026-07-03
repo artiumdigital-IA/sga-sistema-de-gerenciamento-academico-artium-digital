@@ -185,6 +185,7 @@ model Aluno {
   protocolos       Protocolo[]
   ocorrencias      Ocorrencia[]
   observacoesFinanceiras ObservacaoFinanceira[]
+  bolsas           Bolsista[]
 
   @@map("alunos")
 }
@@ -924,4 +925,39 @@ model Ramal {
   atualizadoEm DateTime @updatedAt
 
   @@map("ramais")
+}
+
+// ── Motivos de Transferência & Cancelamento (achado do spike Kirsch: catálogo
+// pré-definido pra padronizar o campo `motivo` de Transferência de Turma e
+// Mudança de Situação — hoje texto livre nesses dois fluxos; o catálogo entra
+// como sugestão via <datalist>, sem forçar obrigatoriedade).
+model MotivoTransferenciaCancelamento {
+  id    String  @id @default(uuid())
+  nome  String
+  ativo Boolean @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("motivos_transferencia_cancelamento")
+}
+
+// ── Bolsistas (Kirsch: Financeiro > Cadastro de Bolsistas / Relatórios >
+// Listagem de Alunos Bolsistas). 1-N com Aluno — permite histórico de bolsas
+// ao longo do curso, não só um registro fixo.
+model Bolsista {
+  id          String    @id @default(uuid())
+  alunoId     String
+  aluno       Aluno     @relation(fields: [alunoId], references: [id])
+  tipoBolsa   String
+  percentual  Decimal   @db.Decimal(5, 2)
+  dataInicio  DateTime  @db.Date
+  dataFim     DateTime? @db.Date
+  ativo       Boolean   @default(true)
+  observacoes String?   @db.Text
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("bolsistas")
 }

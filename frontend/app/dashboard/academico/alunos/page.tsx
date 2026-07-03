@@ -367,6 +367,10 @@ export default function AlunosPage() {
                           onClick={() => router.push(`/dashboard/financeiro/observacoes/${a.id}`)}>
                           Obs. Financeira
                         </button>
+                        <button style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid #ca8a04', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#ca8a04', fontWeight: 500 }}
+                          onClick={() => router.push(`/dashboard/financeiro/bolsistas/${a.id}`)}>
+                          Bolsista
+                        </button>
                       </div>
                     </td>
                   </tr>
