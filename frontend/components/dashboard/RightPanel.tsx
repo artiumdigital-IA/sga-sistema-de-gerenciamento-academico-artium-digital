@@ -121,6 +121,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Geração do Arquivo XML / Consulta Chave NFS-e', href: null },
   ]},
   { title: 'Utilitários', items: [
+    { label: 'Painel do Sistema', href: '/dashboard/admin/sistema' },
     { label: 'Ramais', href: '/dashboard/utilitarios/ramais' },
     { label: 'Calculadora', href: '/dashboard/utilitarios/calculadora' },
     { label: 'Visualizar Relatórios', href: '/dashboard/relatorios/censo' },

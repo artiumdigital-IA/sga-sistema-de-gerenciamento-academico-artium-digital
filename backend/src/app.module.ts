@@ -10,6 +10,7 @@ import { EnrollmentModule } from './enrollment/enrollment.module';
 import { RegistryModule } from './registry/registry.module';
 import { ReportingModule } from './reporting/reporting.module';
 import { FinancialModule } from './financial/financial.module';
+import { SystemModule } from './system/system.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 
@@ -25,6 +26,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     RegistryModule,
     ReportingModule,
     FinancialModule,
+    SystemModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
