@@ -285,9 +285,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }}>
         {[
           { label: 'Novo Aluno', href: '/dashboard/academico/alunos' },
-          { label: 'Nova Turma', href: null },
-          { label: 'Lançamento de Notas', href: null },
-          { label: 'Relatório', href: null },
+          { label: 'Nova Turma', href: '/dashboard/academico/ofertas' },
+          { label: 'Lançamento de Notas', href: '/dashboard/academico/notas' },
+          { label: 'Relatório', href: '/dashboard/academico/mapao' },
         ].map(({ label, href }) => (
           <button key={label} onClick={() => href && router.push(href)} style={{
             height: 26, padding: '0 10px', border: '1px solid var(--gray-200)',
