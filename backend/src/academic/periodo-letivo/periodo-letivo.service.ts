@@ -74,4 +74,15 @@ export class PeriodoLetivoService {
     return periodo;
   }
 
-  async remove(
+  async remove(id: string, usuarioId?: string) {
+    const antes = await this.findOne(id);
+    await this.prisma.periodoLetivo.delete({ where: { id } });
+    await this.audit.log({
+      usuarioId,
+      acao: 'DELETE',
+      entidade: 'PeriodoLetivo',
+      entidadeId: id,
+      dadosAntes: antes,
+    });
+  }
+}
