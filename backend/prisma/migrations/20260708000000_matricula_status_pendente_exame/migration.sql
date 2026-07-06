@@ -1,0 +1,11 @@
+-- AlterEnum
+-- Adiciona o valor PENDENTE_EXAME ao enum MatriculaStatus.
+-- Achado em teste end-to-end (Jul/2026): o schema.prisma já tinha PENDENTE_EXAME
+-- desde a Fase 4 (Diário e histórico / lógica de exame final em
+-- resultado-disciplina.service.ts), mas a migração original (20260622160057_init)
+-- criou o enum MatriculaStatus sem esse valor — nunca foi gerada uma migração
+-- para acompanhar a mudança do schema. Resultado: POST /matriculas/:id/consolidar
+-- retornava "Internal server error" (PostgresError 22P02 - invalid input value
+-- for enum) sempre que um aluno ficava elegível para exame final (frequência
+-- OK, nota < 6.0).
+ALTER TYPE "MatriculaStatus" ADD VALUE IF NOT EXISTS 'PENDENTE_EXAME' BEFORE 'APROVADO';
