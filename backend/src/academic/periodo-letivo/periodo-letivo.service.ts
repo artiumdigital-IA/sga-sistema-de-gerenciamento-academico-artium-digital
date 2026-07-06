@@ -19,7 +19,13 @@ export class PeriodoLetivoService {
       throw new ConflictException(`Período ${dto.ano}/${dto.semestre} já existe.`);
     }
 
-    const periodo = await this.prisma.periodoLetivo.create({ data: dto });
+    const periodo = await this.prisma.periodoLetivo.create({
+      data: {
+        ...dto,
+        dataInicio: new Date(dto.dataInicio),
+        dataFim: new Date(dto.dataFim),
+      },
+    });
 
     await this.audit.log({
       usuarioId,
@@ -49,7 +55,14 @@ export class PeriodoLetivoService {
 
   async update(id: string, dto: UpdatePeriodoLetivoDto, usuarioId?: string) {
     const antes = await this.findOne(id);
-    const periodo = await this.prisma.periodoLetivo.update({ where: { id }, data: dto });
+    const periodo = await this.prisma.periodoLetivo.update({
+      where: { id },
+      data: {
+        ...dto,
+        dataInicio: dto.dataInicio ? new Date(dto.dataInicio) : undefined,
+        dataFim: dto.dataFim ? new Date(dto.dataFim) : undefined,
+      },
+    });
     await this.audit.log({
       usuarioId,
       acao: 'UPDATE',
@@ -61,15 +74,4 @@ export class PeriodoLetivoService {
     return periodo;
   }
 
-  async remove(id: string, usuarioId?: string) {
-    const antes = await this.findOne(id);
-    await this.prisma.periodoLetivo.delete({ where: { id } });
-    await this.audit.log({
-      usuarioId,
-      acao: 'DELETE',
-      entidade: 'PeriodoLetivo',
-      entidadeId: id,
-      dadosAntes: antes,
-    });
-  }
-}
+  async remove(
