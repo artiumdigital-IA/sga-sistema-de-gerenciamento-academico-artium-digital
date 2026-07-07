@@ -301,4 +301,39 @@ export class DocumentoService {
       disciplinasIntegralizadas: disciplinasAprovadas.size,
     };
   }
+
+  async getCalendarioAcademico(periodoLetivoId: string) {
+    const periodo = await this.prisma.periodoLetivo.findUnique({
+      where: { id: periodoLetivoId },
+    });
+    if (!periodo) throw new NotFoundException('Período letivo não encontrado');
+
+    const eventos = await this.prisma.eventoCalendario.findMany({
+      where: { periodoLetivoId },
+      orderBy: [{ ordem: 'asc' }, { dataInicio: 'asc' }],
+    });
+
+    return {
+      periodo: {
+        id: periodo.id,
+        ano: periodo.ano,
+        semestre: periodo.semestre,
+        dataInicio: periodo.dataInicio,
+        dataFim: periodo.dataFim,
+        status: periodo.status,
+        semanasLetivas: periodo.semanasLetivas,
+        diasLetivos: periodo.diasLetivos,
+      },
+      eventos: eventos.map((e) => ({
+        id: e.id,
+        grupo: e.grupo,
+        titulo: e.titulo,
+        dataInicio: e.dataInicio,
+        dataFim: e.dataFim,
+        observacoes: e.observacoes,
+        ordem: e.ordem,
+      })),
+      geradoEm: new Date(),
+    };
+  }
 }

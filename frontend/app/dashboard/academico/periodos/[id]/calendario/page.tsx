@@ -241,11 +241,17 @@ export default function CalendarioAcademicoPeriodoPage() {
     <div style={{ padding: '24px 28px' }}>
       <button style={{ ...BTN_GHOST, marginBottom: 16 }} onClick={() => router.back()}>← Voltar</button>
 
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Calendário Acadêmico</h1>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--gray-500)' }}>
-          Período {periodo.ano}/{periodo.semestre === 'S1' ? '1' : '2'} · {fmt(periodo.dataInicio)} a {fmt(periodo.dataFim)}
-        </p>
+      <div style={{ marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Calendário Acadêmico</h1>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--gray-500)' }}>
+            Período {periodo.ano}/{periodo.semestre === 'S1' ? '1' : '2'} · {fmt(periodo.dataInicio)} a {fmt(periodo.dataFim)}
+          </p>
+        </div>
+        <button style={BTN_PRIMARY}
+          onClick={() => window.open(`/dashboard/secretaria/documentos/calendario-academico/${periodoId}`, '_blank')}>
+          🖨️ Gerar documento
+        </button>
       </div>
 
       <div style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16, marginBottom: 20, display: 'flex', alignItems: 'flex-end', gap: 16 }}>

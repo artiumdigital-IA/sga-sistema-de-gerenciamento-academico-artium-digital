@@ -4,12 +4,25 @@ import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 
 type Aluno = { id: string; nome: string; ra: string; curso?: { nome: string } };
+type PeriodoLetivo = { id: string; ano: number; semestre: 'S1' | 'S2' };
 
 export default function DocumentosPage() {
   const router = useRouter();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [periodos, setPeriodos] = useState<PeriodoLetivo[]>([]);
+  const [periodoSelecionado, setPeriodoSelecionado] = useState('');
+
+  useEffect(() => {
+    apiFetch<PeriodoLetivo[]>('/periodos-letivos')
+      .then(data => {
+        setPeriodos(data);
+        if (data.length > 0) setPeriodoSelecionado(data[0].id);
+      })
+      .catch(() => {});
+  }, []);
 
   async function buscar() {
     if (!search.trim()) return;
@@ -24,6 +37,22 @@ export default function DocumentosPage() {
     <div style={{ padding: '24px 28px' }}>
       <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 600 }}>Documentos</h2>
       <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--gray-500)' }}>Busque o aluno para gerar a declaração de matrícula ou o boletim.</p>
+
+      <div style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>Calendário Acadêmico:</span>
+        <select value={periodoSelecionado} onChange={e => setPeriodoSelecionado(e.target.value)}
+          style={{ padding: '6px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }}>
+          {periodos.map(p => (
+            <option key={p.id} value={p.id}>{p.ano}/{p.semestre === 'S1' ? '1' : '2'}</option>
+          ))}
+        </select>
+        <button
+          disabled={!periodoSelecionado}
+          onClick={() => window.open(`/dashboard/secretaria/documentos/calendario-academico/${periodoSelecionado}`, '_blank')}
+          style={{ padding: '6px 14px', fontSize: 12, border: '1px solid #0d7377', borderRadius: 4, cursor: 'pointer', background: '#d1f5f5', color: '#0d7377' }}>
+          Gerar documento
+        </button>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <input
