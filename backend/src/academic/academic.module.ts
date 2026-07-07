@@ -14,6 +14,7 @@ import { UnidadeModule } from './unidade/unidade.module';
 import { MateriaEquiparadaModule } from './materia-equiparada/materia-equiparada.module';
 import { FrequenciaModule } from './frequencia/frequencia.module';
 import { NotaPautaModule } from './nota-pauta/nota-pauta.module';
+import { EventoCalendarioModule } from './evento-calendario/evento-calendario.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { NotaPautaModule } from './nota-pauta/nota-pauta.module';
     MateriaEquiparadaModule,
     FrequenciaModule,
     NotaPautaModule,
+    EventoCalendarioModule,
   ],
   exports: [
     CursoModule,
@@ -49,6 +51,7 @@ import { NotaPautaModule } from './nota-pauta/nota-pauta.module';
     MateriaEquiparadaModule,
     FrequenciaModule,
     NotaPautaModule,
+    EventoCalendarioModule,
   ],
 })
 export class AcademicModule {}

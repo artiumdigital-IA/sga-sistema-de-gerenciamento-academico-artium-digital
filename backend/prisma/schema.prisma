@@ -103,6 +103,8 @@ model PeriodoLetivo {
   dataInicio DateTime            @db.Date
   dataFim    DateTime            @db.Date
   status     PeriodoStatus       @default(PLANEJADO)
+  semanasLetivas Int?
+  diasLetivos    Int?
 
   criadoEm   DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -110,9 +112,28 @@ model PeriodoLetivo {
   ofertas             Oferta[]
   processosSeletivos  ProcessoSeletivo[]
   contratos           ContratoMatricula[]
+  eventosCalendario   EventoCalendario[]
 
   @@unique([ano, semestre])
   @@map("periodos_letivos")
+}
+
+model EventoCalendario {
+  id              String   @id @default(uuid())
+  periodoLetivoId String
+  grupo           String?  // ex.: "Exames Finais", "Exames de 2a Epoca" - null para item avulso
+  titulo          String   // ex.: "Inicio das Aulas", "Regime de Credito"
+  dataInicio      DateTime @db.Date
+  dataFim         DateTime? @db.Date
+  observacoes     String?
+  ordem           Int      @default(0)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  periodoLetivo PeriodoLetivo @relation(fields: [periodoLetivoId], references: [id], onDelete: Cascade)
+
+  @@map("eventos_calendario")
 }
 
 // =============================================================================

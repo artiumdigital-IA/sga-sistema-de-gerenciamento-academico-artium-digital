@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 
 type Semestre = 'S1' | 'S2';
@@ -113,6 +114,7 @@ function PeriodoModal({ periodo, onClose, onSave }: {
 }
 
 export default function PeriodosPage() {
+  const router = useRouter();
   const [periodos, setPeriodos] = useState<PeriodoLetivo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -188,6 +190,10 @@ export default function PeriodosPage() {
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
+                        <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }}
+                          onClick={() => router.push(`/dashboard/academico/periodos/${p.id}/calendario`)}>
+                          Calendário
+                        </button>
                         <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(p)}>Editar</button>
                         <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }}
                           disabled={deleting === p.id} onClick={() => deletar(p.id)}>
