@@ -142,7 +142,7 @@ function DashCard({
               <circle cx="5" cy="18" r="1.5"/><circle cx="12" cy="18" r="1.5"/><circle cx="19" cy="18" r="1.5"/>
             </svg>
           </span>
-          <span style={{ color: 'var(--blue-dark)' }}>{icon}</span>
+          <span style={{ color: 'var(--accent-blue-text)' }}>{icon}</span>
           <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-700)' }}>{title}</span>
         </div>
         <button style={{ border: 'none', background: 'none', color: 'var(--gray-400)', cursor: 'pointer', display: 'flex', padding: 2 }}>
@@ -206,7 +206,7 @@ function GradeHoraria() {
               <td style={{ ...tdStyle, fontWeight: 500, color: 'var(--gray-700)' }}>{o.disciplina?.nome ?? '—'}</td>
               <td style={tdStyle}>{o.professor?.nome ?? '—'}</td>
               <td style={tdStyle}>{TURNO_LABEL[o.turno] ?? o.turno}</td>
-              <td style={{ ...tdStyle, color: 'var(--blue-mid)' }}>{o.horario ?? '—'}</td>
+              <td style={{ ...tdStyle, color: 'var(--accent-blue-text)' }}>{o.horario ?? '—'}</td>
               <td style={tdStyle}>{o.sala ?? '—'}</td>
               <td style={tdStyle}>{o.vagas}</td>
             </tr>
@@ -270,8 +270,8 @@ function BoletimDiario() {
           <button key={t} onClick={() => setActiveTab(i)} style={{
             padding: '6px 12px', fontSize: 11.5, fontWeight: 600, border: 'none', background: 'none',
             cursor: 'pointer', whiteSpace: 'nowrap',
-            color: activeTab === i ? 'var(--blue-dark)' : 'var(--gray-400)',
-            borderBottom: activeTab === i ? '2px solid var(--blue-dark)' : '2px solid transparent',
+            color: activeTab === i ? 'var(--accent-blue-text)' : 'var(--gray-400)',
+            borderBottom: activeTab === i ? '2px solid var(--accent-blue-text)' : '2px solid transparent',
             marginBottom: -1,
           }}>
             {t}
@@ -438,7 +438,7 @@ function MinhaConta() {
   useEffect(() => { carregar(); }, []);
 
   if (loading) return <div style={{ padding: 24, fontSize: 12.5, color: 'var(--gray-400)' }}>Carregando…</div>;
-  if (erro || !perfil) return <div style={{ padding: 24, fontSize: 12.5, color: 'var(--red)' }}>{erro ?? 'Não foi possível carregar seu perfil.'}</div>;
+  if (erro || !perfil) return <div style={{ padding: 24, fontSize: 12.5, color: 'var(--accent-red-text)' }}>{erro ?? 'Não foi possível carregar seu perfil.'}</div>;
 
   const nomeExibido = perfil.nome || perfil.email.split('@')[0];
   const cargo = CARGO_LABEL[perfil.perfil] ?? perfil.perfil;
@@ -490,7 +490,7 @@ function MinhaConta() {
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
                   <span style={{ color: 'var(--gray-400)' }}>{label}</span>
                   {label === 'Senha' ? (
-                    <button onClick={() => setAlterandoSenha(true)} style={{ padding: '3px 8px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 11, cursor: 'pointer', color: 'var(--blue-dark)', fontWeight: 600 }}>
+                    <button onClick={() => setAlterandoSenha(true)} style={{ padding: '3px 8px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 11, cursor: 'pointer', color: 'var(--accent-blue-text)', fontWeight: 600 }}>
                       Alterar
                     </button>
                   ) : (
@@ -610,7 +610,7 @@ function EditarPerfilModal({ perfil, onClose, onSaved }: {
           </label>
         </div>
 
-        {erro && <div style={{ fontSize: 11.5, color: 'var(--red)', marginBottom: 10 }}>{erro}</div>}
+        {erro && <div style={{ fontSize: 11.5, color: 'var(--accent-red-text)', marginBottom: 10 }}>{erro}</div>}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button onClick={onClose} disabled={salvando} style={{
@@ -703,7 +703,7 @@ function AlterarSenhaModal({ onClose }: { onClose: () => void }) {
               </label>
             </div>
 
-            {erro && <div style={{ fontSize: 11.5, color: 'var(--red)', marginBottom: 10 }}>{erro}</div>}
+            {erro && <div style={{ fontSize: 11.5, color: 'var(--accent-red-text)', marginBottom: 10 }}>{erro}</div>}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={onClose} disabled={salvando} style={{
@@ -860,8 +860,8 @@ export default function DashboardPage() {
           <button key={tab.key} onClick={() => setActiveView(tab.key)} style={{
             padding: '9px 14px', fontSize: 12.5, fontWeight: 600, border: 'none', background: 'none',
             cursor: 'pointer',
-            color: activeView === tab.key ? 'var(--blue-dark)' : 'var(--gray-400)',
-            borderBottom: activeView === tab.key ? '2px solid var(--blue-dark)' : '2px solid transparent',
+            color: activeView === tab.key ? 'var(--accent-blue-text)' : 'var(--gray-400)',
+            borderBottom: activeView === tab.key ? '2px solid var(--accent-blue-text)' : '2px solid transparent',
           }}>
             {tab.label}
           </button>

@@ -172,9 +172,9 @@ export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; 
           <button key={t} onClick={() => onTabChange(t)} style={{
             flex: 1, height: 36, border: 'none', cursor: 'pointer',
             background: tab === t ? 'var(--white)' : 'transparent',
-            borderBottom: tab === t ? '2px solid var(--blue-dark)' : '2px solid transparent',
+            borderBottom: tab === t ? '2px solid var(--accent-blue-text)' : '2px solid transparent',
             fontSize: 11, fontWeight: tab === t ? 700 : 400,
-            color: tab === t ? 'var(--blue-dark)' : 'var(--gray-400)',
+            color: tab === t ? 'var(--accent-blue-text)' : 'var(--gray-400)',
           }}>
             {t === 'barra' ? 'Barra Rapida' : 'Mensagens'}
           </button>

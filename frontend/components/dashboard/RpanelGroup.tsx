@@ -36,7 +36,7 @@ export function RpanelGroup({ title, items, open, onToggle }: {
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '5px 10px 5px 20px', fontSize: 11.5,
                   fontWeight: isActive ? 600 : 400,
-                  color: isActive ? 'var(--blue-dark)' : enabled ? 'var(--gray-500)' : 'var(--gray-300)',
+                  color: isActive ? 'var(--accent-blue-text)' : enabled ? 'var(--gray-500)' : 'var(--gray-300)',
                   background: isActive ? 'var(--gray-100)' : 'transparent',
                   cursor: enabled ? 'pointer' : 'default',
                 }}
