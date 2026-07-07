@@ -27,14 +27,14 @@ const BTN = (v: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer',
   fontSize: 13, fontWeight: 500,
   background: v === 'primary' ? '#1a56db' : v === 'danger' ? '#e02424' : 'transparent',
-  color: v === 'ghost' ? '#374151' : '#fff',
-  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: v === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
 const INPUT: React.CSSProperties = {
   width: '100%', padding: '7px 10px', borderRadius: 5,
-  border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box',
+  border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box',
 };
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 
 const EMPTY = { titulo: '', texto: '', tag: 'GERAL' as TagAviso, autorNome: '' };
 
@@ -92,25 +92,25 @@ export default function AvisosPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Avisos</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>{avisos.length} aviso{avisos.length !== 1 ? 's' : ''}</p>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>{avisos.length} aviso{avisos.length !== 1 ? 's' : ''}</p>
         </div>
         <button style={BTN('primary')} onClick={openNew}>+ Novo Aviso</button>
       </div>
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 14 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</p>}
       {error && <p style={{ color: '#e02424', fontSize: 14 }}>{error}</p>}
 
       {!loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {avisos.length === 0 && (
-            <div style={{ padding: 24, textAlign: 'center', color: '#9ca3af', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)', background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8 }}>
               Nenhum aviso cadastrado.
             </div>
           )}
           {avisos.map(a => {
             const tc = TAG_COLOR[a.tag];
             return (
-              <div key={a.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '14px 16px', display: 'flex', gap: 12 }}>
+              <div key={a.id} style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: '14px 16px', display: 'flex', gap: 12 }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
                   background: a.tag === 'IMPORTANTE' ? '#f8d7db' : a.tag === 'APENAS_EQUIPE' ? '#fef3cd' : '#dde1e8',
@@ -121,14 +121,14 @@ export default function AvisosPage() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600, fontSize: 13, color: '#111827' }}>{a.autorNome}</span>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-700)' }}>{a.autorNome}</span>
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, background: tc.bg, color: tc.color }}>
                       {TAG_LABEL[a.tag]}
                     </span>
-                    <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 'auto' }}>{fmt(a.criadoEm)}</span>
+                    <span style={{ fontSize: 11, color: 'var(--gray-400)', marginLeft: 'auto' }}>{fmt(a.criadoEm)}</span>
                   </div>
-                  <p style={{ fontWeight: 600, fontSize: 13, margin: '0 0 2px', color: '#374151' }}>{a.titulo}</p>
-                  <p style={{ fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>{a.texto}</p>
+                  <p style={{ fontWeight: 600, fontSize: 13, margin: '0 0 2px', color: 'var(--gray-700)' }}>{a.titulo}</p>
+                  <p style={{ fontSize: 12, color: 'var(--gray-500)', margin: 0, lineHeight: 1.5 }}>{a.texto}</p>
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flexShrink: 0 }}>
                   <button style={BTN('ghost')} onClick={() => openEdit(a)}>Editar</button>
@@ -145,7 +145,7 @@ export default function AvisosPage() {
       {/* Modal */}
       {modal !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#fff', borderRadius: 10, padding: 24, width: 480, maxWidth: '95vw' }}>
+          <div style={{ background: 'var(--white)', borderRadius: 10, padding: 24, width: 480, maxWidth: '95vw' }}>
             <h2 style={{ margin: '0 0 18px', fontSize: 16, fontWeight: 700 }}>
               {modal === 'new' ? 'Novo Aviso' : 'Editar Aviso'}
             </h2>

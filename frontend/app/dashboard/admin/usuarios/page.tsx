@@ -38,7 +38,7 @@ const PERFIL_COLOR: Record<Perfil, string> = {
   PROFESSOR: '#7c3aed', ALUNO: '#d97706',
 };
 const STATUS_COLOR: Record<Status, string> = {
-  ATIVO: '#16a34a', INATIVO: '#6b7280', BLOQUEADO: '#dc2626',
+  ATIVO: '#16a34a', INATIVO: 'var(--gray-500)', BLOQUEADO: '#dc2626',
 };
 
 // ─── componentes auxiliares (fora do componente principal para evitar remount) ─
@@ -54,9 +54,9 @@ function Badge({ label, color }: { label: string; color: string }) {
 function FieldInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{label}</label>
+      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)' }}>{label}</label>
       <input {...props} style={{
-        padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6,
+        padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 6,
         fontSize: 13, outline: 'none', ...props.style,
       }} />
     </div>
@@ -66,10 +66,10 @@ function FieldInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputElem
 function FieldSelect({ label, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{label}</label>
+      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)' }}>{label}</label>
       <select {...props} style={{
-        padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6,
-        fontSize: 13, background: '#fff',
+        padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 6,
+        fontSize: 13, background: 'var(--white)',
       }}>{children}</select>
     </div>
   );
@@ -82,12 +82,12 @@ function Modal({ titulo, onClose, children }: { titulo: string; onClose: () => v
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
     }} onClick={onClose}>
       <div style={{
-        background: '#fff', borderRadius: 10, padding: 24, width: 420, maxWidth: '94vw',
+        background: 'var(--white)', borderRadius: 10, padding: 24, width: 420, maxWidth: '94vw',
         boxShadow: '0 20px 60px rgba(0,0,0,.25)',
       }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{titulo}</h3>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, cursor: 'pointer', color: '#6b7280' }}>x</button>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--gray-500)' }}>x</button>
         </div>
         {children}
       </div>
@@ -99,7 +99,7 @@ const BtnPrimary = ({ children, ...p }: React.ButtonHTMLAttributes<HTMLButtonEle
   <button {...p} style={{ padding: '7px 16px', border: 'none', borderRadius: 6, background: '#1e3a5f', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600, ...p.style }}>{children}</button>
 );
 const BtnSecondary = ({ children, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-  <button {...p} style={{ padding: '7px 16px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13, ...p.style }}>{children}</button>
+  <button {...p} style={{ padding: '7px 16px', border: '1px solid var(--gray-300)', borderRadius: 6, background: 'var(--white)', cursor: 'pointer', fontSize: 13, ...p.style }}>{children}</button>
 );
 
 // ─── componente principal ─────────────────────────────────────────────────────
@@ -205,7 +205,7 @@ export default function UsuariosPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Gestao de Usuarios</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--gray-500)' }}>
             {usuarios.length} usuario{usuarios.length !== 1 ? 's' : ''} cadastrado{usuarios.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -228,14 +228,14 @@ export default function UsuariosPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         <input placeholder="Buscar por e-mail ou nome..." value={busca}
           onChange={e => setBusca(e.target.value)}
-          style={{ flex: 1, minWidth: 200, padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 }} />
+          style={{ flex: 1, minWidth: 200, padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 6, fontSize: 13 }} />
         <select value={filtroPerfil} onChange={e => setFiltroPerfil(e.target.value as Perfil | '')}
-          style={{ padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, background: '#fff' }}>
+          style={{ padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 6, fontSize: 13, background: 'var(--white)' }}>
           <option value="">Todos os perfis</option>
           {(Object.keys(PERFIL_LABEL) as Perfil[]).map(p => <option key={p} value={p}>{PERFIL_LABEL[p]}</option>)}
         </select>
         <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value as Status | '')}
-          style={{ padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, background: '#fff' }}>
+          style={{ padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 6, fontSize: 13, background: 'var(--white)' }}>
           <option value="">Todos os status</option>
           <option value="ATIVO">Ativo</option>
           <option value="INATIVO">Inativo</option>
@@ -244,40 +244,40 @@ export default function UsuariosPage() {
       </div>
 
       {/* tabela */}
-      {loading ? <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p>
+      {loading ? <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</p>
         : erro ? <p style={{ color: '#dc2626', fontSize: 13 }}>{erro}</p>
         : (
-        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['E-mail', 'Perfil', 'Status', 'Vinculo', 'Criado em', 'Acoes'].map(h => (
-                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtrados.length === 0
-                ? <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>Nenhum usuario encontrado.</td></tr>
+                ? <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum usuario encontrado.</td></tr>
                 : filtrados.map((u, i) => (
-                  <tr key={u.id} style={{ borderBottom: i < filtrados.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                  <tr key={u.id} style={{ borderBottom: i < filtrados.length - 1 ? '1px solid var(--gray-100)' : 'none' }}>
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ fontWeight: 500 }}>{u.email}</div>
                       {u.mfaAtivo && <span style={{ fontSize: 10, color: '#7c3aed' }}>MFA ativo</span>}
                     </td>
                     <td style={{ padding: '10px 12px' }}><Badge label={PERFIL_LABEL[u.perfil]} color={PERFIL_COLOR[u.perfil]} /></td>
                     <td style={{ padding: '10px 12px' }}><Badge label={u.status} color={STATUS_COLOR[u.status]} /></td>
-                    <td style={{ padding: '10px 12px', color: '#6b7280', fontSize: 12 }}>
+                    <td style={{ padding: '10px 12px', color: 'var(--gray-500)', fontSize: 12 }}>
                       {u.aluno ? `${u.aluno.nome} (RA: ${u.aluno.ra})` : u.professor ? u.professor.nome : '-'}
                     </td>
-                    <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: 12 }}>
+                    <td style={{ padding: '10px 12px', color: 'var(--gray-400)', fontSize: 12 }}>
                       {new Date(u.criadoEm).toLocaleDateString('pt-BR')}
                     </td>
                     <td style={{ padding: '10px 12px' }}>
                       {isAdmin && (
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                           <button onClick={() => { setModalEditar(u); setEditarPerfil(u.perfil); }}
-                            style={{ padding: '3px 8px', border: '1px solid #d1d5db', borderRadius: 4, background: '#fff', cursor: 'pointer', fontSize: 11 }}>
+                            style={{ padding: '3px 8px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'var(--white)', cursor: 'pointer', fontSize: 11 }}>
                             Editar
                           </button>
                           <button onClick={() => handleToggleStatus(u)}
@@ -287,7 +287,7 @@ export default function UsuariosPage() {
                             {u.status === 'BLOQUEADO' ? 'Ativar' : 'Bloquear'}
                           </button>
                           <button onClick={() => { setModalResetar(u); setNovaSenha(''); }}
-                            style={{ padding: '3px 8px', border: '1px solid #d1d5db', borderRadius: 4, background: '#fff', cursor: 'pointer', fontSize: 11 }}>
+                            style={{ padding: '3px 8px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'var(--white)', cursor: 'pointer', fontSize: 11 }}>
                             Reset senha
                           </button>
                         </div>

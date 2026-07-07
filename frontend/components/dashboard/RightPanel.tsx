@@ -1,8 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { RpanelGroup, type RpanelItem } from './RpanelGroup';
 import { MessagesPanel } from './MessagesPanel';
+
+const DIACRITICOS = new RegExp(String.fromCharCode(91, 92, 117, 48, 51, 48, 48, 45, 92, 117, 48, 51, 54, 102, 93), 'g');
+function normalizar(s: string): string {
+  return s.normalize('NFD').replace(DIACRITICOS, '').toLowerCase();
+}
 
 // Mapeamento "Barra Rápida" (nomenclatura/estrutura de menu da Kirsch, levantada no spike de
 // migração) -> telas equivalentes já existentes na plataforma nova. href: null = ainda não
@@ -140,6 +145,17 @@ export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; 
   const pathname = usePathname();
   const initialOpen = RPANEL_GROUPS.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
+  const [busca, setBusca] = useState('');
+
+  const buscando = busca.trim().length > 0;
+
+  const gruposFiltrados = useMemo(() => {
+    if (!buscando) return RPANEL_GROUPS;
+    const alvo = normalizar(busca.trim());
+    return RPANEL_GROUPS
+      .map(g => ({ ...g, items: g.items.filter(i => normalizar(i.label).includes(alvo)) }))
+      .filter(g => g.items.length > 0);
+  }, [busca, buscando]);
 
   return (
     <div style={{
@@ -165,14 +181,57 @@ export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; 
         ))}
       </div>
 
+      {/* Pesquisa */}
+      {tab === 'barra' && (
+        <div style={{ padding: 8, borderBottom: '1px solid var(--gray-200)', flexShrink: 0 }}>
+          <div style={{ position: 'relative' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }}>
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              placeholder="Pesquisar na barra rápida..."
+              style={{
+                width: '100%', boxSizing: 'border-box', padding: '6px 8px 6px 26px',
+                fontSize: 11.5, borderRadius: 5, border: '1px solid var(--gray-200)',
+                background: 'var(--gray-50)', outline: 'none',
+              }}
+            />
+            {buscando && (
+              <button
+                onClick={() => setBusca('')}
+                title="Limpar"
+                style={{
+                  position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                  border: 'none', background: 'transparent', cursor: 'pointer',
+                  fontSize: 13, color: 'var(--gray-400)', lineHeight: 1, padding: 2,
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Conteudo */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'barra'
-          ? RPANEL_GROUPS.map(g => (
-              <RpanelGroup key={g.title} title={g.title} items={g.items}
-                open={openTitle === g.title}
-                onToggle={() => setOpenTitle(t => t === g.title ? null : g.title)} />
-            ))
+          ? (gruposFiltrados.length > 0
+              ? gruposFiltrados.map(g => (
+                  <RpanelGroup key={g.title} title={g.title} items={g.items}
+                    open={buscando ? true : openTitle === g.title}
+                    onToggle={() => setOpenTitle(t => t === g.title ? null : g.title)} />
+                ))
+              : (
+                <p style={{ padding: '16px 12px', fontSize: 11.5, color: 'var(--gray-400)' }}>
+                  Nenhum item encontrado para &quot;{busca}&quot;.
+                </p>
+              )
+            )
           : <MessagesPanel />
         }
       </div>

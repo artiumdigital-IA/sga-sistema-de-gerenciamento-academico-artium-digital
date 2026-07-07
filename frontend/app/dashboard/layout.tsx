@@ -45,6 +45,33 @@ function SvgIcon({ d, size = 18 }: { d: string; size?: number }) {
   );
 }
 
+function ThemeIcon({ dark, size = 16 }: { dark: boolean; size?: number }) {
+  if (dark) {
+    // Lua — modo escuro ativo
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+    );
+  }
+  // Sol — modo claro ativo
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<JwtUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -54,6 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [ramaisOpen, setRamaisOpen] = useState(false);
   const [rightTab, setRightTab] = useState<'barra' | 'msg'>('barra');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [darkMode, setDarkMode] = useState(false);
   const branding = useBranding();
   const simboloUrl = apiFileUrl(branding.simboloUrl) || apiFileUrl(branding.logoUrl);
   const router = useRouter();
@@ -86,6 +114,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
+
+  // Lê o tema já aplicado pelo script anti-flash (app/layout.tsx) — mantém uma
+  // única fonte de verdade (a classe no <html>) em vez de reler o localStorage
+  // aqui, evitando os dois ficarem dessincronizados.
+  useEffect(() => {
+    setDarkMode(document.documentElement.classList.contains('dark-theme'));
+  }, []);
+
+  const toggleTheme = () => {
+    const proximo = !darkMode;
+    setDarkMode(proximo);
+    document.documentElement.classList.toggle('dark-theme', proximo);
+    try { localStorage.setItem('fiurj_theme', proximo ? 'dark' : 'light'); } catch { /* ignora */ }
+  };
 
   // Contagem de mensagens não lidas pro badge do ícone de Mensagens no TopNav —
   // independente da aba do painel direito estar aberta ou não, pra sempre avisar
@@ -131,7 +173,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
-      background: '#fff', fontFamily: 'var(--font-body)' }}>
+      background: 'var(--white)', fontFamily: 'var(--font-body)' }}>
 
       {/* ── TopNav ── */}
       <div style={{
@@ -155,8 +197,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Ações rápidas */}
-        {ACOES_RAPIDAS.map(({ d, onClick, badge }, i) => (
+        {/* Ícone 1: Painel (Home) */}
+        <button onClick={ACOES_RAPIDAS[0].onClick} style={{
+          width: 30, height: 30, border: 'none', borderRadius: 4, cursor: 'pointer',
+          background: 'transparent', color: 'rgba(255,255,255,.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.12)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+        >
+          <SvgIcon d={ACOES_RAPIDAS[0].d} size={16} />
+        </button>
+
+        {/* Ícone 2: alternar tema claro/escuro */}
+        <button onClick={toggleTheme} title={darkMode ? 'Mudar para modo claro' : 'Mudar para modo escuro'} style={{
+          width: 30, height: 30, border: 'none', borderRadius: 4, cursor: 'pointer',
+          background: 'transparent', color: 'rgba(255,255,255,.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.12)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+        >
+          <ThemeIcon dark={darkMode} size={16} />
+        </button>
+
+        {/* Ícones seguintes: Avisos, Mensagens */}
+        {ACOES_RAPIDAS.slice(1).map(({ d, onClick, badge }, i) => (
           <button key={i} onClick={onClick} style={{
             position: 'relative', width: 30, height: 30, border: 'none', borderRadius: 4, cursor: 'pointer',
             background: 'transparent', color: 'rgba(255,255,255,.7)',

@@ -50,7 +50,7 @@ const TIPO_COLOR: Record<AvaliacaoTipo, { bg: string; color: string }> = {
   TRABALHO:    { bg: '#d1fae5', color: '#065f46' },
   SEMINARIO:   { bg: '#ede9fe', color: '#5b21b6' },
   EXAME_FINAL: { bg: '#fee2e2', color: '#991b1b' },
-  OUTRO:       { bg: '#f3f4f6', color: '#374151' },
+  OUTRO:       { bg: 'var(--gray-100)', color: 'var(--gray-700)' },
 };
 const SITUACAO_STYLE: Record<SituacaoResultado, { bg: string; color: string; label: string }> = {
   APROVADO:              { bg: '#d1fae5', color: '#065f46', label: 'Aprovado' },
@@ -62,12 +62,12 @@ const SITUACAO_STYLE: Record<SituacaoResultado, { bg: string; color: string; lab
 const BTN = (v: 'primary' | 'danger' | 'ghost' | 'warning') => ({
   padding: '7px 16px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
   background: v === 'primary' ? '#1a56db' : v === 'danger' ? '#e02424' : v === 'warning' ? '#d97706' : 'transparent',
-  color: v === 'ghost' ? '#374151' : '#fff',
-  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: v === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
-const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const };
-const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
-const CARD = { background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', padding: 20, marginBottom: 16 };
+const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' as const };
+const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
+const CARD = { background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', padding: 20, marginBottom: 16 };
 
 export default function MatriculaNotasPage() {
   const params = useParams();
@@ -163,7 +163,7 @@ export default function MatriculaNotasPage() {
     }
   }
 
-  if (loading) return <p style={{ padding: 24, color: '#6b7280' }}>Carregando...</p>;
+  if (loading) return <p style={{ padding: 24, color: 'var(--gray-500)' }}>Carregando...</p>;
   if (error) return <p style={{ padding: 24, color: '#e02424' }}>{error}</p>;
   if (!matricula) return null;
 
@@ -194,10 +194,10 @@ export default function MatriculaNotasPage() {
             <h1 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>
               {oferta.disciplina.codigo} — {oferta.disciplina.nome}
             </h1>
-            <p style={{ margin: '0 0 2px', fontSize: 13, color: '#6b7280' }}>
+            <p style={{ margin: '0 0 2px', fontSize: 13, color: 'var(--gray-500)' }}>
               {aluno.ra} · {aluno.nome}
             </p>
-            <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-400)' }}>
               {oferta.periodoLetivo.ano}/{oferta.periodoLetivo.semestre === 'S1' ? '1' : '2'} · {oferta.professor.nome} · {oferta.disciplina.cargaHoraria}h
             </p>
           </div>
@@ -229,13 +229,13 @@ export default function MatriculaNotasPage() {
       <div style={CARD}>
         <h2 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700 }}>Avaliações</h2>
         {avaliacoes.length === 0 ? (
-          <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>Nenhuma avaliação lançada.</p>
+          <p style={{ color: 'var(--gray-400)', fontSize: 13, margin: 0 }}>Nenhuma avaliação lançada.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['Tipo', 'Nota', 'Peso', 'Contribuição', ''].map(h => (
-                  <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -244,15 +244,15 @@ export default function MatriculaNotasPage() {
                 const tc = TIPO_COLOR[a.tipo];
                 const contribuicao = Number(a.nota) * Number(a.peso);
                 return (
-                  <tr key={a.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                  <tr key={a.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                     <td style={{ padding: '8px 12px' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: tc.bg, color: tc.color }}>
                         {TIPO_LABEL[a.tipo]}
                       </span>
                     </td>
                     <td style={{ padding: '8px 12px', fontWeight: 700, fontSize: 15 }}>{Number(a.nota).toFixed(1)}</td>
-                    <td style={{ padding: '8px 12px', color: '#6b7280' }}>{Number(a.peso).toFixed(1)}</td>
-                    <td style={{ padding: '8px 12px', color: '#6b7280', fontSize: 12 }}>{contribuicao.toFixed(2)}</td>
+                    <td style={{ padding: '8px 12px', color: 'var(--gray-500)' }}>{Number(a.peso).toFixed(1)}</td>
+                    <td style={{ padding: '8px 12px', color: 'var(--gray-500)', fontSize: 12 }}>{contribuicao.toFixed(2)}</td>
                     <td style={{ padding: '8px 12px' }}>
                       <button style={{ ...BTN('danger'), padding: '3px 8px', fontSize: 11 }}
                         onClick={() => removerAvaliacao(a.id)}>✕</button>
@@ -266,13 +266,13 @@ export default function MatriculaNotasPage() {
 
         {/* Preview média */}
         {prevMediaSemestre !== null && (
-          <div style={{ fontSize: 13, color: '#374151', padding: '8px 0 0', borderTop: '1px solid #f3f4f6' }}>
+          <div style={{ fontSize: 13, color: 'var(--gray-700)', padding: '8px 0 0', borderTop: '1px solid var(--gray-100)' }}>
             Média do semestre (avaliações regulares):{' '}
             <strong style={{ fontSize: 15, color: prevMediaSemestre >= 6 ? '#065f46' : '#e02424' }}>
               {prevMediaSemestre.toFixed(2)}
             </strong>
             {exame && (
-              <span style={{ marginLeft: 12, color: '#6b7280' }}>
+              <span style={{ marginLeft: 12, color: 'var(--gray-500)' }}>
                 · Após exame: <strong>{((prevMediaSemestre + Number(exame.nota)) / 2).toFixed(2)}</strong>
               </span>
             )}
@@ -312,7 +312,7 @@ export default function MatriculaNotasPage() {
       {/* Consolidar resultado */}
       <div style={CARD}>
         <h2 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700 }}>Consolidar resultado</h2>
-        <p style={{ margin: '0 0 14px', fontSize: 12, color: '#6b7280' }}>
+        <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--gray-500)' }}>
           Calcula média, frequência e situação final. Pode ser executado mais de uma vez (ex: após lançar exame final).
         </p>
         <form onSubmit={consolidar}>
@@ -353,8 +353,8 @@ export default function MatriculaNotasPage() {
               { label: 'Faltas (h/a)', value: String(resultado.faltas), highlight: false, ok: true },
               { label: 'Situação', value: SITUACAO_STYLE[resultado.situacao]?.label ?? resultado.situacao, highlight: true, ok: resultado.situacao === 'APROVADO' },
             ].map(({ label, value, ok, highlight }) => (
-              <div key={label} style={{ background: '#f9fafb', borderRadius: 6, padding: '12px 14px' }}>
-                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{label}</div>
+              <div key={label} style={{ background: 'var(--gray-50)', borderRadius: 6, padding: '12px 14px' }}>
+                <div style={{ fontSize: 11, color: 'var(--gray-500)', marginBottom: 4 }}>{label}</div>
                 <div style={{ fontSize: highlight ? 20 : 16, fontWeight: 700, color: ok ? '#065f46' : '#e02424' }}>{value}</div>
               </div>
             ))}

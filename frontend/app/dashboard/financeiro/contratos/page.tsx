@@ -18,15 +18,15 @@ type Aluno = { id: string; nome: string; ra: string };
 type Periodo = { id: string; ano: number; semestre: number };
 
 const STATUS_COLOR: Record<string, string> = {
-  PENDENTE: '#f59e0b', PAGO: '#10b981', VENCIDO: '#ef4444', CANCELADO: '#9ca3af',
-  ATIVO: '#10b981', SUSPENSO: '#f59e0b', ENCERRADO: '#6b7280',
+  PENDENTE: '#f59e0b', PAGO: '#10b981', VENCIDO: '#ef4444', CANCELADO: 'var(--gray-400)',
+  ATIVO: '#10b981', SUSPENSO: '#f59e0b', ENCERRADO: 'var(--gray-500)',
 };
 
 function fmt(v: number) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v); }
 function fmtDate(s: string) { return new Date(s).toLocaleDateString('pt-BR'); }
 
 function Badge({ s }: { s: string }) {
-  return <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: (STATUS_COLOR[s] ?? '#e5e7eb') + '22', color: STATUS_COLOR[s] ?? '#374151' }}>{s}</span>;
+  return <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: (STATUS_COLOR[s] ?? 'var(--gray-200)') + '22', color: STATUS_COLOR[s] ?? 'var(--gray-700)' }}>{s}</span>;
 }
 
 // ── Modal Novo Contrato ────────────────────────────────────────────────────
@@ -58,9 +58,9 @@ function ModalNovoContrato({ onClose, onSaved }: { onClose: () => void; onSaved:
   }
 
   const overlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 };
-  const box: React.CSSProperties = { background: '#fff', borderRadius: 10, padding: 28, width: 480, maxHeight: '90vh', overflowY: 'auto' };
-  const inp: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' };
-  const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 };
+  const box: React.CSSProperties = { background: 'var(--white)', borderRadius: 10, padding: 28, width: 480, maxHeight: '90vh', overflowY: 'auto' };
+  const inp: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' };
+  const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 };
 
   return (
     <div style={overlay} onClick={onClose}>
@@ -101,7 +101,7 @@ function ModalNovoContrato({ onClose, onSaved }: { onClose: () => void; onSaved:
           </div>
           {err && <div style={{ color: '#ef4444', fontSize: 12 }}>{err}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-            <button style={{ padding: '7px 16px', border: '1px solid #d1d5db', borderRadius: 5, background: '#fff', cursor: 'pointer', fontSize: 13 }} onClick={onClose}>Cancelar</button>
+            <button style={{ padding: '7px 16px', border: '1px solid var(--gray-300)', borderRadius: 5, background: 'var(--white)', cursor: 'pointer', fontSize: 13 }} onClick={onClose}>Cancelar</button>
             <button style={{ padding: '7px 16px', border: 'none', borderRadius: 5, background: '#1e3a5f', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }} onClick={salvar} disabled={saving}>{saving ? 'Salvando...' : 'Criar Contrato'}</button>
           </div>
         </div>
@@ -116,8 +116,8 @@ function ModalPagar({ parcela, onClose, onSaved }: { parcela: Parcela; onClose: 
   const [saving, setSaving] = useState(false);
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
-  const inp: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' };
-  const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 };
+  const inp: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' };
+  const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 };
 
   async function pagar() {
     setSaving(true);
@@ -128,7 +128,7 @@ function ModalPagar({ parcela, onClose, onSaved }: { parcela: Parcela; onClose: 
   }
 
   const overlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 };
-  const box: React.CSSProperties = { background: '#fff', borderRadius: 10, padding: 24, width: 360 };
+  const box: React.CSSProperties = { background: 'var(--white)', borderRadius: 10, padding: 24, width: 360 };
 
   return (
     <div style={overlay} onClick={onClose}>
@@ -143,7 +143,7 @@ function ModalPagar({ parcela, onClose, onSaved }: { parcela: Parcela; onClose: 
           </div>
           <div><label style={lbl}>Data do Pagamento</label><input style={inp} type="date" value={form.dataPagamento} onChange={set('dataPagamento')} /></div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-            <button style={{ padding: '7px 14px', border: '1px solid #d1d5db', borderRadius: 5, background: '#fff', cursor: 'pointer', fontSize: 13 }} onClick={onClose}>Cancelar</button>
+            <button style={{ padding: '7px 14px', border: '1px solid var(--gray-300)', borderRadius: 5, background: 'var(--white)', cursor: 'pointer', fontSize: 13 }} onClick={onClose}>Cancelar</button>
             <button style={{ padding: '7px 14px', border: 'none', borderRadius: 5, background: '#10b981', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }} onClick={pagar} disabled={saving}>{saving ? '...' : 'Confirmar Pagamento'}</button>
           </div>
         </div>
@@ -189,25 +189,25 @@ export default function ContratosPage() {
       </div>
 
       <input
-        style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13, marginBottom: 14, boxSizing: 'border-box' }}
+        style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--gray-300)', fontSize: 13, marginBottom: 14, boxSizing: 'border-box' }}
         placeholder="Buscar por nome ou RA..."
         value={search} onChange={e => setSearch(e.target.value)}
       />
 
-      {loading ? <div style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>Carregando...</div> : (
+      {loading ? <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Carregando...</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.length === 0 && <div style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>Nenhum contrato encontrado.</div>}
+          {filtered.length === 0 && <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum contrato encontrado.</div>}
           {filtered.map(c => {
             const isOpen = expanded === c.id;
             const pago = totalPago(c);
             const vencido = totalVencido(c);
             return (
-              <div key={c.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+              <div key={c.id} style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', cursor: 'pointer', gap: 12 }} onClick={() => setExpanded(isOpen ? null : c.id)}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{c.aluno.nome} <span style={{ color: '#6b7280', fontWeight: 400, fontSize: 12 }}>({c.aluno.ra})</span></div>
-                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{c.periodoLetivo.ano}/{c.periodoLetivo.semestre} · {c.numeroParcelas}x de {fmt(c.valorTotal / c.numeroParcelas)} · venc. dia {c.diaVencimento}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{c.aluno.nome} <span style={{ color: 'var(--gray-500)', fontWeight: 400, fontSize: 12 }}>({c.aluno.ra})</span></div>
+                    <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 2 }}>{c.periodoLetivo.ano}/{c.periodoLetivo.semestre} · {c.numeroParcelas}x de {fmt(c.valorTotal / c.numeroParcelas)} · venc. dia {c.diaVencimento}</div>
                   </div>
                   <div style={{ textAlign: 'right', fontSize: 12 }}>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{fmt(c.valorTotal)}</div>
@@ -215,17 +215,17 @@ export default function ContratosPage() {
                     {vencido > 0 && <div style={{ color: '#ef4444' }}>{fmt(vencido)} vencido</div>}
                   </div>
                   <Badge s={c.status} />
-                  <span style={{ color: '#9ca3af', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</span>
+                  <span style={{ color: 'var(--gray-400)', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
 
                 {/* Parcelas */}
                 {isOpen && (
-                  <div style={{ borderTop: '1px solid #f3f4f6', padding: '0 16px 12px' }}>
+                  <div style={{ borderTop: '1px solid var(--gray-100)', padding: '0 16px 12px' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
                       <thead>
                         <tr>
                           {['Nº', 'Vencimento', 'Valor', 'Status', 'Pagamento', 'Forma', 'Ação'].map(h => (
-                            <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontSize: 11, color: '#6b7280', borderBottom: '1px solid #f3f4f6' }}>{h}</th>
+                            <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontSize: 11, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-100)' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -236,8 +236,8 @@ export default function ContratosPage() {
                             <td style={{ padding: '6px 8px', fontSize: 13 }}>{fmtDate(p.dataVencimento)}</td>
                             <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600 }}>{fmt(p.valor)}</td>
                             <td style={{ padding: '6px 8px' }}><Badge s={p.status} /></td>
-                            <td style={{ padding: '6px 8px', fontSize: 12, color: '#6b7280' }}>{p.dataPagamento ? fmtDate(p.dataPagamento) : '—'}</td>
-                            <td style={{ padding: '6px 8px', fontSize: 12, color: '#6b7280' }}>{p.formaPagamento ?? '—'}</td>
+                            <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--gray-500)' }}>{p.dataPagamento ? fmtDate(p.dataPagamento) : '—'}</td>
+                            <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--gray-500)' }}>{p.formaPagamento ?? '—'}</td>
                             <td style={{ padding: '6px 8px' }}>
                               {(p.status === 'PENDENTE' || p.status === 'VENCIDO') && (
                                 <button style={{ padding: '3px 10px', border: 'none', borderRadius: 4, background: '#10b981', color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}

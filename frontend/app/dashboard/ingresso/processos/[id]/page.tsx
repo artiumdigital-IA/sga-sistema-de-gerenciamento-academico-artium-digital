@@ -23,11 +23,11 @@ interface Matriz { id: string; versao: string; }
 const ST_STYLE: Record<StatusInscricao, { bg: string; color: string }> = {
   INSCRITO: { bg: '#dbeafe', color: '#1e40af' }, EM_ANALISE: { bg: '#fef3c7', color: '#92400e' },
   APROVADO: { bg: '#d1fae5', color: '#065f46' }, REPROVADO: { bg: '#fee2e2', color: '#991b1b' },
-  MATRICULADO: { bg: '#f3e8ff', color: '#6b21a8' }, DESISTENTE: { bg: '#f3f4f6', color: '#6b7280' },
+  MATRICULADO: { bg: '#f3e8ff', color: '#6b21a8' }, DESISTENTE: { bg: 'var(--gray-100)', color: 'var(--gray-500)' },
 };
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, width: '100%', boxSizing: 'border-box' };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const BTN_P: React.CSSProperties = { padding: '7px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: '#1a56db', color: '#fff' };
-const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: '#374151', border: '1px solid #d1d5db' };
+const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: 'var(--gray-700)', border: '1px solid var(--gray-300)' };
 
 function ModalConverter({ inscricao, processoId, onClose, onDone }: {
   inscricao: Inscricao; processoId: string; onClose: () => void; onDone: () => void;
@@ -62,16 +62,16 @@ function ModalConverter({ inscricao, processoId, onClose, onDone }: {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 460, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 460, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Converter em Aluno</h2>
-        <p style={{ margin: '0 0 18px', fontSize: 12, color: '#6b7280' }}>{inscricao.candidato.nome}</p>
+        <p style={{ margin: '0 0 18px', fontSize: 12, color: 'var(--gray-500)' }}>{inscricao.candidato.nome}</p>
 
         {resultado ? (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 16 }}>
             <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: '#065f46' }}>Aluno criado com sucesso!</p>
             <p style={{ margin: '4px 0', fontSize: 13 }}>RA: <strong>{resultado.ra}</strong></p>
             <p style={{ margin: '4px 0', fontSize: 13 }}>Senha temporária: <strong style={{ fontFamily: 'monospace', background: '#e8f5e9', padding: '1px 6px', borderRadius: 3 }}>{resultado.senhaTemporaria}</strong></p>
-            <p style={{ margin: '8px 0 0', fontSize: 11, color: '#6b7280' }}>Anote a senha temporária — ela não será exibida novamente.</p>
+            <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--gray-500)' }}>Anote a senha temporária — ela não será exibida novamente.</p>
             <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
               <button style={BTN_G} onClick={onClose}>Fechar</button>
             </div>
@@ -79,7 +79,7 @@ function ModalConverter({ inscricao, processoId, onClose, onDone }: {
         ) : (
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>Matriz Curricular *</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 3 }}>Matriz Curricular *</label>
               <select style={INPUT} value={matrizId} onChange={e => setMatrizId(e.target.value)} required>
                 <option value="">Selecione...</option>
                 {matrizes.map(m => <option key={m.id} value={m.id}>{m.versao}</option>)}
@@ -120,36 +120,36 @@ export default function InscricoesPage() {
     finally { setAtualizando(''); }
   }
 
-  if (loading) return <div style={{ padding: 32, color: '#6b7280' }}>Carregando...</div>;
+  if (loading) return <div style={{ padding: 32, color: 'var(--gray-500)' }}>Carregando...</div>;
   if (!processo) return null;
 
   return (
     <div style={{ padding: '24px 28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button onClick={() => router.push('/dashboard/ingresso/processos')}
-          style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer' }}>← Voltar</button>
+          style={{ background: 'var(--white)', border: '1px solid var(--gray-300)', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer' }}>← Voltar</button>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{processo.nome}</h1>
-          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{processo.curso.nome} · {processo.periodoLetivo.ano}/{processo.periodoLetivo.semestre} · {processo.vagas} vagas</p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>{processo.curso.nome} · {processo.periodoLetivo.ano}/{processo.periodoLetivo.semestre} · {processo.vagas} vagas</p>
         </div>
       </div>
 
       {processo.inscricoes.length === 0 ? (
-        <p style={{ color: '#6b7280', fontSize: 13 }}>Nenhuma inscrição registrada.</p>
+        <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Nenhuma inscrição registrada.</p>
       ) : (
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr style={{ background: '#f9fafb' }}>
+            <thead><tr style={{ background: 'var(--gray-50)' }}>
               {['Candidato', 'CPF', 'Email', 'Nota ENEM', 'Docs', 'Status', 'Ações'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: '#6b7280', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>{h}</th>
+                <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{processo.inscricoes.map(ins => {
               const ss = ST_STYLE[ins.status];
               return (
-                <tr key={ins.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                <tr key={ins.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                   <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 500 }}>{ins.candidato.nome}</td>
-                  <td style={{ padding: '10px 12px', fontSize: 12, color: '#6b7280' }}>{ins.candidato.cpf}</td>
+                  <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--gray-500)' }}>{ins.candidato.cpf}</td>
                   <td style={{ padding: '10px 12px', fontSize: 12 }}>{ins.candidato.email}</td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>{ins.notaEnem ? Number(ins.notaEnem).toFixed(1) : '—'}</td>
                   <td style={{ padding: '10px 12px' }}>
@@ -170,14 +170,14 @@ export default function InscricoesPage() {
                         <>
                           <button onClick={() => mudarStatus(ins.id, 'APROVADO')} disabled={atualizando === ins.id} style={{ padding: '3px 8px', fontSize: 11, borderRadius: 4, border: '1px solid #16a34a', background: '#f0fdf4', color: '#16a34a', cursor: 'pointer', fontWeight: 600 }}>Aprovar</button>
                           <button onClick={() => mudarStatus(ins.id, 'REPROVADO')} disabled={atualizando === ins.id} style={{ padding: '3px 8px', fontSize: 11, borderRadius: 4, border: '1px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>Reprovar</button>
-                          <button onClick={() => mudarStatus(ins.id, 'DESISTENTE')} disabled={atualizando === ins.id} style={{ padding: '3px 8px', fontSize: 11, borderRadius: 4, border: '1px solid #d1d5db', background: '#f9fafb', color: '#6b7280', cursor: 'pointer' }}>Desistente</button>
+                          <button onClick={() => mudarStatus(ins.id, 'DESISTENTE')} disabled={atualizando === ins.id} style={{ padding: '3px 8px', fontSize: 11, borderRadius: 4, border: '1px solid var(--gray-300)', background: 'var(--gray-50)', color: 'var(--gray-500)', cursor: 'pointer' }}>Desistente</button>
                         </>
                       )}
                       {ins.status === 'APROVADO' && !ins.alunoId && (
                         <button onClick={() => setModalConverter(ins)} style={{ padding: '3px 10px', fontSize: 11, borderRadius: 4, border: '1px solid #7c3aed', background: '#f5f3ff', color: '#7c3aed', cursor: 'pointer', fontWeight: 600 }}>→ Criar Aluno</button>
                       )}
                       {ins.status === 'MATRICULADO' && (
-                        <span style={{ fontSize: 11, color: '#6b7280' }}>✓ Aluno criado</span>
+                        <span style={{ fontSize: 11, color: 'var(--gray-500)' }}>✓ Aluno criado</span>
                       )}
                     </div>
                   </td>

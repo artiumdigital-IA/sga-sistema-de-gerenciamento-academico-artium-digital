@@ -36,11 +36,11 @@ const EMPTY: FormData = {
 const BTN = (variant: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
   background: variant === 'primary' ? '#1a56db' : variant === 'danger' ? '#e02424' : 'transparent',
-  color: variant === 'ghost' ? '#374151' : '#fff',
-  ...(variant === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: variant === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(variant === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
-const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const };
-const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' as const };
+const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 
 // ── modal ──────────────────────────────────────────────────────────────
 function ProfessorModal({ professor, onClose, onSave }: {
@@ -87,7 +87,7 @@ function ProfessorModal({ professor, onClose, onSave }: {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 20px', fontSize: 17, fontWeight: 700 }}>
           {professor ? 'Editar Professor' : 'Novo Professor'}
         </h2>
@@ -149,7 +149,7 @@ function ProfessorModal({ professor, onClose, onSave }: {
 
 // ── badge de titulação ─────────────────────────────────────────────────
 const TITULACAO_STYLE: Record<Titulacao, { bg: string; color: string }> = {
-  GRADUADO:    { bg: '#f3f4f6', color: '#374151' },
+  GRADUADO:    { bg: 'var(--gray-100)', color: 'var(--gray-700)' },
   ESPECIALISTA:{ bg: '#fef3c7', color: '#92400e' },
   MESTRE:      { bg: '#dbeafe', color: '#1e40af' },
   DOUTOR:      { bg: '#ede9fe', color: '#5b21b6' },
@@ -204,7 +204,7 @@ export default function ProfessoresPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Professores</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>
             {professores.length} professor{professores.length !== 1 ? 'es' : ''} cadastrado{professores.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -215,29 +215,29 @@ export default function ProfessoresPage() {
         placeholder="Buscar por nome, CPF ou e-mail..."
         value={search} onChange={e => setSearch(e.target.value)} />
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 14 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</p>}
       {error && <p style={{ color: '#e02424', fontSize: 14 }}>{error}</p>}
 
       {!loading && (
-        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['Nome', 'CPF', 'E-mail', 'Titulação', 'Regime', 'Lattes', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
+                <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>
                   {search ? 'Nenhum resultado.' : 'Nenhum professor cadastrado ainda.'}
                 </td></tr>
               )}
               {filtered.map((p, i) => {
                 const ts = TITULACAO_STYLE[p.titulacao];
                 return (
-                  <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                  <tr key={p.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 500 }}>{p.nome}</td>
                     <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }}>{p.cpf}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12 }}>{p.email}</td>
@@ -251,7 +251,7 @@ export default function ProfessoresPage() {
                       {p.lattes
                         ? <a href={p.lattes} target="_blank" rel="noopener noreferrer"
                             style={{ color: '#1a56db', fontSize: 12 }}>Ver ↗</a>
-                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
+                        : <span style={{ color: 'var(--gray-400)', fontSize: 12 }}>—</span>}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>

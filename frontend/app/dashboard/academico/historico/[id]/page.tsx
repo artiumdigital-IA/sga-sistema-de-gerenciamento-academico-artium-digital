@@ -54,9 +54,9 @@ function SituacaoBadge({ situacao }: { situacao: SituacaoResult }) {
 
 function StatCard({ label, value, color }: { label: string; value: string | number; color: string }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '14px 16px', textAlign: 'center' }}>
+    <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: '14px 16px', textAlign: 'center' }}>
       <div style={{ fontSize: 24, fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--gray-500)', marginTop: 3 }}>{label}</div>
     </div>
   );
 }
@@ -77,8 +77,8 @@ export default function HistoricoPage() {
       .finally(() => setLoading(false));
   }, [alunoId]);
 
-  if (loading) return <div style={{ padding: 32, color: '#6b7280', fontSize: 14 }}>Carregando historico...</div>;
-  if (erro) return <div style={{ padding: 32 }}><p style={{ color: '#dc2626', fontSize: 14 }}>{erro}</p><button onClick={() => router.back()} style={{ fontSize: 13, cursor: 'pointer', border: '1px solid #d1d5db', borderRadius: 5, padding: '6px 12px', background: '#fff' }}>Voltar</button></div>;
+  if (loading) return <div style={{ padding: 32, color: 'var(--gray-500)', fontSize: 14 }}>Carregando historico...</div>;
+  if (erro) return <div style={{ padding: 32 }}><p style={{ color: '#dc2626', fontSize: 14 }}>{erro}</p><button onClick={() => router.back()} style={{ fontSize: 13, cursor: 'pointer', border: '1px solid var(--gray-300)', borderRadius: 5, padding: '6px 12px', background: 'var(--white)' }}>Voltar</button></div>;
   if (!historico) return null;
 
   const periodos = new Map<string, Matricula[]>();
@@ -96,12 +96,12 @@ export default function HistoricoPage() {
     <div style={{ padding: '24px 28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button onClick={() => router.push('/dashboard/academico/alunos')}
-          style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', color: '#374151' }}>
+          style={{ background: 'var(--white)', border: '1px solid var(--gray-300)', borderRadius: 6, padding: '6px 12px', fontSize: 13, cursor: 'pointer', color: 'var(--gray-700)' }}>
           ← Voltar
         </button>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Historico Academico</h1>
-          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{historico.aluno.nome} · RA {historico.aluno.ra} · {VINCULO_LABEL[historico.aluno.situacaoVinculo] ?? historico.aluno.situacaoVinculo}</p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>{historico.aluno.nome} · RA {historico.aluno.ra} · {VINCULO_LABEL[historico.aluno.situacaoVinculo] ?? historico.aluno.situacaoVinculo}</p>
         </div>
       </div>
 
@@ -112,27 +112,27 @@ export default function HistoricoPage() {
         <StatCard label="Em andamento" value={pendentes} color="#d97706" />
       </div>
 
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '14px 16px', marginBottom: 20 }}>
+      <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: '14px 16px', marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>Integralização do curso</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)' }}>Integralização do curso</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: '#1a56db' }}>
             {historico.integralizacao.percentual}%
-            <span style={{ fontSize: 11, fontWeight: 400, color: '#6b7280', marginLeft: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-500)', marginLeft: 6 }}>
               ({historico.integralizacao.chIntegralizada}h / {historico.integralizacao.chTotalCurso}h — {historico.integralizacao.disciplinasIntegralizadas} disciplina{historico.integralizacao.disciplinasIntegralizadas !== 1 ? 's' : ''} aprovada{historico.integralizacao.disciplinasIntegralizadas !== 1 ? 's' : ''})
             </span>
           </span>
         </div>
-        <div style={{ height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ height: 8, background: 'var(--gray-100)', borderRadius: 4, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${Math.min(historico.integralizacao.percentual, 100)}%`, background: historico.integralizacao.percentual >= 100 ? '#16a34a' : '#1a56db', borderRadius: 4 }} />
         </div>
-        <p style={{ fontSize: 10.5, color: '#9ca3af', margin: '8px 0 0', lineHeight: 1.4 }}>
+        <p style={{ fontSize: 10.5, color: 'var(--gray-400)', margin: '8px 0 0', lineHeight: 1.4 }}>
           Soma a carga horária de cada disciplina distinta já aprovada (inclusive via DP, contada uma única vez)
           sobre a carga horária total exigida pelo curso. Dado calculado a cada acesso, não armazenado.
         </p>
       </div>
 
       {sortedPeriodos.length === 0 && (
-        <p style={{ color: '#6b7280', fontSize: 13 }}>Nenhuma matricula registrada.</p>
+        <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Nenhuma matricula registrada.</p>
       )}
 
       {sortedPeriodos.map(([key, mats]) => {
@@ -141,25 +141,25 @@ export default function HistoricoPage() {
           <div key={key} style={{ marginBottom: 24 }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1f2937', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ background: '#1a56db', color: '#fff', padding: '3px 10px', borderRadius: 4, fontSize: 12 }}>{ano}/{sem}</span>
-              <span style={{ color: '#6b7280', fontWeight: 400, fontSize: 13 }}>{mats.length} disciplina{mats.length !== 1 ? 's' : ''}</span>
+              <span style={{ color: 'var(--gray-500)', fontWeight: 400, fontSize: 13 }}>{mats.length} disciplina{mats.length !== 1 ? 's' : ''}</span>
             </h2>
-            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ background: '#f9fafb' }}>
+                <thead><tr style={{ background: 'var(--gray-50)' }}>
                   {['Disciplina', 'Professor', 'C.H.', 'Media', 'Freq%', 'Faltas', 'Situacao'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 600, color: '#6b7280', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>{h}</th>
+                    <th key={h} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>{mats.map(m => (
-                  <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={m.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ fontSize: 13, fontWeight: 500 }}>{m.oferta.disciplina.nome}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                      <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>
                         {m.oferta.disciplina.codigo}
                         {m.isDependencia && <span style={{ marginLeft: 6, background: '#f3e8ff', color: '#6b21a8', padding: '1px 5px', borderRadius: 999, fontWeight: 600 }}>DP</span>}
                       </div>
                     </td>
-                    <td style={{ padding: '10px 12px', fontSize: 12, color: '#6b7280' }}>{m.oferta.professor?.nome ?? '—'}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--gray-500)' }}>{m.oferta.professor?.nome ?? '—'}</td>
                     <td style={{ padding: '10px 12px', fontSize: 13 }}>{m.oferta.disciplina.cargaHoraria}h</td>
                     <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: m.resultado ? 600 : 400 }}>
                       {m.resultado ? Number(m.resultado.mediaFinal).toFixed(2) : '—'}
@@ -171,7 +171,7 @@ export default function HistoricoPage() {
                     <td style={{ padding: '10px 12px' }}>
                       {m.resultado
                         ? <SituacaoBadge situacao={m.resultado.situacao} />
-                        : <span style={{ fontSize: 12, color: '#9ca3af' }}>Em andamento</span>}
+                        : <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>Em andamento</span>}
                     </td>
                   </tr>
                 ))}</tbody>

@@ -30,12 +30,12 @@ const SITUACAO_LABEL: Record<SituacaoResult, string> = {
 const STATUS_BG: Record<string, { bg: string; color: string }> = {
   MATRICULADO: { bg: '#dbeafe', color: '#1e40af' }, APROVADO: { bg: '#d1fae5', color: '#065f46' },
   REPROVADO_NOTA: { bg: '#fee2e2', color: '#991b1b' }, REPROVADO_FALTA: { bg: '#ffedd5', color: '#9a3412' },
-  DEPENDENCIA: { bg: '#f3e8ff', color: '#6b21a8' }, TRANCADO: { bg: '#f3f4f6', color: '#374151' },
+  DEPENDENCIA: { bg: '#f3e8ff', color: '#6b21a8' }, TRANCADO: { bg: 'var(--gray-100)', color: 'var(--gray-700)' },
 };
 
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
 const BTN_P: React.CSSProperties = { padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: '#1a56db', color: '#fff' };
-const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: '#374151', border: '1px solid #d1d5db' };
+const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: 'var(--gray-700)', border: '1px solid var(--gray-300)' };
 
 function SituacaoBadge({ situacao }: { situacao: SituacaoResult }) {
   return <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, color: '#fff', background: SITUACAO_COLOR[situacao] }}>{SITUACAO_LABEL[situacao]}</span>;
@@ -79,31 +79,31 @@ function ModalNotas({ matricula, onClose, onUpdate }: { matricula: Matricula; on
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 580, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 580, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 2px', fontSize: 16, fontWeight: 700 }}>Notas — {matricula.aluno.nome}</h2>
-        <p style={{ margin: '0 0 18px', fontSize: 12, color: '#6b7280' }}>RA {matricula.aluno.ra}</p>
+        <p style={{ margin: '0 0 18px', fontSize: 12, color: 'var(--gray-500)' }}>RA {matricula.aluno.ra}</p>
 
-        {loading ? <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p> : (<>
+        {loading ? <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</p> : (<>
           {avaliacoes.length > 0 ? (
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 14 }}>
-              <thead><tr style={{ background: '#f9fafb' }}>
+              <thead><tr style={{ background: 'var(--gray-50)' }}>
                 {['Tipo', 'Nota', 'Peso', 'Contrib.', ''].map(h => (
-                  <th key={h} style={{ padding: '6px 10px', fontSize: 11, fontWeight: 600, color: '#374151', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>{h}</th>
+                  <th key={h} style={{ padding: '6px 10px', fontSize: 11, fontWeight: 600, color: 'var(--gray-700)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>{avaliacoes.map(a => (
-                <tr key={a.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                <tr key={a.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                   <td style={{ padding: '8px 10px', fontSize: 13 }}>{TIPO_LABEL[a.tipo]}</td>
                   <td style={{ padding: '8px 10px', fontSize: 13, fontWeight: 600 }}>{Number(a.nota).toFixed(1)}</td>
                   <td style={{ padding: '8px 10px', fontSize: 13 }}>{a.peso}</td>
-                  <td style={{ padding: '8px 10px', fontSize: 12, color: '#6b7280' }}>{(Number(a.nota) * Number(a.peso)).toFixed(2)}</td>
+                  <td style={{ padding: '8px 10px', fontSize: 12, color: 'var(--gray-500)' }}>{(Number(a.nota) * Number(a.peso)).toFixed(2)}</td>
                   <td style={{ padding: '8px 10px' }}>
                     <button onClick={() => delAv(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 16, lineHeight: 1 }}>×</button>
                   </td>
                 </tr>
               ))}</tbody>
             </table>
-          ) : <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 14 }}>Nenhuma avaliacao lancada.</p>}
+          ) : <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 14 }}>Nenhuma avaliacao lancada.</p>}
 
           {media !== null && (
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '8px 12px', marginBottom: 14, fontSize: 13 }}>
@@ -114,17 +114,17 @@ function ModalNotas({ matricula, onClose, onUpdate }: { matricula: Matricula; on
 
           <form onSubmit={addAv} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 70px auto', gap: 8, alignItems: 'end' }}>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>Tipo</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 3 }}>Tipo</label>
               <select style={INPUT} value={tipo} onChange={e => setTipo(e.target.value as AvaliacaoTipo)}>
                 {(Object.entries(TIPO_LABEL) as [AvaliacaoTipo, string][]).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>Nota (0-10)</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 3 }}>Nota (0-10)</label>
               <input style={INPUT} type="number" min="0" max="10" step="0.1" value={nota} onChange={e => setNota(e.target.value)} required placeholder="0.0" />
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>Peso</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 3 }}>Peso</label>
               <input style={INPUT} type="number" min="0.1" step="0.1" value={peso} onChange={e => setPeso(e.target.value)} required />
             </div>
             <button type="submit" style={{ ...BTN_P, height: 36, whiteSpace: 'nowrap' }} disabled={salvando}>+ Lançar</button>
@@ -176,9 +176,9 @@ function ModalConsolidar({ matricula, onClose, onUpdate }: { matricula: Matricul
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 420, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 420, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 2px', fontSize: 16, fontWeight: 700 }}>Consolidar — {matricula.aluno.nome}</h2>
-        <p style={{ margin: '0 0 20px', fontSize: 12, color: '#6b7280' }}>RA {matricula.aluno.ra}</p>
+        <p style={{ margin: '0 0 20px', fontSize: 12, color: 'var(--gray-500)' }}>RA {matricula.aluno.ra}</p>
 
         {resultado ? (
           <>
@@ -198,11 +198,11 @@ function ModalConsolidar({ matricula, onClose, onUpdate }: { matricula: Matricul
               {buscandoFreq ? 'Buscando...' : '↺ Calcular da frequência diária lançada'}
             </button>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Total de aulas ministradas *</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 }}>Total de aulas ministradas *</label>
               <input style={INPUT} type="number" min="1" value={totalAulas} onChange={e => setTotalAulas(e.target.value)} required />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Faltas do aluno *</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 }}>Faltas do aluno *</label>
               <input style={INPUT} type="number" min="0" value={faltas} onChange={e => setFaltas(e.target.value)} required />
             </div>
             {freq && (
@@ -259,19 +259,19 @@ export default function NotasPage() {
     <div style={{ padding: '24px 28px' }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Lancamento de Notas</h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Selecione o periodo e a oferta para gerenciar notas e frequencia</p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>Selecione o periodo e a oferta para gerenciar notas e frequencia</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12, marginBottom: 20, background: '#f9fafb', padding: 16, borderRadius: 8, border: '1px solid #e5e7eb' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12, marginBottom: 20, background: 'var(--gray-50)', padding: 16, borderRadius: 8, border: '1px solid var(--gray-200)' }}>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Periodo Letivo</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 }}>Periodo Letivo</label>
           <select style={INPUT} value={selectedPeriodo} onChange={e => setSelectedPeriodo(e.target.value)}>
             <option value="">Selecione...</option>
             {periodos.map(p => <option key={p.id} value={p.id}>{p.ano}/{p.semestre}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Oferta / Disciplina</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 }}>Oferta / Disciplina</label>
           <select style={INPUT} value={selectedOferta} onChange={e => setSelectedOferta(e.target.value)} disabled={!selectedPeriodo}>
             <option value="">Selecione o periodo primeiro...</option>
             {ofertas.map(o => <option key={o.id} value={o.id}>{o.disciplina.nome} — {o.turno}{o.horario ? ` (${o.horario})` : ''}</option>)}
@@ -289,24 +289,24 @@ export default function NotasPage() {
         </div>
       )}
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</p>}
       {erro && <p style={{ color: '#dc2626', fontSize: 13 }}>{erro}</p>}
       {!loading && selectedOferta && matriculas.length === 0 && (
-        <p style={{ color: '#6b7280', fontSize: 13 }}>Nenhum aluno matriculado nesta oferta.</p>
+        <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Nenhum aluno matriculado nesta oferta.</p>
       )}
 
       {!loading && matriculas.length > 0 && (
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr style={{ background: '#f9fafb' }}>
+            <thead><tr style={{ background: 'var(--gray-50)' }}>
               {['RA', 'Nome', 'Situacao', 'Media', 'Freq%', 'Resultado', 'Acoes'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: '#6b7280', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>{h}</th>
+                <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{matriculas.map(m => {
-              const st = STATUS_BG[m.status] ?? { bg: '#f3f4f6', color: '#374151' };
+              const st = STATUS_BG[m.status] ?? { bg: 'var(--gray-100)', color: 'var(--gray-700)' };
               return (
-                <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                <tr key={m.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                   <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600 }}>{m.aluno.ra}</td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>
                     {m.aluno.nome}
@@ -317,7 +317,7 @@ export default function NotasPage() {
                   </td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>{m.resultado ? Number(m.resultado.mediaFinal).toFixed(2) : '—'}</td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>{m.resultado ? `${Number(m.resultado.frequenciaPercentual).toFixed(1)}%` : '—'}</td>
-                  <td style={{ padding: '10px 12px' }}>{m.resultado ? <SituacaoBadge situacao={m.resultado.situacao} /> : <span style={{ fontSize: 12, color: '#9ca3af' }}>Pendente</span>}</td>
+                  <td style={{ padding: '10px 12px' }}>{m.resultado ? <SituacaoBadge situacao={m.resultado.situacao} /> : <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>Pendente</span>}</td>
                   <td style={{ padding: '10px 12px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => setModalNotas(m)} style={{ padding: '4px 10px', fontSize: 12, borderRadius: 4, border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb', cursor: 'pointer', fontWeight: 500 }}>Notas</button>

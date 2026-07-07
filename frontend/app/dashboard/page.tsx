@@ -342,7 +342,7 @@ interface PeriodoLetivo {
 const PERIODO_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   EM_ANDAMENTO: { bg: '#d4edda', color: '#1a7a3c' },
   PLANEJADO:    { bg: '#dbeafe', color: '#1e40af' },
-  ENCERRADO:    { bg: '#f3f4f6', color: '#6b7280' },
+  ENCERRADO:    { bg: 'var(--gray-100)', color: 'var(--gray-500)' },
 };
 
 const PERIODO_STATUS_LABEL: Record<string, string> = {

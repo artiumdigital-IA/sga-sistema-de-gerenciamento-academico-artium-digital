@@ -25,11 +25,11 @@ interface Disciplina {
 const BTN = (v: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
   background: v === 'primary' ? '#1a56db' : v === 'danger' ? '#e02424' : 'transparent',
-  color: v === 'ghost' ? '#374151' : '#fff',
-  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: v === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
-const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const };
-const CARD = { background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', padding: 20 };
+const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' as const };
+const CARD = { background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', padding: 20 };
 
 export default function DisciplinaDetalhePage() {
   const router = useRouter();
@@ -98,7 +98,7 @@ export default function DisciplinaDetalhePage() {
     }
   }
 
-  if (loading) return <div style={{ padding: '24px 28px', color: '#6b7280', fontSize: 14 }}>Carregando...</div>;
+  if (loading) return <div style={{ padding: '24px 28px', color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</div>;
   if (error || !disciplina) return (
     <div style={{ padding: '24px 28px' }}>
       <p style={{ color: '#e02424', fontSize: 14 }}>{error || 'Disciplina não encontrada.'}</p>
@@ -116,10 +116,10 @@ export default function DisciplinaDetalhePage() {
           &larr; Voltar para Disciplinas
         </button>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
-          <span style={{ fontFamily: 'monospace', color: '#6b7280', marginRight: 8 }}>{disciplina.codigo}</span>
+          <span style={{ fontFamily: 'monospace', color: 'var(--gray-500)', marginRight: 8 }}>{disciplina.codigo}</span>
           {disciplina.nome}
         </h1>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>
           {disciplina.matrizCurricular?.curso.nome} • versão {disciplina.matrizCurricular?.versao} •
           {' '}{disciplina.periodoSugerido}º período sugerido • {disciplina.cargaHoraria}h • {disciplina.creditos} créditos
         </p>
@@ -127,25 +127,25 @@ export default function DisciplinaDetalhePage() {
 
       {disciplina.ementa && (
         <div style={CARD}>
-          <h2 style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: '#374151' }}>Ementa</h2>
+          <h2 style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>Ementa</h2>
           <p style={{ margin: 0, fontSize: 13, color: '#4b5563', whiteSpace: 'pre-wrap' }}>{disciplina.ementa}</p>
         </div>
       )}
 
       <div style={CARD}>
         <h2 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700 }}>Pré-requisitos</h2>
-        <p style={{ margin: '0 0 14px', fontSize: 12, color: '#6b7280' }}>
+        <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--gray-500)' }}>
           Disciplinas que o aluno precisa ter cursado (e aprovado) antes de se matricular em {disciplina.codigo}.
         </p>
 
         {disciplina.prerequisitos.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 14px' }}>Nenhum pré-requisito cadastrado.</p>
+          <p style={{ fontSize: 13, color: 'var(--gray-400)', margin: '0 0 14px' }}>Nenhum pré-requisito cadastrado.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
             {disciplina.prerequisitos.map(p => (
               <div key={p.id} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 12px', background: '#f9fafb', borderRadius: 6, border: '1px solid #f3f4f6',
+                padding: '8px 12px', background: 'var(--gray-50)', borderRadius: 6, border: '1px solid var(--gray-100)',
               }}>
                 <span style={{ fontSize: 13 }}>
                   <span style={{ fontFamily: 'monospace', fontWeight: 600, marginRight: 8 }}>{p.prerequisito.codigo}</span>
@@ -181,16 +181,16 @@ export default function DisciplinaDetalhePage() {
 
       <div style={CARD}>
         <h2 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700 }}>É pré-requisito de</h2>
-        <p style={{ margin: '0 0 14px', fontSize: 12, color: '#6b7280' }}>
+        <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--gray-500)' }}>
           Disciplinas que exigem {disciplina.codigo} como pré-requisito. Somente leitura.
         </p>
         {disciplina.dependentes.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Nenhuma disciplina depende desta.</p>
+          <p style={{ fontSize: 13, color: 'var(--gray-400)', margin: 0 }}>Nenhuma disciplina depende desta.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {disciplina.dependentes.map(dep => (
               <div key={dep.id} style={{
-                padding: '8px 12px', background: '#f9fafb', borderRadius: 6, border: '1px solid #f3f4f6', fontSize: 13,
+                padding: '8px 12px', background: 'var(--gray-50)', borderRadius: 6, border: '1px solid var(--gray-100)', fontSize: 13,
               }}>
                 <span style={{ fontFamily: 'monospace', fontWeight: 600, marginRight: 8 }}>{dep.disciplina.codigo}</span>
                 {dep.disciplina.nome}

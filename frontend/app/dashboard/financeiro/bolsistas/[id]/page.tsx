@@ -9,10 +9,10 @@ interface Bolsa {
   dataInicio: string; dataFim: string | null; ativo: boolean; observacoes: string | null;
 }
 
-const INPUT: React.CSSProperties = { padding: '8px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT: React.CSSProperties = { padding: '8px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 const BTN: React.CSSProperties = { padding: '8px 16px', borderRadius: 5, border: 'none', background: '#059669', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 };
-const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid #d1d5db', cursor: 'pointer', fontSize: 12, background: '#fff', color: '#374151' };
+const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 12, background: 'var(--white)', color: 'var(--gray-700)' };
 
 const EMPTY = { tipoBolsa: '', percentual: 50, dataInicio: '', dataFim: '', observacoes: '' };
 
@@ -82,10 +82,10 @@ export default function BolsistasPage() {
 
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Cadastro de Bolsistas</h1>
-        <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>{aluno.nome} — RA {aluno.ra}</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--gray-500)' }}>{aluno.nome} — RA {aluno.ra}</p>
       </div>
 
-      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 18, marginBottom: 20 }}>
+      <div style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 18, marginBottom: 20 }}>
         <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700 }}>Nova bolsa</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
@@ -113,21 +113,21 @@ export default function BolsistasPage() {
       </div>
 
       <h3 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700 }}>Bolsas registradas</h3>
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+            <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
               {['Tipo', '%', 'Início', 'Fim', 'Status', 'Observações', ''].map(h => (
-                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {bolsas.length === 0 && (
-              <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>Nenhuma bolsa registrada.</td></tr>
+              <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhuma bolsa registrada.</td></tr>
             )}
             {bolsas.map(b => (
-              <tr key={b.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <tr key={b.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 500 }}>{b.tipoBolsa}</td>
                 <td style={{ padding: '10px 14px' }}>{Number(b.percentual)}%</td>
                 <td style={{ padding: '10px 14px' }}>{new Date(b.dataInicio).toLocaleDateString('pt-BR')}</td>
@@ -135,12 +135,12 @@ export default function BolsistasPage() {
                 <td style={{ padding: '10px 14px' }}>
                   <button onClick={() => alternarAtivo(b)} style={{
                     padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer',
-                    background: b.ativo ? '#d1fae5' : '#f3f4f6', color: b.ativo ? '#065f46' : '#6b7280',
+                    background: b.ativo ? '#d1fae5' : 'var(--gray-100)', color: b.ativo ? '#065f46' : 'var(--gray-500)',
                   }}>
                     {b.ativo ? 'Ativa' : 'Inativa'}
                   </button>
                 </td>
-                <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: 12 }}>{b.observacoes ?? '—'}</td>
+                <td style={{ padding: '10px 14px', color: 'var(--gray-500)', fontSize: 12 }}>{b.observacoes ?? '—'}</td>
                 <td style={{ padding: '10px 14px' }}>
                   <button style={{ ...BTN_G, color: '#dc2626', borderColor: '#fecaca' }} onClick={() => remover(b.id)}>Remover</button>
                 </td>

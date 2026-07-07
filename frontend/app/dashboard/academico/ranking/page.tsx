@@ -15,7 +15,7 @@ interface LinhaRanking {
   totalDisciplinas: number;
 }
 
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
 
 const SITUACAO_LABEL: Record<string, string> = {
   CURSANDO: 'Cursando', TRANCADO: 'Trancado', FORMADO: 'Formado',
@@ -48,7 +48,7 @@ export default function RankingPage() {
     <div style={{ padding: '24px 28px' }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Ranking de Alunos</h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>
           Ordenado por coeficiente de rendimento (CR). Só entram alunos com pelo menos uma disciplina cursada.
         </p>
       </div>
@@ -60,32 +60,32 @@ export default function RankingPage() {
         </select>
       </div>
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</p>}
       {erro && <p style={{ color: '#dc2626', fontSize: 13 }}>{erro}</p>}
 
       {!loading && !erro && (
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['#', 'RA', 'Nome', 'Curso', 'Situação', 'CR', 'Aprovadas'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {linhas.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
+                <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>
                   Nenhum aluno com disciplinas cursadas ainda.
                 </td></tr>
               )}
               {linhas.map((l, i) => (
-                <tr key={l.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                <tr key={l.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 700 }}>{MEDALHA[i] ?? l.posicao}</td>
                   <td style={{ padding: '10px 14px', fontFamily: 'monospace' }}>{l.ra}</td>
                   <td style={{ padding: '10px 14px' }}>{l.nome}</td>
-                  <td style={{ padding: '10px 14px', color: '#6b7280' }}>{l.curso}</td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: '#6b7280' }}>{SITUACAO_LABEL[l.situacaoVinculo] ?? l.situacaoVinculo}</td>
+                  <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{l.curso}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--gray-500)' }}>{SITUACAO_LABEL[l.situacaoVinculo] ?? l.situacaoVinculo}</td>
                   <td style={{ padding: '10px 14px', fontWeight: 700 }}>{l.cr.toFixed(2)}</td>
                   <td style={{ padding: '10px 14px' }}>{l.aprovadas} / {l.totalDisciplinas}</td>
                 </tr>

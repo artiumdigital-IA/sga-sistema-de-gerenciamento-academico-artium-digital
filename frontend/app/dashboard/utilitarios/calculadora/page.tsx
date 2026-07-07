@@ -8,11 +8,11 @@ interface Avaliacao {
   peso: string;
 }
 
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
-const LABEL: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 };
-const CARD: React.CSSProperties = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 20 };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const LABEL: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 };
+const CARD: React.CSSProperties = { background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 20 };
 const BTN_P: React.CSSProperties = { padding: '7px 16px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: '#1a56db', color: '#fff' };
-const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid #d1d5db', cursor: 'pointer', fontSize: 12, background: 'transparent', color: '#374151' };
+const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 12, background: 'transparent', color: 'var(--gray-700)' };
 
 let seq = 0;
 function novaLinha(): Avaliacao {
@@ -44,7 +44,7 @@ export default function CalculadoraPage() {
     <div style={{ padding: '24px 28px', maxWidth: 720 }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Calculadora de Médias</h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>
           Simula a média ponderada de um aluno e, se necessário, a nota mínima no exame final para aprovação —
           útil pra secretaria e professores conferirem casos antes de lançar oficialmente em Notas.
         </p>
@@ -54,9 +54,9 @@ export default function CalculadoraPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#6b7280', paddingBottom: 6 }}>Avaliação (opcional)</th>
-              <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#6b7280', paddingBottom: 6, width: 110 }}>Nota (0–10)</th>
-              <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#6b7280', paddingBottom: 6, width: 90 }}>Peso</th>
+              <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', paddingBottom: 6 }}>Avaliação (opcional)</th>
+              <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', paddingBottom: 6, width: 110 }}>Nota (0–10)</th>
+              <th style={{ textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', paddingBottom: 6, width: 90 }}>Peso</th>
               <th style={{ width: 36 }}></th>
             </tr>
           </thead>
@@ -82,9 +82,9 @@ export default function CalculadoraPage() {
 
         <button style={BTN_G} onClick={add}>+ Adicionar avaliação</button>
 
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f3f4f6' }}>
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--gray-100)' }}>
           {media === null ? (
-            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Preencha ao menos uma nota e peso pra calcular.</p>
+            <p style={{ fontSize: 13, color: 'var(--gray-500)', margin: 0 }}>Preencha ao menos uma nota e peso pra calcular.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ fontSize: 14 }}>
@@ -106,7 +106,7 @@ export default function CalculadoraPage() {
                 </div>
               )}
 
-              <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>
+              <p style={{ fontSize: 11, color: 'var(--gray-400)', margin: 0 }}>
                 Regras usadas: aprovação direta com média ≥ 6,0; exame final só pra quem tem frequência ≥ 75%;
                 nota final do exame = (média do semestre + nota do exame) / 2. Esta calculadora não lança nada
                 no sistema — é só uma simulação rápida.

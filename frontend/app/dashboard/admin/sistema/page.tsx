@@ -70,16 +70,16 @@ const LOGIN_MOTIVO_LABEL: Record<string, string> = {
   senha_invalida: 'senha inválida', mfa_ausente: 'MFA não informado', mfa_invalido: 'código MFA inválido',
 };
 
-const CARD: React.CSSProperties = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 };
-const TITLE: React.CSSProperties = { margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#374151', display: 'flex', alignItems: 'center', gap: 6 };
-const ROW: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', fontSize: 12.5, padding: '4px 0', color: '#374151' };
-const LABEL: React.CSSProperties = { color: '#6b7280' };
+const CARD: React.CSSProperties = { background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16 };
+const TITLE: React.CSSProperties = { margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: 'var(--gray-700)', display: 'flex', alignItems: 'center', gap: 6 };
+const ROW: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', fontSize: 12.5, padding: '4px 0', color: 'var(--gray-700)' };
+const LABEL: React.CSSProperties = { color: 'var(--gray-500)' };
 
 function Barra({ percentual, cor = '#1a56db' }: { percentual: number | null; cor?: string }) {
   if (percentual == null) return null;
   const c = percentual > 90 ? '#dc2626' : percentual > 75 ? '#d97706' : cor;
   return (
-    <div style={{ height: 6, background: '#f3f4f6', borderRadius: 3, overflow: 'hidden', marginTop: 6 }}>
+    <div style={{ height: 6, background: 'var(--gray-100)', borderRadius: 3, overflow: 'hidden', marginTop: 6 }}>
       <div style={{ height: '100%', width: `${Math.min(percentual, 100)}%`, background: c, borderRadius: 3 }} />
     </div>
   );
@@ -122,7 +122,7 @@ export default function PainelSistemaPage() {
     return () => clearInterval(id);
   }, [carregar]);
 
-  if (loading) return <div style={{ padding: 28, color: '#6b7280' }}>Carregando painel do sistema...</div>;
+  if (loading) return <div style={{ padding: 28, color: 'var(--gray-500)' }}>Carregando painel do sistema...</div>;
   if (erro) return <div style={{ padding: 28, color: '#dc2626' }}>{erro}</div>;
   if (!data) return null;
 
@@ -131,13 +131,13 @@ export default function PainelSistemaPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Painel do Sistema</h1>
-          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>
             Verificação geral: backend, VPS/SO, disco, banco de dados e volume de dados. Atualiza a cada 20s.
           </p>
         </div>
         <div style={{ textAlign: 'right' }}>
-          {ultimaAtualizacao && <p style={{ margin: '0 0 6px', fontSize: 11, color: '#9ca3af' }}>Atualizado {ultimaAtualizacao.toLocaleTimeString('pt-BR')}</p>}
-          <button onClick={carregar} style={{ padding: '6px 14px', borderRadius: 5, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer', fontSize: 12 }}>
+          {ultimaAtualizacao && <p style={{ margin: '0 0 6px', fontSize: 11, color: 'var(--gray-400)' }}>Atualizado {ultimaAtualizacao.toLocaleTimeString('pt-BR')}</p>}
+          <button onClick={carregar} style={{ padding: '6px 14px', borderRadius: 5, border: '1px solid var(--gray-300)', background: 'var(--white)', cursor: 'pointer', fontSize: 12 }}>
             ↻ Atualizar agora
           </button>
         </div>
@@ -178,7 +178,7 @@ export default function PainelSistemaPage() {
               <div style={ROW}><span style={LABEL}>% usado</span><span>{data.disco.usadoPercentual ?? '—'}%</span></div>
               <Barra percentual={data.disco.usadoPercentual} />
             </>
-          ) : <p style={{ fontSize: 12, color: '#9ca3af' }}>Não foi possível ler o disco.</p>}
+          ) : <p style={{ fontSize: 12, color: 'var(--gray-400)' }}>Não foi possível ler o disco.</p>}
         </div>
 
         {/* Banco de dados */}
@@ -188,7 +188,7 @@ export default function PainelSistemaPage() {
           <div style={ROW}><span style={LABEL}>Latência</span><span>{data.banco.latenciaMs != null ? `${data.banco.latenciaMs} ms` : '—'}</span></div>
           <div style={ROW}><span style={LABEL}>Tamanho</span><span>{formatBytes(data.banco.tamanhoBytes)}</span></div>
           <div style={ROW}><span style={LABEL}>Conexões ativas</span><span>{data.banco.conexoesAtivas ?? '—'}</span></div>
-          <p style={{ fontSize: 10.5, color: '#9ca3af', margin: '8px 0 0', lineHeight: 1.4 }}>{data.banco.versao ?? data.banco.erro ?? ''}</p>
+          <p style={{ fontSize: 10.5, color: 'var(--gray-400)', margin: '8px 0 0', lineHeight: 1.4 }}>{data.banco.versao ?? data.banco.erro ?? ''}</p>
         </div>
       </div>
 
@@ -198,9 +198,9 @@ export default function PainelSistemaPage() {
           <h3 style={TITLE}>Volume de Dados</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
             {CONTAGEM_LABELS.map(([key, label]) => (
-              <div key={key} style={{ textAlign: 'center', padding: '10px 4px', background: '#f9fafb', borderRadius: 6 }}>
+              <div key={key} style={{ textAlign: 'center', padding: '10px 4px', background: 'var(--gray-50)', borderRadius: 6 }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: '#1a56db' }}>{data.contagens[key] as number}</div>
-                <div style={{ fontSize: 10.5, color: '#6b7280' }}>{label}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--gray-500)' }}>{label}</div>
               </div>
             ))}
           </div>
@@ -209,11 +209,11 @@ export default function PainelSistemaPage() {
         {/* Usuários por perfil/status */}
         <div style={CARD}>
           <h3 style={TITLE}>Usuários</h3>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', margin: '0 0 4px' }}>Por perfil</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-400)', margin: '0 0 4px' }}>Por perfil</p>
           {data.contagens.usuariosPorPerfil.map(u => (
             <div key={u.perfil} style={ROW}><span style={LABEL}>{u.perfil}</span><span>{u.total}</span></div>
           ))}
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', margin: '10px 0 4px' }}>Por status</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-400)', margin: '10px 0 4px' }}>Por status</p>
           {data.contagens.usuariosPorStatus.map(u => (
             <div key={u.status} style={ROW}><span style={LABEL}>{u.status}</span><span>{u.total}</span></div>
           ))}
@@ -238,24 +238,24 @@ export default function PainelSistemaPage() {
           <h3 style={TITLE}>Segurança — Login</h3>
           <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: data.login.falhas24h > 0 ? '#dc2626' : '#374151' }}>{data.login.falhas24h}</div>
-              <div style={{ fontSize: 10.5, color: '#6b7280' }}>Falhas (24h)</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: data.login.falhas24h > 0 ? '#dc2626' : 'var(--gray-700)' }}>{data.login.falhas24h}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--gray-500)' }}>Falhas (24h)</div>
             </div>
             <div>
               <div style={{ fontSize: 18, fontWeight: 700, color: '#065f46' }}>{data.login.sucessos24h}</div>
-              <div style={{ fontSize: 10.5, color: '#6b7280' }}>Sucessos (24h)</div>
+              <div style={{ fontSize: 10.5, color: 'var(--gray-500)' }}>Sucessos (24h)</div>
             </div>
           </div>
           <div style={{ maxHeight: 150, overflowY: 'auto' }}>
-            {data.login.recentes.length === 0 && <p style={{ fontSize: 11, color: '#9ca3af' }}>Nenhum evento de login ainda.</p>}
+            {data.login.recentes.length === 0 && <p style={{ fontSize: 11, color: 'var(--gray-400)' }}>Nenhum evento de login ainda.</p>}
             {data.login.recentes.map(l => {
               const ok = l.acao === 'LOGIN';
               const email = l.usuario?.email ?? l.dadosDepois?.email ?? '—';
               const motivo = !ok ? (LOGIN_MOTIVO_LABEL[l.dadosDepois?.motivo] ?? l.dadosDepois?.motivo) : null;
               return (
-                <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, padding: '3px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, padding: '3px 0', borderBottom: '1px solid var(--gray-100)' }}>
                   <span style={{ color: ok ? '#065f46' : '#991b1b' }}>{ok ? '✓' : '✗'} {email}{motivo ? ` — ${motivo}` : ''}</span>
-                  <span style={{ color: '#9ca3af', flexShrink: 0, marginLeft: 8 }}>{new Date(l.criadoEm).toLocaleTimeString('pt-BR')}</span>
+                  <span style={{ color: 'var(--gray-400)', flexShrink: 0, marginLeft: 8 }}>{new Date(l.criadoEm).toLocaleTimeString('pt-BR')}</span>
                 </div>
               );
             })}
@@ -268,21 +268,21 @@ export default function PainelSistemaPage() {
           <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
             <div>
               <div style={{ fontSize: 18, fontWeight: 700, color: '#065f46' }}>{data.sessoes.totalLogados}</div>
-              <div style={{ fontSize: 10.5, color: '#6b7280' }}>Logados agora</div>
+              <div style={{ fontSize: 10.5, color: 'var(--gray-500)' }}>Logados agora</div>
             </div>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#374151' }}>{data.sessoes.totalUsuarios}</div>
-              <div style={{ fontSize: 10.5, color: '#6b7280' }}>Usuários ativos</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--gray-700)' }}>{data.sessoes.totalUsuarios}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--gray-500)' }}>Usuários ativos</div>
             </div>
           </div>
           <div style={{ maxHeight: 150, overflowY: 'auto' }}>
-            {data.sessoes.usuarios.length === 0 && <p style={{ fontSize: 11, color: '#9ca3af' }}>Nenhum usuário ativo.</p>}
+            {data.sessoes.usuarios.length === 0 && <p style={{ fontSize: 11, color: 'var(--gray-400)' }}>Nenhum usuário ativo.</p>}
             {data.sessoes.usuarios.map(u => (
-              <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, padding: '3px 0', borderBottom: '1px solid #f3f4f6', gap: 8 }}>
+              <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, padding: '3px 0', borderBottom: '1px solid var(--gray-100)', gap: 8 }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <Dot ok={u.logado} /> {u.nome || u.email} <span style={{ color: '#9ca3af' }}>· {PERFIL_LABEL[u.perfil] ?? u.perfil}</span>
+                  <Dot ok={u.logado} /> {u.nome || u.email} <span style={{ color: 'var(--gray-400)' }}>· {PERFIL_LABEL[u.perfil] ?? u.perfil}</span>
                 </span>
-                <span style={{ flexShrink: 0, color: u.logado ? '#065f46' : '#9ca3af' }}>
+                <span style={{ flexShrink: 0, color: u.logado ? '#065f46' : 'var(--gray-400)' }}>
                   {u.logado
                     ? `há ${formatUptime(u.tempoLogadoSegundos ?? 0)}`
                     : u.ultimoLogin
@@ -292,7 +292,7 @@ export default function PainelSistemaPage() {
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 10, color: '#9ca3af', margin: '8px 0 0', lineHeight: 1.4 }}>
+          <p style={{ fontSize: 10, color: 'var(--gray-400)', margin: '8px 0 0', lineHeight: 1.4 }}>
             Aproximação: sem sessão no servidor (JWT puro), "logado" = fez login há menos tempo que a validade
             do token. Não detecta logout manual antes do token expirar.
           </p>
@@ -304,19 +304,19 @@ export default function PainelSistemaPage() {
         <h3 style={TITLE}>Auditoria Recente</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+            <tr style={{ borderBottom: '1px solid var(--gray-200)' }}>
               {['Data/Hora', 'Usuário', 'Ação', 'Entidade'].map(h => (
-                <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 11 }}>{h}</th>
+                <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-500)', fontSize: 11 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {data.auditoriaRecente.length === 0 && (
-              <tr><td colSpan={4} style={{ padding: 16, textAlign: 'center', color: '#9ca3af' }}>Sem registros ainda.</td></tr>
+              <tr><td colSpan={4} style={{ padding: 16, textAlign: 'center', color: 'var(--gray-400)' }}>Sem registros ainda.</td></tr>
             )}
             {data.auditoriaRecente.map(a => (
-              <tr key={a.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <td style={{ padding: '6px 10px', color: '#6b7280' }}>{new Date(a.criadoEm).toLocaleString('pt-BR')}</td>
+              <tr key={a.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                <td style={{ padding: '6px 10px', color: 'var(--gray-500)' }}>{new Date(a.criadoEm).toLocaleString('pt-BR')}</td>
                 <td style={{ padding: '6px 10px' }}>{a.usuario?.email ?? '— (sistema)'}</td>
                 <td style={{ padding: '6px 10px' }}>{a.acao}</td>
                 <td style={{ padding: '6px 10px' }}>{a.entidade}</td>

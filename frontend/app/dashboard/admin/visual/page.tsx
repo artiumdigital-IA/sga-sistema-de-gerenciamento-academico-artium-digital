@@ -4,13 +4,13 @@ import { apiFetch, apiUpload, apiFileUrl } from '@/lib/api';
 import { getToken, parseJwt } from '@/lib/auth';
 import { notificarBrandingAtualizada, BRANDING_PADRAO, type BrandingConfig } from '@/lib/branding';
 
-const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' };
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 };
+const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 6 };
 const BTN = (v: 'primary' | 'ghost') => ({
   padding: '7px 16px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
   background: v === 'primary' ? '#1a56db' : 'transparent',
-  color: v === 'ghost' ? '#374151' : '#fff',
-  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: v === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
 
 export default function VisualPage() {
@@ -95,7 +95,7 @@ export default function VisualPage() {
   if (loading) {
     return (
       <div style={{ padding: 28 }}>
-        <p style={{ color: '#6b7280', fontSize: 14 }}>Carregando...</p>
+        <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</p>
       </div>
     );
   }
@@ -103,7 +103,7 @@ export default function VisualPage() {
   return (
     <div style={{ padding: '24px 28px', maxWidth: 760 }}>
       <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Identidade Visual</h1>
-      <p style={{ margin: '2px 0 20px', fontSize: 13, color: '#6b7280' }}>
+      <p style={{ margin: '2px 0 20px', fontSize: 13, color: 'var(--gray-500)' }}>
         Nome, logo, símbolo e cores da instituição — aplicados em toda a plataforma (login, menu, documentos impressos).
       </p>
 
@@ -118,15 +118,15 @@ export default function VisualPage() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16 }}>
           <div style={LABEL}>Logo (login, menu, documentos)</div>
           <div style={{
             height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#f9fafb', border: '1px dashed #d1d5db', borderRadius: 6, marginBottom: 10,
+            background: 'var(--gray-50)', border: '1px dashed var(--gray-300)', borderRadius: 6, marginBottom: 10,
           }}>
             {config.logoUrl
               ? <img src={apiFileUrl(config.logoUrl) ?? ''} alt="Logo" style={{ maxHeight: 70, maxWidth: '90%', objectFit: 'contain' }} />
-              : <span style={{ fontSize: 12, color: '#9ca3af' }}>Nenhuma logo enviada</span>}
+              : <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>Nenhuma logo enviada</span>}
           </div>
           <input
             ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }}
@@ -137,15 +137,15 @@ export default function VisualPage() {
           </button>
         </div>
 
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16 }}>
           <div style={LABEL}>Símbolo (ícone da aba do navegador)</div>
           <div style={{
             height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#f9fafb', border: '1px dashed #d1d5db', borderRadius: 6, marginBottom: 10,
+            background: 'var(--gray-50)', border: '1px dashed var(--gray-300)', borderRadius: 6, marginBottom: 10,
           }}>
             {config.simboloUrl
               ? <img src={apiFileUrl(config.simboloUrl) ?? ''} alt="Símbolo" style={{ maxHeight: 70, maxWidth: '90%', objectFit: 'contain' }} />
-              : <span style={{ fontSize: 12, color: '#9ca3af' }}>Nenhum símbolo enviado</span>}
+              : <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>Nenhum símbolo enviado</span>}
           </div>
           <input
             ref={simboloInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }}
@@ -157,7 +157,7 @@ export default function VisualPage() {
         </div>
       </div>
 
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+      <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
         <div style={{ marginBottom: 12 }}>
           <label style={LABEL}>Nome curto (aparece no menu, título da aba)</label>
           <input style={INPUT} value={form.nomeInstituicao} onChange={e => setForm(f => ({ ...f, nomeInstituicao: e.target.value }))} placeholder="Ex: FIURJ" />
@@ -168,7 +168,7 @@ export default function VisualPage() {
         </div>
       </div>
 
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 20 }}>
+      <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16, marginBottom: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>
             <label style={LABEL}>Cor primária</label>
@@ -176,7 +176,7 @@ export default function VisualPage() {
               <input
                 type="color" value={/^#[0-9a-fA-F]{6}$/.test(form.corPrimaria) ? form.corPrimaria : '#1C3A6B'}
                 onChange={e => setForm(f => ({ ...f, corPrimaria: e.target.value }))}
-                style={{ width: 40, height: 34, padding: 2, border: '1px solid #d1d5db', borderRadius: 5, cursor: 'pointer' }}
+                style={{ width: 40, height: 34, padding: 2, border: '1px solid var(--gray-300)', borderRadius: 5, cursor: 'pointer' }}
               />
               <input
                 style={{ ...INPUT, fontFamily: 'monospace' }} value={form.corPrimaria}
@@ -190,7 +190,7 @@ export default function VisualPage() {
               <input
                 type="color" value={/^#[0-9a-fA-F]{6}$/.test(form.corSecundaria) ? form.corSecundaria : '#C8102E'}
                 onChange={e => setForm(f => ({ ...f, corSecundaria: e.target.value }))}
-                style={{ width: 40, height: 34, padding: 2, border: '1px solid #d1d5db', borderRadius: 5, cursor: 'pointer' }}
+                style={{ width: 40, height: 34, padding: 2, border: '1px solid var(--gray-300)', borderRadius: 5, cursor: 'pointer' }}
               />
               <input
                 style={{ ...INPUT, fontFamily: 'monospace' }} value={form.corSecundaria}
@@ -199,7 +199,7 @@ export default function VisualPage() {
             </div>
           </div>
         </div>
-        <p style={{ fontSize: 11.5, color: '#9ca3af', margin: '10px 0 0' }}>
+        <p style={{ fontSize: 11.5, color: 'var(--gray-400)', margin: '10px 0 0' }}>
           A cor primária é usada no menu, botões e destaques; a secundária em alertas e detalhes. As mudanças aplicam na hora, em toda a plataforma.
         </p>
       </div>

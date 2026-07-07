@@ -14,10 +14,10 @@ interface ResultadoImportacao {
   detalhes: { ra: string; status: 'ok' | 'erro'; mensagem?: string }[];
 }
 
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
-const LABEL: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const LABEL: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 };
 const BTN_P: React.CSSProperties = { padding: '8px 16px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: '#1a56db', color: '#fff' };
-const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: '#374151', border: '1px solid #d1d5db', fontWeight: 500 };
+const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: 'var(--gray-700)', border: '1px solid var(--gray-300)', fontWeight: 500 };
 
 const TIPOS_VALIDOS = ['PROVA', 'TRABALHO', 'EXAME_FINAL'];
 
@@ -107,10 +107,10 @@ export default function PlanilhaNotasPage() {
     <div style={{ padding: '24px 28px' }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Planilha de Notas</h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Gere uma planilha CSV para preenchimento offline, ou importe uma planilha já preenchida.</p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>Gere uma planilha CSV para preenchimento offline, ou importe uma planilha já preenchida.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12, marginBottom: 20, background: '#f9fafb', padding: 16, borderRadius: 8, border: '1px solid #e5e7eb' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12, marginBottom: 20, background: 'var(--gray-50)', padding: 16, borderRadius: 8, border: '1px solid var(--gray-200)' }}>
         <div>
           <label style={LABEL}>Período Letivo</label>
           <select style={INPUT} value={selectedPeriodo} onChange={e => setSelectedPeriodo(e.target.value)}>
@@ -130,9 +130,9 @@ export default function PlanilhaNotasPage() {
       {erro && <p style={{ color: '#dc2626', fontSize: 13 }}>{erro}</p>}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 18 }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 18 }}>
           <h3 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700 }}>1. Gerar planilha</h3>
-          <p style={{ margin: '0 0 14px', fontSize: 12, color: '#6b7280' }}>
+          <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--gray-500)' }}>
             Baixa um CSV com os alunos matriculados na oferta selecionada (colunas RA, Nome, Tipo, Nota, Peso — Nota em branco pra preencher).
           </p>
           <button style={BTN_P} disabled={!selectedOferta || gerando} onClick={gerarPlanilha}>
@@ -140,9 +140,9 @@ export default function PlanilhaNotasPage() {
           </button>
         </div>
 
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 18 }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 18 }}>
           <h3 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700 }}>2. Importar planilha preenchida</h3>
-          <p style={{ margin: '0 0 14px', fontSize: 12, color: '#6b7280' }}>
+          <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--gray-500)' }}>
             Envie o CSV preenchido (mesmo formato). Cada linha com Nota preenchida vira uma avaliação lançada.
           </p>
           <input
@@ -153,7 +153,7 @@ export default function PlanilhaNotasPage() {
             onChange={e => { const f = e.target.files?.[0]; if (f) importarPlanilha(f); }}
             style={{ fontSize: 12 }}
           />
-          {importando && <p style={{ fontSize: 12, color: '#6b7280', marginTop: 8 }}>Importando...</p>}
+          {importando && <p style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 8 }}>Importando...</p>}
         </div>
       </div>
 
@@ -169,25 +169,25 @@ export default function PlanilhaNotasPage() {
               </div>
             )}
           </div>
-          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                   {['RA', 'Status', 'Mensagem'].map(h => (
-                    <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                    <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {resultado.detalhes.map((d, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={i} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                     <td style={{ padding: '8px 14px' }}>{d.ra}</td>
                     <td style={{ padding: '8px 14px' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: d.status === 'ok' ? '#d1fae5' : '#fee2e2', color: d.status === 'ok' ? '#065f46' : '#991b1b' }}>
                         {d.status === 'ok' ? 'OK' : 'Erro'}
                       </span>
                     </td>
-                    <td style={{ padding: '8px 14px', color: '#6b7280' }}>{d.mensagem ?? '—'}</td>
+                    <td style={{ padding: '8px 14px', color: 'var(--gray-500)' }}>{d.mensagem ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

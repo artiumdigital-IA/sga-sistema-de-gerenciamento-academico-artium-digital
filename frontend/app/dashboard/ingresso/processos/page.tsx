@@ -22,14 +22,14 @@ const TIPO_LABEL: Record<TipoProcesso, string> = {
 };
 const STATUS_STYLE: Record<StatusProcesso, { bg: string; color: string }> = {
   ABERTO: { bg: '#d1fae5', color: '#065f46' },
-  ENCERRADO: { bg: '#f3f4f6', color: '#374151' },
+  ENCERRADO: { bg: 'var(--gray-100)', color: 'var(--gray-700)' },
   CANCELADO: { bg: '#fee2e2', color: '#991b1b' },
 };
 
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, width: '100%', boxSizing: 'border-box' };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 const BTN_P: React.CSSProperties = { padding: '7px 16px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: '#1a56db', color: '#fff' };
-const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: '#374151', border: '1px solid #d1d5db' };
-const LBL: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 };
+const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: 'var(--gray-700)', border: '1px solid var(--gray-300)' };
+const LBL: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 3 };
 
 interface FormData {
   nome: string; tipo: TipoProcesso; cursoId: string; periodoLetivoId: string;
@@ -66,7 +66,7 @@ function ProcessoModal({ processo, cursos, periodos, onClose, onSave }: {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 540, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 540, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>{processo ? 'Editar Processo' : 'Novo Processo Seletivo'}</h2>
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label style={LBL}>Nome *</label><input style={INPUT} value={form.nome} onChange={e => set('nome', e.target.value)} required /></div>
@@ -147,33 +147,33 @@ export default function ProcessosPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Processos Seletivos</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>{processos.length} processo{processos.length !== 1 ? 's' : ''}</p>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--gray-500)' }}>{processos.length} processo{processos.length !== 1 ? 's' : ''}</p>
         </div>
         <button style={BTN_P} onClick={() => setModal('new')}>+ Novo Processo</button>
       </div>
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p>}
-      {!loading && processos.length === 0 && <p style={{ color: '#6b7280', fontSize: 13 }}>Nenhum processo seletivo cadastrado.</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</p>}
+      {!loading && processos.length === 0 && <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Nenhum processo seletivo cadastrado.</p>}
 
       {!loading && processos.length > 0 && (
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr style={{ background: '#f9fafb' }}>
+            <thead><tr style={{ background: 'var(--gray-50)' }}>
               {['Nome', 'Tipo', 'Curso', 'Período', 'Vagas', 'Inscritos', 'Datas', 'Status', ''].map(h => (
-                <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: '#6b7280', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>{h}</th>
+                <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{processos.map(p => {
               const ss = STATUS_STYLE[p.status];
               return (
-                <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                <tr key={p.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                   <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 500 }}>{p.nome}</td>
                   <td style={{ padding: '10px 12px', fontSize: 12 }}>{TIPO_LABEL[p.tipo]}</td>
                   <td style={{ padding: '10px 12px', fontSize: 12 }}>{p.curso.nome}</td>
                   <td style={{ padding: '10px 12px', fontSize: 12 }}>{p.periodoLetivo.ano}/{p.periodoLetivo.semestre}</td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>{p.vagas}</td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>{p._count?.inscricoes ?? 0}</td>
-                  <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>
+                  <td style={{ padding: '10px 12px', fontSize: 11, color: 'var(--gray-500)' }}>
                     {new Date(p.dataAbertura).toLocaleDateString('pt-BR')} →<br />
                     {new Date(p.dataEncerramento).toLocaleDateString('pt-BR')}
                   </td>
@@ -183,7 +183,7 @@ export default function ProcessosPage() {
                   <td style={{ padding: '10px 12px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => router.push(`/dashboard/ingresso/processos/${p.id}`)} style={{ padding: '4px 10px', fontSize: 12, borderRadius: 4, border: '1px solid #2563eb', background: '#eff6ff', color: '#2563eb', cursor: 'pointer', fontWeight: 500 }}>Inscrições</button>
-                      <button onClick={() => setModal(p)} style={{ padding: '4px 10px', fontSize: 12, borderRadius: 4, border: '1px solid #d1d5db', background: '#fff', color: '#374151', cursor: 'pointer' }}>Editar</button>
+                      <button onClick={() => setModal(p)} style={{ padding: '4px 10px', fontSize: 12, borderRadius: 4, border: '1px solid var(--gray-300)', background: 'var(--white)', color: 'var(--gray-700)', cursor: 'pointer' }}>Editar</button>
                       <button onClick={() => del(p.id)} disabled={deleting === p.id} style={{ padding: '4px 10px', fontSize: 12, borderRadius: 4, border: '1px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>{deleting === p.id ? '...' : 'Excluir'}</button>
                     </div>
                   </td>

@@ -16,13 +16,13 @@ interface Protocolo {
 const STATUS_LABEL: Record<Status, string> = { ABERTO: 'Aberto', EM_ANDAMENTO: 'Em Andamento', CONCLUIDO: 'Concluído', CANCELADO: 'Cancelado' };
 const STATUS_COLOR: Record<Status, { bg: string; color: string }> = {
   ABERTO: { bg: '#dbeafe', color: '#1e40af' }, EM_ANDAMENTO: { bg: '#fef3c7', color: '#92400e' },
-  CONCLUIDO: { bg: '#d1fae5', color: '#065f46' }, CANCELADO: { bg: '#f3f4f6', color: '#374151' },
+  CONCLUIDO: { bg: '#d1fae5', color: '#065f46' }, CANCELADO: { bg: 'var(--gray-100)', color: 'var(--gray-700)' },
 };
 
-const INPUT: React.CSSProperties = { padding: '8px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT: React.CSSProperties = { padding: '8px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 const BTN_P: React.CSSProperties = { padding: '8px 16px', borderRadius: 5, border: 'none', background: '#1a56db', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 };
-const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid #d1d5db', cursor: 'pointer', fontSize: 12, background: '#fff', color: '#374151' };
+const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 12, background: 'var(--white)', color: 'var(--gray-700)' };
 
 function ModalNovoProtocolo({ tipos, onClose, onCreated }: { tipos: TipoProtocolo[]; onClose: () => void; onCreated: () => void }) {
   const [tipoId, setTipoId] = useState('');
@@ -57,7 +57,7 @@ function ModalNovoProtocolo({ tipos, onClose, onCreated }: { tipos: TipoProtocol
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 480, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 480, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700 }}>Lançar Protocolo</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
@@ -125,7 +125,7 @@ export default function ProtocolosPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Protocolos</h1>
-          <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Lançamento e consulta de protocolos administrativos.</p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>Lançamento e consulta de protocolos administrativos.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button style={BTN_G} onClick={() => router.push('/dashboard/secretaria/tipos-protocolo')}>Gerenciar Tipos</button>
@@ -140,25 +140,25 @@ export default function ProtocolosPage() {
         </select>
       </div>
 
-      {loading ? <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p> : (
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+      {loading ? <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</p> : (
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                {['Número', 'Tipo', 'Assunto', 'Aluno', 'Abertura', 'Status', ''].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>)}
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
+                {['Número', 'Tipo', 'Assunto', 'Aluno', 'Abertura', 'Status', ''].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
-              {protocolos.length === 0 && <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>Nenhum protocolo encontrado.</td></tr>}
+              {protocolos.length === 0 && <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum protocolo encontrado.</td></tr>}
               {protocolos.map(p => {
                 const cor = STATUS_COLOR[p.status];
                 return (
-                  <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={p.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                     <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600 }}>{p.numero}</td>
                     <td style={{ padding: '10px 14px' }}>{p.tipo.nome}</td>
                     <td style={{ padding: '10px 14px' }}>{p.assunto}</td>
                     <td style={{ padding: '10px 14px' }}>{p.aluno ? `${p.aluno.ra} — ${p.aluno.nome}` : '—'}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: '#6b7280' }}>{new Date(p.dataAbertura).toLocaleDateString('pt-BR')}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--gray-500)' }}>{new Date(p.dataAbertura).toLocaleDateString('pt-BR')}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: cor.bg, color: cor.color }}>{STATUS_LABEL[p.status]}</span>
                     </td>

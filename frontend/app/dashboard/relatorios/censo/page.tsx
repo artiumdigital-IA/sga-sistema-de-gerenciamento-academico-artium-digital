@@ -43,9 +43,9 @@ function downloadCsv(data: Record<string, unknown>[], filename: string) {
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '16px 20px', borderTop: '3px solid ' + color }}>
+    <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: '16px 20px', borderTop: '3px solid ' + color }}>
       <div style={{ fontSize: 28, fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -53,22 +53,22 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 function GroupTable({ title, rows, keyLabel }: { title: string; rows: { key: string; total: number }[]; keyLabel: string }) {
   const total = rows.reduce((s, r) => s + r.total, 0);
   return (
-    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid #e5e7eb', fontWeight: 600, fontSize: 13 }}>{title}</div>
+    <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--gray-200)', fontWeight: 600, fontSize: 13 }}>{title}</div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            <th style={{ padding: '6px 14px', textAlign: 'left', fontSize: 11, color: '#6b7280', borderBottom: '1px solid #f3f4f6' }}>{keyLabel}</th>
-            <th style={{ padding: '6px 14px', textAlign: 'right', fontSize: 11, color: '#6b7280', borderBottom: '1px solid #f3f4f6' }}>Total</th>
-            <th style={{ padding: '6px 14px', textAlign: 'right', fontSize: 11, color: '#6b7280', borderBottom: '1px solid #f3f4f6' }}>%</th>
+            <th style={{ padding: '6px 14px', textAlign: 'left', fontSize: 11, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-100)' }}>{keyLabel}</th>
+            <th style={{ padding: '6px 14px', textAlign: 'right', fontSize: 11, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-100)' }}>Total</th>
+            <th style={{ padding: '6px 14px', textAlign: 'right', fontSize: 11, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-100)' }}>%</th>
           </tr>
         </thead>
         <tbody>
           {rows.sort((a, b) => b.total - a.total).map(r => (
             <tr key={r.key}>
-              <td style={{ padding: '6px 14px', fontSize: 13, borderBottom: '1px solid #f9fafb' }}>{LABELS[r.key] ?? r.key}</td>
-              <td style={{ padding: '6px 14px', fontSize: 13, textAlign: 'right', fontWeight: 600, borderBottom: '1px solid #f9fafb' }}>{r.total}</td>
-              <td style={{ padding: '6px 14px', fontSize: 12, textAlign: 'right', color: '#6b7280', borderBottom: '1px solid #f9fafb' }}>
+              <td style={{ padding: '6px 14px', fontSize: 13, borderBottom: '1px solid var(--gray-50)' }}>{LABELS[r.key] ?? r.key}</td>
+              <td style={{ padding: '6px 14px', fontSize: 13, textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--gray-50)' }}>{r.total}</td>
+              <td style={{ padding: '6px 14px', fontSize: 12, textAlign: 'right', color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-50)' }}>
                 {total > 0 ? ((r.total / total) * 100).toFixed(1) + '%' : '-'}
               </td>
             </tr>
@@ -100,7 +100,7 @@ export default function CensoPage() {
     } finally { setExportLoading(null); }
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando dados do Censo...</div>;
+  if (loading) return <div style={{ padding: 40, color: 'var(--gray-500)' }}>Carregando dados do Censo...</div>;
   if (error) return <div style={{ padding: 40, color: '#ef4444' }}>Erro: {error}</div>;
   if (!resumo) return null;
 
@@ -111,7 +111,7 @@ export default function CensoPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>
           <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 600 }}>Censo da Educacao Superior - INEP</h2>
-          <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>Dados com campos exigidos pelo Censo. Exporte em CSV para conferencia.</p>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--gray-500)' }}>Dados com campos exigidos pelo Censo. Exporte em CSV para conferencia.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {[
@@ -120,7 +120,7 @@ export default function CensoPage() {
             { key: 'cursos', label: 'Cursos CSV' },
           ].map(({ key, label }) => (
             <button key={key}
-              style={{ padding: '7px 14px', border: 'none', borderRadius: 4, cursor: exportLoading ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 500, background: exportLoading === key ? '#e5e7eb' : '#1e3a5f', color: exportLoading === key ? '#6b7280' : '#fff' }}
+              style={{ padding: '7px 14px', border: 'none', borderRadius: 4, cursor: exportLoading ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 500, background: exportLoading === key ? 'var(--gray-200)' : '#1e3a5f', color: exportLoading === key ? 'var(--gray-500)' : '#fff' }}
               disabled={!!exportLoading}
               onClick={() => exportar(key, 'censo_' + key + '_' + yr + '.csv')}>
               {exportLoading === key ? '...' : '↓ ' + label}
@@ -135,7 +135,7 @@ export default function CensoPage() {
         <StatCard label="Cursos" value={resumo.totais.cursos} color="#7c3aed" />
       </div>
 
-      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>Alunos</h3>
+      <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--gray-700)', margin: '0 0 10px' }}>Alunos</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
         <GroupTable title="Por Situacao de Vinculo" keyLabel="Situacao"
           rows={resumo.alunosPorSituacao.map(r => ({ key: r.situacao, total: r.total }))} />
@@ -147,7 +147,7 @@ export default function CensoPage() {
           rows={resumo.alunosPorCorRaca.map(r => ({ key: r.corRaca, total: r.total }))} />
       </div>
 
-      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#374151', margin: '0 0 10px' }}>Docentes</h3>
+      <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--gray-700)', margin: '0 0 10px' }}>Docentes</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <GroupTable title="Por Titulacao" keyLabel="Titulacao"
           rows={resumo.docentesPorTitulacao.map(r => ({ key: r.titulacao, total: r.total }))} />

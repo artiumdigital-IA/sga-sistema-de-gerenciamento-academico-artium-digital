@@ -20,10 +20,10 @@ interface ResumoAluno {
   emAtraso: boolean;
 }
 
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
-const LABEL: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const LABEL: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 };
 const BTN_P: React.CSSProperties = { padding: '8px 16px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: '#1a56db', color: '#fff' };
-const BTN_G: React.CSSProperties = { padding: '6px 14px', borderRadius: 5, border: '1px solid #d1d5db', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: 'transparent', color: '#374151' };
+const BTN_G: React.CSSProperties = { padding: '6px 14px', borderRadius: 5, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: 'transparent', color: 'var(--gray-700)' };
 
 export default function FrequenciaPage() {
   const [tab, setTab] = useState<'lancar' | 'resumo'>(() => {
@@ -101,19 +101,19 @@ export default function FrequenciaPage() {
     <div style={{ padding: '24px 28px' }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Frequência</h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Lançamento de entrada/faltas por dia de aula, e listagem de alunos em atraso.</p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>Lançamento de entrada/faltas por dia de aula, e listagem de alunos em atraso.</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid #e5e7eb' }}>
-        <button onClick={() => setTab('lancar')} style={{ padding: '8px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, borderBottom: tab === 'lancar' ? '2px solid #1a56db' : '2px solid transparent', color: tab === 'lancar' ? '#1a56db' : '#6b7280' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--gray-200)' }}>
+        <button onClick={() => setTab('lancar')} style={{ padding: '8px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, borderBottom: tab === 'lancar' ? '2px solid #1a56db' : '2px solid transparent', color: tab === 'lancar' ? '#1a56db' : 'var(--gray-500)' }}>
           Lançamento Diário
         </button>
-        <button onClick={() => setTab('resumo')} style={{ padding: '8px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, borderBottom: tab === 'resumo' ? '2px solid #1a56db' : '2px solid transparent', color: tab === 'resumo' ? '#1a56db' : '#6b7280' }}>
+        <button onClick={() => setTab('resumo')} style={{ padding: '8px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, borderBottom: tab === 'resumo' ? '2px solid #1a56db' : '2px solid transparent', color: tab === 'resumo' ? '#1a56db' : 'var(--gray-500)' }}>
           Resumo / Alunos em Atraso
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: tab === 'lancar' ? '200px 1fr 140px 120px' : '200px 1fr', gap: 12, marginBottom: 20, background: '#f9fafb', padding: 16, borderRadius: 8, border: '1px solid #e5e7eb', alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: tab === 'lancar' ? '200px 1fr 140px 120px' : '200px 1fr', gap: 12, marginBottom: 20, background: 'var(--gray-50)', padding: 16, borderRadius: 8, border: '1px solid var(--gray-200)', alignItems: 'end' }}>
         <div>
           <label style={LABEL}>Período Letivo</label>
           <select style={INPUT} value={selectedPeriodo} onChange={e => setSelectedPeriodo(e.target.value)}>
@@ -142,26 +142,26 @@ export default function FrequenciaPage() {
         )}
       </div>
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</p>}
       {erro && <p style={{ color: '#dc2626', fontSize: 13 }}>{erro}</p>}
 
       {tab === 'lancar' && !loading && selectedOferta && (
         matriculas.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: 13 }}>Nenhum aluno matriculado nesta oferta.</p>
+          <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Nenhum aluno matriculado nesta oferta.</p>
         ) : (
           <>
-            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
+            <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                  <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                     {['RA', 'Nome', `Faltas nesse dia (máx. ${quantidadeAulas || 0})`].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {matriculas.map(m => (
-                    <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <tr key={m.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                       <td style={{ padding: '8px 14px', fontWeight: 600 }}>{m.aluno.ra}</td>
                       <td style={{ padding: '8px 14px' }}>{m.aluno.nome}</td>
                       <td style={{ padding: '8px 14px' }}>
@@ -189,20 +189,20 @@ export default function FrequenciaPage() {
 
       {tab === 'resumo' && !loading && selectedOferta && (
         resumo.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: 13 }}>Nenhum aluno matriculado nesta oferta.</p>
+          <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Nenhum aluno matriculado nesta oferta.</p>
         ) : (
-          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                   {['RA', 'Nome', 'Dias Lançados', 'Total Aulas', 'Total Faltas', 'Frequência', 'Situação'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {resumo.map(r => (
-                  <tr key={r.matriculaDisciplinaId} style={{ borderBottom: '1px solid #f3f4f6', background: r.emAtraso ? '#fef2f2' : undefined }}>
+                  <tr key={r.matriculaDisciplinaId} style={{ borderBottom: '1px solid var(--gray-100)', background: r.emAtraso ? '#fef2f2' : undefined }}>
                     <td style={{ padding: '8px 14px', fontWeight: 600 }}>{r.aluno.ra}</td>
                     <td style={{ padding: '8px 14px' }}>{r.aluno.nome}</td>
                     <td style={{ padding: '8px 14px' }}>{r.diasLancados}</td>

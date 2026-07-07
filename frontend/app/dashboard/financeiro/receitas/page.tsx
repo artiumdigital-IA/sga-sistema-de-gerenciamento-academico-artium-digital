@@ -7,13 +7,13 @@ type FormData = Omit<Categoria, 'id'>;
 
 const EMPTY: FormData = { nome: '', descricao: '', ativa: true };
 
-const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' };
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 const BTN = (v: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
   background: v === 'primary' ? '#1a56db' : v === 'danger' ? '#e02424' : 'transparent',
-  color: v === 'ghost' ? '#374151' : '#fff',
-  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: v === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
 
 function F({ label, children }: { label: string; children: React.ReactNode }) {
@@ -40,14 +40,14 @@ function CategoriaModal({ categoria, onClose, onSave }: { categoria: Categoria |
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, width: 420, boxShadow: '0 10px 40px rgba(0,0,0,.18)', padding: 24 }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, width: 420, boxShadow: '0 10px 40px rgba(0,0,0,.18)', padding: 24 }}>
         <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700 }}>{categoria ? 'Editar Categoria de Receita' : 'Nova Categoria de Receita'}</h2>
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <F label="Nome *"><input style={INPUT} value={form.nome} required onChange={e => set('nome', e.target.value)} placeholder="Ex: Mensalidade, Taxa de Matrícula..." /></F>
           <F label="Descrição">
             <textarea style={{ ...INPUT, minHeight: 60, resize: 'vertical', fontFamily: 'inherit' }} value={form.descricao ?? ''} onChange={e => set('descricao', e.target.value)} />
           </F>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
             <input type="checkbox" checked={form.ativa} onChange={e => set('ativa', e.target.checked)} />
             Categoria ativa
           </label>
@@ -91,34 +91,34 @@ export default function ReceitasPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Receitas</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>Categorias de receita, base pra classificação financeira futura.</p>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>Categorias de receita, base pra classificação financeira futura.</p>
         </div>
         <button style={BTN('primary')} onClick={() => setModal('new')}>+ Nova Categoria</button>
       </div>
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 14 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</p>}
       {error && <p style={{ color: '#e02424', fontSize: 14 }}>{error}</p>}
 
       {!loading && (
-        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['Nome', 'Descrição', 'Status', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {categorias.length === 0 && (
-                <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>Nenhuma categoria cadastrada ainda.</td></tr>
+                <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhuma categoria cadastrada ainda.</td></tr>
               )}
               {categorias.map((c, i) => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                <tr key={c.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 500 }}>{c.nome}</td>
-                  <td style={{ padding: '10px 14px', color: '#6b7280' }}>{c.descricao ?? '—'}</td>
+                  <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{c.descricao ?? '—'}</td>
                   <td style={{ padding: '10px 14px' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: c.ativa ? '#d1fae5' : '#f3f4f6', color: c.ativa ? '#065f46' : '#6b7280' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: c.ativa ? '#d1fae5' : 'var(--gray-100)', color: c.ativa ? '#065f46' : 'var(--gray-500)' }}>
                       {c.ativa ? 'Ativa' : 'Inativa'}
                     </span>
                   </td>

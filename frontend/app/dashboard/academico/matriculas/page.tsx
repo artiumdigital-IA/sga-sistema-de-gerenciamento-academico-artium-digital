@@ -34,17 +34,17 @@ const STATUS_STYLE: Record<StatusMatricula, { bg: string; color: string; label: 
   APROVADO:    { bg: '#d1fae5', color: '#065f46', label: 'Aprovado' },
   REPROVADO:   { bg: '#fee2e2', color: '#991b1b', label: 'Reprovado' },
   DEPENDENCIA: { bg: '#fef3c7', color: '#92400e', label: 'Dependência' },
-  TRANCADO:    { bg: '#f3f4f6', color: '#374151', label: 'Trancado' },
+  TRANCADO:    { bg: 'var(--gray-100)', color: 'var(--gray-700)', label: 'Trancado' },
 };
 
 const BTN = (v: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
   background: v === 'primary' ? '#1a56db' : v === 'danger' ? '#e02424' : 'transparent',
-  color: v === 'ghost' ? '#374151' : '#fff',
-  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: v === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
-const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const };
-const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' as const };
+const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 
 // ── modal nova matrícula ───────────────────────────────────────────────
 function MatriculaModal({ alunos, cursos, periodos, disciplinas, professores, ofertas, onClose, onSave }: {
@@ -108,7 +108,7 @@ function MatriculaModal({ alunos, cursos, periodos, disciplinas, professores, of
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 20px', fontSize: 17, fontWeight: 700 }}>Nova Matrícula</h2>
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
@@ -128,7 +128,7 @@ function MatriculaModal({ alunos, cursos, periodos, disciplinas, professores, of
             </select>
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb' }} />
+          <hr style={{ border: 'none', borderTop: '1px solid var(--gray-200)' }} />
 
           {/* Seleção da oferta */}
           <div>
@@ -260,7 +260,7 @@ export default function MatriculasPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Matrículas</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>{matriculas.length} matrícula{matriculas.length !== 1 ? 's' : ''}</p>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>{matriculas.length} matrícula{matriculas.length !== 1 ? 's' : ''}</p>
         </div>
         <button style={BTN('primary')} onClick={() => setShowModal(true)}>+ Nova Matrícula</button>
       </div>
@@ -269,29 +269,29 @@ export default function MatriculasPage() {
         placeholder="Filtrar por nome ou RA do aluno..."
         value={filtroAluno} onChange={e => setFiltroAluno(e.target.value)} />
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 14 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</p>}
       {error && <p style={{ color: '#e02424', fontSize: 14 }}>{error}</p>}
 
       {!loading && (
-        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['Aluno', 'Disciplina / Período', 'Status', 'DP', 'Data', '', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
+                <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>
                   {filtroAluno ? 'Nenhum resultado.' : 'Nenhuma matrícula cadastrada ainda.'}
                 </td></tr>
               )}
               {filtered.map((m, i) => {
                 const st = STATUS_STYLE[m.status] ?? STATUS_STYLE.MATRICULADO;
                 return (
-                  <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                  <tr key={m.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 500 }}>{alunoInfo(m.alunoId)}</td>
                     <td style={{ padding: '10px 14px', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>{ofertaInfo(m.ofertaId)}</td>
                     <td style={{ padding: '10px 14px' }}>
@@ -300,7 +300,7 @@ export default function MatriculasPage() {
                     <td style={{ padding: '10px 14px' }}>
                       {m.isDependencia && <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: '#fef3c7', color: '#92400e' }}>DP</span>}
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: '#6b7280' }}>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--gray-500)' }}>
                       {m.dataMatricula ? new Date(m.dataMatricula).toLocaleDateString('pt-BR') : '-'}
                     </td>
                     <td style={{ padding: '10px 14px' }}>

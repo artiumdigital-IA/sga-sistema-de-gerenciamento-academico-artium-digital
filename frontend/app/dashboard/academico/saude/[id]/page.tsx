@@ -31,10 +31,10 @@ const EMPTY: Form = {
 
 const TIPOS_SANGUINEOS = ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Não informado'];
 
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 const BTN_P: React.CSSProperties = { padding: '7px 16px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: '#1a56db', color: '#fff' };
-const BTN_G: React.CSSProperties = { padding: '7px 16px', borderRadius: 5, border: '1px solid #d1d5db', cursor: 'pointer', fontSize: 13, background: '#fff', color: '#374151' };
+const BTN_G: React.CSSProperties = { padding: '7px 16px', borderRadius: 5, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)' };
 
 function G({ cols, children }: { cols: string; children: React.ReactNode }) {
   return <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 12 }}>{children}</div>;
@@ -92,7 +92,7 @@ export default function FichaSaudePage() {
     finally { setSaving(false); }
   }
 
-  if (loading) return <div style={{ padding: 24, color: '#6b7280', fontSize: 13 }}>Carregando...</div>;
+  if (loading) return <div style={{ padding: 24, color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</div>;
   if (erro && !aluno) return <div style={{ padding: 24, color: '#dc2626', fontSize: 13 }}>{erro}</div>;
 
   return (
@@ -101,13 +101,13 @@ export default function FichaSaudePage() {
 
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Ficha de Saúde</h1>
-        <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>{aluno?.nome} — RA {aluno?.ra}</p>
-        <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af' }}>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--gray-500)' }}>{aluno?.nome} — RA {aluno?.ra}</p>
+        <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--gray-400)' }}>
           Dado sensível (LGPD). Visível apenas para Admin e Secretaria.
         </p>
       </div>
 
-      <form onSubmit={salvar} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <form onSubmit={salvar} style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <G cols="1fr 2fr">
           <F label="Tipo sanguíneo">
             <select style={INPUT} value={form.tipoSanguineo} onChange={e => set('tipoSanguineo', e.target.value)}>

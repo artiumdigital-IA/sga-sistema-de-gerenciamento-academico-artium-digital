@@ -6,9 +6,9 @@ import { apiFetch } from '@/lib/api';
 interface Aluno { id: string; nome: string; ra: string; }
 interface Observacao { id: string; observacao: string; data: string; }
 
-const INPUT: React.CSSProperties = { padding: '8px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const INPUT: React.CSSProperties = { padding: '8px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
 const BTN: React.CSSProperties = { padding: '8px 16px', borderRadius: 5, border: 'none', background: '#059669', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 };
-const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid #d1d5db', cursor: 'pointer', fontSize: 12, background: '#fff', color: '#374151' };
+const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 12, background: 'var(--white)', color: 'var(--gray-700)' };
 
 export default function ObservacoesFinanceirasPage() {
   const params = useParams();
@@ -59,21 +59,21 @@ export default function ObservacoesFinanceirasPage() {
 
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Observações Financeiras</h1>
-        <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>{aluno.nome} — RA {aluno.ra}</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--gray-500)' }}>{aluno.nome} — RA {aluno.ra}</p>
       </div>
 
-      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 18, marginBottom: 20 }}>
+      <div style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 18, marginBottom: 20 }}>
         <textarea style={{ ...INPUT, minHeight: 70, resize: 'vertical', marginBottom: 12 }} value={texto} placeholder="Ex: Aluno solicitou renegociação da 3ª parcela." onChange={e => setTexto(e.target.value)} />
         <button style={BTN} disabled={salvando} onClick={salvar}>{salvando ? 'Salvando...' : 'Registrar observação'}</button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {observacoes.length === 0 && <p style={{ color: '#9ca3af', fontSize: 13 }}>Nenhuma observação registrada.</p>}
+        {observacoes.length === 0 && <p style={{ color: 'var(--gray-400)', fontSize: 13 }}>Nenhuma observação registrada.</p>}
         {observacoes.map(o => (
-          <div key={o.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+          <div key={o.id} style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
             <div>
               <p style={{ margin: '0 0 4px', fontSize: 13 }}>{o.observacao}</p>
-              <p style={{ margin: 0, fontSize: 11, color: '#9ca3af' }}>{new Date(o.data).toLocaleString('pt-BR')}</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--gray-400)' }}>{new Date(o.data).toLocaleString('pt-BR')}</p>
             </div>
             <button style={{ ...BTN_G, color: '#dc2626', borderColor: '#fecaca', height: 'fit-content' }} onClick={() => remover(o.id)}>Remover</button>
           </div>

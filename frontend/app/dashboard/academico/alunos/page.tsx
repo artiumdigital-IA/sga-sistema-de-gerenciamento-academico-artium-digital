@@ -38,7 +38,7 @@ const VINCULO_LABEL: Record<SituacaoVinculo, string> = {
 const VINCULO_COLOR: Record<SituacaoVinculo, { bg: string; color: string }> = {
   CURSANDO: { bg: '#d1fae5', color: '#065f46' }, TRANCADO: { bg: '#fef3c7', color: '#92400e' },
   FORMADO: { bg: '#dbeafe', color: '#1e40af' }, EVADIDO: { bg: '#fee2e2', color: '#991b1b' },
-  TRANSFERIDO_OUT: { bg: '#f3e8ff', color: '#6b21a8' }, FALECIDO: { bg: '#f3f4f6', color: '#374151' },
+  TRANSFERIDO_OUT: { bg: '#f3e8ff', color: '#6b21a8' }, FALECIDO: { bg: 'var(--gray-100)', color: 'var(--gray-700)' },
 };
 const UF_LIST = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
@@ -53,11 +53,11 @@ const EMPTY: FormData = {
 const BTN = (v: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
   background: v === 'primary' ? '#1a56db' : v === 'danger' ? '#e02424' : 'transparent',
-  color: v === 'ghost' ? '#374151' : '#fff',
-  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: v === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
-const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' };
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 
 function G({ cols, children }: { cols: string; children: React.ReactNode }) {
   return <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 12 }}>{children}</div>;
@@ -130,16 +130,16 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
   const tabStyle = (t: string): React.CSSProperties => ({
     padding: '8px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
     borderBottom: tab === t ? '2px solid #1a56db' : '2px solid transparent',
-    color: tab === t ? '#1a56db' : '#6b7280', background: 'transparent',
+    color: tab === t ? '#1a56db' : 'var(--gray-500)', background: 'transparent',
   });
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, width: 620, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, width: 620, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <div style={{ padding: '20px 28px 0' }}>
           <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700 }}>{aluno ? 'Editar Aluno' : 'Novo Aluno'}</h2>
-          <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: 20 }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--gray-200)', marginBottom: 20 }}>
             <button style={tabStyle('dados')} onClick={() => setTab('dados')}>Dados Pessoais</button>
             <button style={tabStyle('endereco')} onClick={() => setTab('endereco')}>Endereço</button>
           </div>
@@ -150,7 +150,7 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
           {tab === 'dados' && <>
             <G cols="1fr 1fr">
               <F label={aluno ? 'RA' : 'RA (gerado automaticamente)'}>
-                <input style={{ ...INPUT, background: '#f3f4f6', color: '#6b7280' }} value={aluno ? form.ra : 'Será gerado ao salvar'} disabled />
+                <input style={{ ...INPUT, background: 'var(--gray-100)', color: 'var(--gray-500)' }} value={aluno ? form.ra : 'Será gerado ao salvar'} disabled />
               </F>
               <F label="Nome completo *"><input style={INPUT} value={form.nome} required onChange={e => set('nome', e.target.value)} /></F>
             </G>
@@ -198,7 +198,7 @@ function AlunoModal({ aluno, cursos, matrizes, onClose, onSave }: {
                   onChange={e => set('cep', e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); buscarCep(); } }} />
                 <button type="button"
-                  style={{ padding: '7px 14px', border: '1px solid #1a56db', borderRadius: 5, background: '#fff', color: '#1a56db', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}
+                  style={{ padding: '7px 14px', border: '1px solid #1a56db', borderRadius: 5, background: 'var(--white)', color: '#1a56db', cursor: 'pointer', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap' }}
                   onClick={buscarCep} disabled={cepLoading}>
                   {cepLoading ? '...' : 'Pesquisar CEP'}
                 </button>
@@ -284,7 +284,7 @@ export default function AlunosPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Alunos</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>
             {alunos.length} aluno{alunos.length !== 1 ? 's' : ''} cadastrado{alunos.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -295,22 +295,22 @@ export default function AlunosPage() {
         placeholder="Buscar por nome, RA, CPF ou e-mail..."
         value={search} onChange={e => setSearch(e.target.value)} />
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 14 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</p>}
       {error && <p style={{ color: '#e02424', fontSize: 14 }}>{error}</p>}
 
       {!loading && (
-        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['RA', 'Nome', 'CPF', 'Curso', 'Ingresso', 'Situação', '', ''].map((h, i) => (
-                  <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
+                <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>
                   {search ? 'Nenhum resultado.' : 'Nenhum aluno cadastrado ainda.'}
                 </td></tr>
               )}
@@ -318,7 +318,7 @@ export default function AlunosPage() {
                 const vc = VINCULO_COLOR[a.situacaoVinculo];
                 const cursoNome = cursos.find(c => c.id === a.cursoId)?.nome ?? '-';
                 return (
-                  <tr key={a.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                  <tr key={a.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                     <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 500 }}>{a.ra}</td>
                     <td style={{ padding: '10px 14px' }}>{a.nome}</td>
                     <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }}>{a.cpf}</td>

@@ -16,10 +16,10 @@ interface Matricula {
   oferta: { id: string; disciplinaId: string; };
 }
 
-const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
-const LABEL: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 };
+const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
+const LABEL: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', display: 'block', marginBottom: 4 };
 const BTN_P: React.CSSProperties = { padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: '#1a56db', color: '#fff' };
-const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: '#374151', border: '1px solid #d1d5db' };
+const BTN_G: React.CSSProperties = { ...BTN_P, background: 'transparent', color: 'var(--gray-700)', border: '1px solid var(--gray-300)' };
 
 function ModalTransferir({ matricula, periodoId, onClose, onUpdate }: { matricula: Matricula; periodoId: string; onClose: () => void; onUpdate: () => void }) {
   const [ofertasDestino, setOfertasDestino] = useState<Oferta[]>([]);
@@ -54,9 +54,9 @@ function ModalTransferir({ matricula, periodoId, onClose, onUpdate }: { matricul
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 460, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 460, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 2px', fontSize: 16, fontWeight: 700 }}>Transferir Turma — {matricula.aluno.nome}</h2>
-        <p style={{ margin: '0 0 20px', fontSize: 12, color: '#6b7280' }}>RA {matricula.aluno.ra}</p>
+        <p style={{ margin: '0 0 20px', fontSize: 12, color: 'var(--gray-500)' }}>RA {matricula.aluno.ra}</p>
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
@@ -68,7 +68,7 @@ function ModalTransferir({ matricula, periodoId, onClose, onUpdate }: { matricul
               ))}
             </select>
             {ofertasDestino.length === 0 && (
-              <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 6 }}>Nenhuma outra turma dessa disciplina nesse período letivo.</p>
+              <p style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 6 }}>Nenhuma outra turma dessa disciplina nesse período letivo.</p>
             )}
           </div>
           <div>
@@ -121,10 +121,10 @@ export default function TransferenciaPage() {
     <div style={{ padding: '24px 28px' }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Transferência de Turma</h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Selecione a turma de origem e transfira alunos para outra turma da mesma disciplina.</p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>Selecione a turma de origem e transfira alunos para outra turma da mesma disciplina.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12, marginBottom: 20, background: '#f9fafb', padding: 16, borderRadius: 8, border: '1px solid #e5e7eb' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12, marginBottom: 20, background: 'var(--gray-50)', padding: 16, borderRadius: 8, border: '1px solid var(--gray-200)' }}>
         <div>
           <label style={LABEL}>Período Letivo</label>
           <select style={INPUT} value={selectedPeriodo} onChange={e => setSelectedPeriodo(e.target.value)}>
@@ -141,22 +141,22 @@ export default function TransferenciaPage() {
         </div>
       </div>
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Carregando...</p>}
       {erro && <p style={{ color: '#dc2626', fontSize: 13 }}>{erro}</p>}
       {!loading && selectedOferta && matriculas.length === 0 && (
-        <p style={{ color: '#6b7280', fontSize: 13 }}>Nenhum aluno matriculado nesta turma.</p>
+        <p style={{ color: 'var(--gray-500)', fontSize: 13 }}>Nenhum aluno matriculado nesta turma.</p>
       )}
 
       {!loading && matriculas.length > 0 && (
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr style={{ background: '#f9fafb' }}>
+            <thead><tr style={{ background: 'var(--gray-50)' }}>
               {['RA', 'Nome', 'Status', 'Ações'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: '#6b7280', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>{h}</th>
+                <th key={h} style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textAlign: 'left', borderBottom: '1px solid var(--gray-200)' }}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{matriculas.map(m => (
-              <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <tr key={m.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                 <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600 }}>{m.aluno.ra}</td>
                 <td style={{ padding: '10px 12px', fontSize: 13 }}>
                   {m.aluno.nome}

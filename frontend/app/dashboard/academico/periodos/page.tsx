@@ -19,7 +19,7 @@ type FormData = { ano: number; semestre: Semestre; dataInicio: string; dataFim: 
 const EMPTY: FormData = { ano: new Date().getFullYear(), semestre: 'S1', dataInicio: '', dataFim: '' };
 
 const STATUS_STYLE: Record<PeriodoStatus, { bg: string; color: string; label: string }> = {
-  PLANEJADO:    { bg: '#f3f4f6', color: '#374151', label: 'Planejado' },
+  PLANEJADO:    { bg: 'var(--gray-100)', color: 'var(--gray-700)', label: 'Planejado' },
   EM_ANDAMENTO: { bg: '#d1fae5', color: '#065f46', label: 'Em andamento' },
   ENCERRADO:    { bg: '#dbeafe', color: '#1e40af', label: 'Encerrado' },
 };
@@ -27,11 +27,11 @@ const STATUS_STYLE: Record<PeriodoStatus, { bg: string; color: string; label: st
 const BTN = (v: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
   background: v === 'primary' ? '#1a56db' : v === 'danger' ? '#e02424' : 'transparent',
-  color: v === 'ghost' ? '#374151' : '#fff',
-  ...(v === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: v === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(v === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
-const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const };
-const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const INPUT = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' as const };
+const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 
 function PeriodoModal({ periodo, onClose, onSave }: {
   periodo: PeriodoLetivo | null;
@@ -72,7 +72,7 @@ function PeriodoModal({ periodo, onClose, onSave }: {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: 440, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 28, width: 440, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
         <h2 style={{ margin: '0 0 20px', fontSize: 17, fontWeight: 700 }}>
           {periodo ? 'Editar Período' : 'Novo Período Letivo'}
         </h2>
@@ -154,32 +154,32 @@ export default function PeriodosPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Períodos Letivos</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>{periodos.length} período{periodos.length !== 1 ? 's' : ''}</p>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>{periodos.length} período{periodos.length !== 1 ? 's' : ''}</p>
         </div>
         <button style={BTN('primary')} onClick={() => setModal('new')}>+ Novo Período</button>
       </div>
 
-      {loading && <p style={{ color: '#6b7280', fontSize: 14 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</p>}
       {error && <p style={{ color: '#e02424', fontSize: 14 }}>{error}</p>}
 
       {!loading && (
-        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['Período', 'Início', 'Fim', 'Status', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {periodos.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>Nenhum período cadastrado ainda.</td></tr>
+                <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum período cadastrado ainda.</td></tr>
               )}
               {periodos.map((p, i) => {
                 const s = STATUS_STYLE[p.status] ?? STATUS_STYLE.PLANEJADO;
                 return (
-                  <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                  <tr key={p.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 600 }}>{p.ano}/{p.semestre === 'S1' ? '1' : '2'}</td>
                     <td style={{ padding: '10px 14px' }}>{fmt(p.dataInicio)}</td>
                     <td style={{ padding: '10px 14px' }}>{fmt(p.dataFim)}</td>

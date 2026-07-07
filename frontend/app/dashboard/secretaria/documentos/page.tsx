@@ -23,7 +23,7 @@ export default function DocumentosPage() {
   return (
     <div style={{ padding: '24px 28px' }}>
       <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 600 }}>Documentos</h2>
-      <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>Busque o aluno para gerar a declaração de matrícula ou o boletim.</p>
+      <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--gray-500)' }}>Busque o aluno para gerar a declaração de matrícula ou o boletim.</p>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <input
@@ -31,7 +31,7 @@ export default function DocumentosPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && buscar()}
-          style={{ flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 4, fontSize: 13 }}
+          style={{ flex: 1, padding: '8px 12px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }}
         />
         <button onClick={buscar} disabled={loading}
           style={{ padding: '8px 16px', background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}>
@@ -40,22 +40,22 @@ export default function DocumentosPage() {
       </div>
 
       {alunos.length > 0 && (
-        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 {['Aluno', 'RA', 'Curso', 'Documentos'].map(h => (
-                  <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6b7280', borderBottom: '1px solid #e5e7eb' }}>{h}</th>
+                  <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-200)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {alunos.map(a => (
                 <tr key={a.id}>
-                  <td style={{ padding: '8px 12px', fontSize: 13, borderBottom: '1px solid #f3f4f6', fontWeight: 500 }}>{a.nome}</td>
-                  <td style={{ padding: '8px 12px', fontSize: 13, borderBottom: '1px solid #f3f4f6' }}>{a.ra}</td>
-                  <td style={{ padding: '8px 12px', fontSize: 13, borderBottom: '1px solid #f3f4f6', color: '#6b7280' }}>{a.curso?.nome ?? '—'}</td>
-                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '8px 12px', fontSize: 13, borderBottom: '1px solid var(--gray-100)', fontWeight: 500 }}>{a.nome}</td>
+                  <td style={{ padding: '8px 12px', fontSize: 13, borderBottom: '1px solid var(--gray-100)' }}>{a.ra}</td>
+                  <td style={{ padding: '8px 12px', fontSize: 13, borderBottom: '1px solid var(--gray-100)', color: 'var(--gray-500)' }}>{a.curso?.nome ?? '—'}</td>
+                  <td style={{ padding: '8px 12px', borderBottom: '1px solid var(--gray-100)' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button
                         onClick={() => router.push(`/dashboard/secretaria/documentos/declaracao/${a.id}`)}

@@ -46,14 +46,14 @@ const BTN = (variant: 'primary' | 'danger' | 'ghost') => ({
   padding: '6px 14px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: 13,
   fontWeight: 500,
   background: variant === 'primary' ? '#1a56db' : variant === 'danger' ? '#e02424' : 'transparent',
-  color: variant === 'ghost' ? '#374151' : '#fff',
-  ...(variant === 'ghost' ? { border: '1px solid #d1d5db' } : {}),
+  color: variant === 'ghost' ? 'var(--gray-700)' : '#fff',
+  ...(variant === 'ghost' ? { border: '1px solid var(--gray-300)' } : {}),
 });
 const INPUT = {
   width: '100%', padding: '7px 10px', borderRadius: 5,
-  border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const,
+  border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' as const,
 };
-const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 };
+const LABEL = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
 
 // ── modal ──────────────────────────────────────────────────────────────
 function CursoModal({
@@ -101,7 +101,7 @@ function CursoModal({
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
     }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{
-        background: '#fff', borderRadius: 10, padding: 28, width: 520, maxHeight: '90vh',
+        background: 'var(--white)', borderRadius: 10, padding: 28, width: 520, maxHeight: '90vh',
         overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,.18)',
       }}>
         <h2 style={{ margin: '0 0 20px', fontSize: 17, fontWeight: 700 }}>
@@ -215,7 +215,7 @@ export default function CursosPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Cursos</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>
             {cursos.length} curso{cursos.length !== 1 ? 's' : ''} cadastrado{cursos.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -231,28 +231,28 @@ export default function CursosPage() {
       />
 
       {/* estados */}
-      {loading && <p style={{ color: '#6b7280', fontSize: 14 }}>Carregando...</p>}
+      {loading && <p style={{ color: 'var(--gray-500)', fontSize: 14 }}>Carregando...</p>}
       {error && <p style={{ color: '#e02424', fontSize: 14 }}>{error}</p>}
 
       {/* tabela */}
       {!loading && (
-        <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--white)', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
                 {['Nome', 'Grau', 'Modalidade', 'e-MEC', 'C.H.', 'Prazos', 'Status', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
+                <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>
                   {search ? 'Nenhum resultado.' : 'Nenhum curso cadastrado ainda.'}
                 </td></tr>
               )}
               {filtered.map((c, i) => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #f3f4f6', background: i % 2 ? '#fafafa' : '#fff' }}>
+                <tr key={c.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 500 }}>{c.nome}</td>
                   <td style={{ padding: '10px 14px' }}>{GRAU_LABEL[c.grau]}</td>
                   <td style={{ padding: '10px 14px' }}>{MODALIDADE_LABEL[c.modalidade]}</td>
@@ -262,8 +262,8 @@ export default function CursosPage() {
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{
                       padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600,
-                      background: c.status === 'ATIVO' ? '#d1fae5' : '#f3f4f6',
-                      color: c.status === 'ATIVO' ? '#065f46' : '#6b7280',
+                      background: c.status === 'ATIVO' ? '#d1fae5' : 'var(--gray-100)',
+                      color: c.status === 'ATIVO' ? '#065f46' : 'var(--gray-500)',
                     }}>{c.status}</span>
                   </td>
                   <td style={{ padding: '10px 14px' }}>
