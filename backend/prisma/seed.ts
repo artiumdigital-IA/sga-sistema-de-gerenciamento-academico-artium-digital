@@ -71,6 +71,59 @@ async function main() {
 
   console.log(`✅ ${periodos.length} períodos letivos de teste (calendário acadêmico)`);
 
+  // ── Itens de teste do Calendário Acadêmico (marcos/eventos) para 2026/S2 ──
+  // Modelado no formato da Deliberação nº 41/2025 (UERJ) trazida como referência:
+  // marco/etapa + data única ou intervalo, com grupos de 2 níveis (ex. Exames Finais).
+  const periodo2026S2 = await prisma.periodoLetivo.findUnique({
+    where: { ano_semestre: { ano: 2026, semestre: 'S2' } },
+  });
+
+  if (periodo2026S2) {
+    await prisma.periodoLetivo.update({
+      where: { id: periodo2026S2.id },
+      data: { semanasLetivas: 18, diasLetivos: 102 },
+    });
+
+    const eventosExistentes = await prisma.eventoCalendario.count({
+      where: { periodoLetivoId: periodo2026S2.id },
+    });
+
+    if (eventosExistentes === 0) {
+      const eventos: { grupo: string | null; titulo: string; dataInicio: string; dataFim: string | null; observacoes: string | null; ordem: number }[] = [
+        { grupo: null, titulo: 'Acertos Curriculares', dataInicio: '2026-06-22', dataFim: '2026-07-03', observacoes: null, ordem: 10 },
+        { grupo: null, titulo: 'Inscrição em Disciplinas', dataInicio: '2026-06-24', dataFim: '2026-07-05', observacoes: null, ordem: 20 },
+        { grupo: null, titulo: 'Preparação do Ambiente Virtual de Aprendizagem (AVA)', dataInicio: '2026-07-01', dataFim: '2026-07-05', observacoes: 'Disciplinas EAD', ordem: 30 },
+        { grupo: null, titulo: 'Início das Aulas', dataInicio: '2026-07-06', dataFim: null, observacoes: null, ordem: 40 },
+        { grupo: null, titulo: 'Cancelamento, Reinscrição e Substituição', dataInicio: '2026-07-13', dataFim: '2026-07-24', observacoes: null, ordem: 50 },
+        { grupo: null, titulo: 'Término das Aulas', dataInicio: '2026-11-27', dataFim: null, observacoes: null, ordem: 60 },
+        { grupo: 'Exames Finais', titulo: 'Regime de Crédito', dataInicio: '2026-11-30', dataFim: '2026-12-04', observacoes: null, ordem: 70 },
+        { grupo: 'Exames Finais', titulo: 'Regime Seriado', dataInicio: '2026-12-07', dataFim: '2026-12-11', observacoes: null, ordem: 71 },
+        { grupo: 'Exames de 2ª Época', titulo: 'Requerimento', dataInicio: '2026-12-14', dataFim: '2026-12-15', observacoes: null, ordem: 80 },
+        { grupo: 'Exames de 2ª Época', titulo: 'Exames', dataInicio: '2026-12-16', dataFim: '2026-12-17', observacoes: null, ordem: 81 },
+        { grupo: null, titulo: 'Término do Semestre', dataInicio: '2026-12-18', dataFim: null, observacoes: null, ordem: 90 },
+        { grupo: null, titulo: 'Recesso Natalino', dataInicio: '2026-12-21', dataFim: '2027-01-31', observacoes: null, ordem: 100 },
+      ];
+
+      for (const ev of eventos) {
+        await prisma.eventoCalendario.create({
+          data: {
+            periodoLetivoId: periodo2026S2.id,
+            grupo: ev.grupo,
+            titulo: ev.titulo,
+            dataInicio: new Date(ev.dataInicio),
+            dataFim: ev.dataFim ? new Date(ev.dataFim) : undefined,
+            observacoes: ev.observacoes,
+            ordem: ev.ordem,
+          },
+        });
+      }
+
+      console.log(`✅ ${eventos.length} itens de teste do calendário acadêmico (período 2026/S2)`);
+    } else {
+      console.log('↷ Itens do calendário acadêmico de 2026/S2 já existem, seed não duplicou.');
+    }
+  }
+
   console.log('\n⚠️  ATENÇÃO: Altere as senhas em produção!');
   console.log('🏁 Seed concluído.');
 }
