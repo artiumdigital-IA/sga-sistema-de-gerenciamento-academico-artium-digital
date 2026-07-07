@@ -85,10 +85,17 @@ function MatriculaModal({ alunos, cursos, periodos, disciplinas, professores, of
     setError('');
     setSaving(true);
     try {
-      await apiFetch('/matriculas', {
+      const criada = await apiFetch<{ avisos?: string[] }>('/matriculas', {
         method: 'POST',
         body: JSON.stringify({ alunoId, ofertaId, isDependencia }),
       });
+      if (criada?.avisos && criada.avisos.length > 0) {
+        alert(
+          'Matrícula realizada, mas com aviso(s):\n\n' +
+          criada.avisos.map(a => `• ${a}`).join('\n') +
+          '\n\nA matrícula NÃO foi bloqueada — confirme com a secretaria/coordenação se a exceção é aceitável.',
+        );
+      }
       onSave();
       onClose();
     } catch (err: unknown) {

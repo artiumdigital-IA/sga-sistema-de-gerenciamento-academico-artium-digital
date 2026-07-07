@@ -8,6 +8,7 @@ const include = {
   disciplina: true,
   periodoLetivo: true,
   professor: true,
+  _count: { select: { matriculas: true } },
 };
 
 @Injectable()

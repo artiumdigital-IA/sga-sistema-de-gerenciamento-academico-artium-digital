@@ -48,6 +48,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Manutenção de Frequência', href: '/dashboard/academico/frequencia' },
     { label: 'Listagem de Alunos em Atraso', href: '/dashboard/academico/frequencia?tab=resumo' },
     { label: 'Diário de Classe', href: '/dashboard/academico/notas' },
+    { label: 'Notas & Frequência por Pauta', href: '/dashboard/academico/pauta' },
     { label: 'Emissão de Boletim', href: '/dashboard/secretaria/documentos' },
     { label: 'Relatório Notas/Disciplinas', href: '/dashboard/academico/mapao' },
     { label: 'Emissão de Carteirinha', href: '/dashboard/secretaria/documentos' },

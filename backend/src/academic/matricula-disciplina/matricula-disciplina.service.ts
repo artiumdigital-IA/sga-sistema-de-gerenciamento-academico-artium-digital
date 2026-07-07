@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { MatriculaStatus } from '@prisma/client';
 import { CreateMatriculaDisciplinaDto } from './dto/create-matricula-disciplina.dto';
 import { UpdateMatriculaDisciplinaDto } from './dto/update-matricula-disciplina.dto';
 import { TransferirTurmaDto } from './dto/transferir-turma.dto';
@@ -44,7 +45,34 @@ export class MatriculaDisciplinaService {
       throw new ConflictException('Aluno já está matriculado nesta oferta.');
     }
 
-    // TODO: verificar pré-requisitos (confirmar regra com secretaria — seção 7 da spec)
+    // Verifica pré-requisitos — regra confirmada (Jul/2026): AVISA mas NÃO bloqueia a matrícula.
+    // A secretaria/coordenação decide caso a caso se aceita a exceção; o sistema só sinaliza.
+    const disciplinaAtual = await this.prisma.disciplina.findUnique({
+      where: { id: oferta.disciplinaId },
+      include: { prerequisitos: { include: { prerequisito: true } } },
+    });
+
+    const avisos: string[] = [];
+    if (disciplinaAtual && disciplinaAtual.prerequisitos.length > 0) {
+      const prereqIds = disciplinaAtual.prerequisitos.map((p) => p.prerequisitoId);
+      const aprovados = await this.prisma.matriculaDisciplina.findMany({
+        where: {
+          alunoId: dto.alunoId,
+          status: MatriculaStatus.APROVADO,
+          oferta: { disciplinaId: { in: prereqIds } },
+        },
+        select: { oferta: { select: { disciplinaId: true } } },
+      });
+      const aprovadosSet = new Set(aprovados.map((a) => a.oferta.disciplinaId));
+      const pendentes = disciplinaAtual.prerequisitos.filter(
+        (p) => !aprovadosSet.has(p.prerequisitoId),
+      );
+      for (const p of pendentes) {
+        avisos.push(
+          `Pré-requisito não cumprido: ${p.prerequisito.codigo} — ${p.prerequisito.nome}`,
+        );
+      }
+    }
 
     const matricula = await this.prisma.matriculaDisciplina.create({
       data: {
@@ -63,10 +91,10 @@ export class MatriculaDisciplinaService {
       acao: 'CREATE',
       entidade: 'MatriculaDisciplina',
       entidadeId: matricula.id,
-      dadosDepois: matricula,
+      dadosDepois: { ...matricula, avisosPrerequisito: avisos.length ? avisos : undefined },
     });
 
-    return matricula;
+    return { ...matricula, avisos };
   }
 
   findAll(alunoId?: string, ofertaId?: string) {

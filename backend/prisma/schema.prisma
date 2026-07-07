@@ -229,6 +229,7 @@ model MatriculaDisciplina {
   avaliacoes Avaliacao[]
   resultado  ResultadoDisciplina?
   registrosFrequencia RegistroFrequencia[]
+  notasPauta NotaPauta[]
 
   @@unique([alunoId, ofertaId])
   @@map("matriculas_disciplinas")
@@ -282,6 +283,49 @@ model ResultadoDisciplina {
   matriculaDisciplina MatriculaDisciplina @relation(fields: [matriculaDisciplinaId], references: [id])
 
   @@map("resultados_disciplinas")
+}
+
+// ── Pauta bimestral (achado do spike Kirsch: "Lançamento de Notas & Frequência
+// por Pauta" — tela nomeada AV1-AV5 + 2ª Chamada + Recuperação, por bimestre.
+// Regra confirmada pelo usuário (Jul/2026) como a fórmula de aprovação certa
+// pra graduação (Direito/Gestão Pública), substituindo a suposição anterior
+// de "só nota mínima 6.0 + média ponderada". Fórmula (idêntica à encontrada na
+// tela "Configurar Fórmula Cálculo Bimestral" do Kirsch):
+//   F1 = (AV1+AV2+AV3+AV4 + IF(2ªChamada>0; 2ªChamada; AV5)*6) / 10
+//   Média = IF(F1 < 6 AND Recuperação > F1; Recuperação; F1)
+// Calculada em tempo real na API — não fica armazenada (mesmo padrão de
+// CR/Integralização já usado no restante do sistema). ─────────────────────
+enum EtapaAvaliativa {
+  BIMESTRE_1
+  BIMESTRE_2
+  BIMESTRE_3
+  BIMESTRE_4
+  PROVA_FINAL
+  RECUP_FINAL
+  RECUP_SEMESTRAL
+}
+
+model NotaPauta {
+  id                    String          @id @default(uuid())
+  matriculaDisciplinaId String
+  etapa                 EtapaAvaliativa
+
+  av1            Decimal? @db.Decimal(4, 2)
+  av2            Decimal? @db.Decimal(4, 2)
+  av3            Decimal? @db.Decimal(4, 2)
+  av4            Decimal? @db.Decimal(4, 2)
+  av5            Decimal? @db.Decimal(4, 2)
+  segundaChamada Decimal? @db.Decimal(4, 2)
+  recuperacao    Decimal? @db.Decimal(4, 2)
+  faltas         Int      @default(0)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  matriculaDisciplina MatriculaDisciplina @relation(fields: [matriculaDisciplinaId], references: [id])
+
+  @@unique([matriculaDisciplinaId, etapa])
+  @@map("notas_pauta")
 }
 
 // =============================================================================

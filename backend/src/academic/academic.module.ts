@@ -13,6 +13,7 @@ import { FichaSaudeModule } from './ficha-saude/ficha-saude.module';
 import { UnidadeModule } from './unidade/unidade.module';
 import { MateriaEquiparadaModule } from './materia-equiparada/materia-equiparada.module';
 import { FrequenciaModule } from './frequencia/frequencia.module';
+import { NotaPautaModule } from './nota-pauta/nota-pauta.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { FrequenciaModule } from './frequencia/frequencia.module';
     UnidadeModule,
     MateriaEquiparadaModule,
     FrequenciaModule,
+    NotaPautaModule,
   ],
   exports: [
     CursoModule,
@@ -46,6 +48,7 @@ import { FrequenciaModule } from './frequencia/frequencia.module';
     UnidadeModule,
     MateriaEquiparadaModule,
     FrequenciaModule,
+    NotaPautaModule,
   ],
 })
 export class AcademicModule {}
