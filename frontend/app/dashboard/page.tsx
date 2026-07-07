@@ -356,7 +356,7 @@ function CalendarioAcademico() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch<PeriodoLetivo[]>('/periodos')
+    apiFetch<PeriodoLetivo[]>('/periodos-letivos')
       .then(data => setPeriodos(data))
       .catch(() => setPeriodos([]))
       .finally(() => setLoading(false));
