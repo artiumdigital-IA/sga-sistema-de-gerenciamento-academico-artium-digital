@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiFetch } from '@/lib/api';
 
 // ── tipos ──────────────────────────────────────────────────────────────
-type Etapa = 'BIMESTRE_1' | 'BIMESTRE_2' | 'BIMESTRE_3' | 'BIMESTRE_4' | 'PROVA_FINAL' | 'RECUP_FINAL' | 'RECUP_SEMESTRAL';
-
 interface PeriodoLetivo { id: string; ano: number; semestre: 'S1' | 'S2'; }
 interface Curso { id: string; nome: string; }
 interface Matriz { id: string; cursoId: string; }
@@ -25,20 +23,8 @@ interface LinhaPauta {
 }
 interface PautaResponse {
   oferta: { id: string; disciplina: string; codigo: string; periodo: { ano: number; semestre: string }; professor: string | null; turno: string };
-  etapa: Etapa;
   linhas: LinhaPauta[];
 }
-
-const ETAPA_LABEL: Record<Etapa, string> = {
-  BIMESTRE_1: '1º Bimestre',
-  BIMESTRE_2: '2º Bimestre',
-  BIMESTRE_3: '3º Bimestre',
-  BIMESTRE_4: '4º Bimestre',
-  PROVA_FINAL: 'Prova Final',
-  RECUP_FINAL: 'Recup. Final',
-  RECUP_SEMESTRAL: 'Recup. Semestral',
-};
-const ETAPAS: Etapa[] = ['BIMESTRE_1', 'BIMESTRE_2', 'BIMESTRE_3', 'BIMESTRE_4', 'PROVA_FINAL', 'RECUP_FINAL', 'RECUP_SEMESTRAL'];
 
 const INPUT: React.CSSProperties = { padding: '7px 10px', borderRadius: 5, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box', width: '100%' };
 
@@ -152,7 +138,6 @@ export default function PautaPage() {
   const [periodoId, setPeriodoId] = useState('');
   const [cursoId, setCursoId] = useState('');
   const [ofertaId, setOfertaId] = useState('');
-  const [etapa, setEtapa] = useState<Etapa>('BIMESTRE_1');
 
   const [pauta, setPauta] = useState<PautaResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -191,11 +176,11 @@ export default function PautaPage() {
 
   const periodoLabel = (p: PeriodoLetivo) => `${p.ano}/${p.semestre === 'S1' ? '1' : '2'}`;
 
-  const carregarPauta = useCallback(async (ofId: string, et: Etapa) => {
+  const carregarPauta = useCallback(async (ofId: string) => {
     if (!ofId) { setPauta(null); return; }
     setLoading(true); setErro('');
     try {
-      setPauta(await apiFetch<PautaResponse>(`/notas-pauta?ofertaId=${ofId}&etapa=${et}`));
+      setPauta(await apiFetch<PautaResponse>(`/notas-pauta?ofertaId=${ofId}`));
     } catch (e: any) {
       setErro(e.message ?? 'Erro ao carregar a pauta');
     } finally {
@@ -203,7 +188,7 @@ export default function PautaPage() {
     }
   }, []);
 
-  useEffect(() => { carregarPauta(ofertaId, etapa); }, [ofertaId, etapa, carregarPauta]);
+  useEffect(() => { carregarPauta(ofertaId); }, [ofertaId, carregarPauta]);
 
   async function salvarCampo(matriculaDisciplinaId: string, campo: CampoNota, valor: number | null) {
     if (!pauta) return;
@@ -216,7 +201,7 @@ export default function PautaPage() {
         segundaChamada: linha.segundaChamada, recuperacao: linha.recuperacao, faltas: linha.faltas,
         [campo]: valor,
       };
-      const atualizado = await apiFetch<LinhaPauta>(`/notas-pauta/${matriculaDisciplinaId}?etapa=${etapa}`, {
+      const atualizado = await apiFetch<LinhaPauta>(`/notas-pauta/${matriculaDisciplinaId}`, {
         method: 'PUT', body: JSON.stringify(body),
       });
       setPauta(p => p ? {
@@ -240,7 +225,7 @@ export default function PautaPage() {
         av1: linha.av1, av2: linha.av2, av3: linha.av3, av4: linha.av4, av5: linha.av5,
         segundaChamada: linha.segundaChamada, recuperacao: linha.recuperacao, faltas: valor,
       };
-      const atualizado = await apiFetch<LinhaPauta>(`/notas-pauta/${matriculaDisciplinaId}?etapa=${etapa}`, {
+      const atualizado = await apiFetch<LinhaPauta>(`/notas-pauta/${matriculaDisciplinaId}`, {
         method: 'PUT', body: JSON.stringify(body),
       });
       setPauta(p => p ? {
@@ -254,17 +239,15 @@ export default function PautaPage() {
     }
   }
 
-  const RADIO_STYLE: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' };
-
   return (
     <div style={{ padding: '24px 28px' }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Lançamento de Notas &amp; Frequência por Pauta</h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Selecione o período, o curso e a turma/matéria pra lançar as notas do bimestre</p>
+        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Selecione o período, o curso e a turma/matéria pra lançar as notas do semestre</p>
       </div>
 
       {/* Filtros */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, marginBottom: 14, background: '#f9fafb', padding: 16, borderRadius: 8, border: '1px solid #e5e7eb' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, marginBottom: 16, background: '#f9fafb', padding: 16, borderRadius: 8, border: '1px solid #e5e7eb' }}>
         <div>
           <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Ano / Período Letivo</label>
           <select style={INPUT} value={periodoId} onChange={e => { setPeriodoId(e.target.value); setOfertaId(''); }}>
@@ -287,17 +270,6 @@ export default function PautaPage() {
           </select>
         </div>
       </div>
-
-      {/* Bimestre */}
-      <fieldset style={{ border: '1px solid #fde68a', background: '#fffbeb', borderRadius: 8, padding: '10px 16px', marginBottom: 16, display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <legend style={{ fontSize: 12, fontWeight: 700, color: '#92400e', padding: '0 6px' }}>Bimestre</legend>
-        {ETAPAS.map(et => (
-          <label key={et} style={RADIO_STYLE}>
-            <input type="radio" name="etapa" checked={etapa === et} onChange={() => setEtapa(et)} />
-            {ETAPA_LABEL[et]}
-          </label>
-        ))}
-      </fieldset>
 
       {erro && <p style={{ color: '#dc2626', fontSize: 13 }}>{erro}</p>}
       {loading && <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando...</p>}

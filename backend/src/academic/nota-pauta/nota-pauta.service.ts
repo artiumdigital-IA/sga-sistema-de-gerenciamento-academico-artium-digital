@@ -1,15 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
-import { EtapaAvaliativa } from '@prisma/client';
 import { UpsertNotaPautaDto } from './dto/upsert-nota-pauta.dto';
 
 /**
- * Pauta bimestral — "Lançamento de Notas & Frequência por Pauta" (Kirsch).
+ * Pauta por semestre — "Lançamento de Notas & Frequência por Pauta" (Kirsch).
  * Fórmula confirmada pelo usuário (Jul/2026) como a regra certa de aprovação
  * pra graduação, substituindo a suposição anterior (só nota mínima 6.0 + média
  * ponderada por peso). Fórmula idêntica à encontrada na tela "Configurar
- * Fórmula Cálculo Bimestral" do Kirsch:
+ * Fórmula Cálculo Bimestral" do Kirsch — mas aplicada uma única vez por
+ * semestre (não por bimestre): a FIURJ trabalha com semestres (ex.: 2026/1,
+ * 2026/2), não bimestres, então não há campo "etapa" — a matrícula já está
+ * naturalmente escopada ao semestre via PeriodoLetivo/Oferta.
  *   F1 = (AV1+AV2+AV3+AV4 + IF(2ªChamada>0; 2ªChamada; AV5)*6) / 10
  *   Média = IF(F1 < 6 AND Recuperação > F1; Recuperação; F1)
  * Calculada em tempo real — não fica armazenada (mesmo padrão de CR/
@@ -49,9 +51,9 @@ export class NotaPautaService {
 
   /**
    * Grade da pauta: todos os alunos matriculados na oferta + a linha de notas
-   * daquele bimestre/etapa (ou nulls, se ainda não lançada nenhuma nota).
+   * do semestre (ou nulls, se ainda não lançada nenhuma nota).
    */
-  async pauta(ofertaId: string, etapa: EtapaAvaliativa) {
+  async pauta(ofertaId: string) {
     const oferta = await this.prisma.oferta.findUnique({
       where: { id: ofertaId },
       include: { disciplina: true, periodoLetivo: true, professor: true },
@@ -62,7 +64,7 @@ export class NotaPautaService {
       where: { ofertaId },
       include: {
         aluno: { select: { id: true, ra: true, nome: true } },
-        notasPauta: { where: { etapa } },
+        notaPauta: true,
       },
       orderBy: { aluno: { nome: 'asc' } },
     });
@@ -76,9 +78,8 @@ export class NotaPautaService {
         professor: oferta.professor?.nome ?? null,
         turno: oferta.turno,
       },
-      etapa,
       linhas: matriculas.map((m, i) => {
-        const nota = m.notasPauta[0] ?? null;
+        const nota = m.notaPauta;
         const row = {
           av1: nota ? toNumOrNull(nota.av1) : null,
           av2: nota ? toNumOrNull(nota.av2) : null,
@@ -100,13 +101,11 @@ export class NotaPautaService {
     };
   }
 
-  async salvar(matriculaDisciplinaId: string, etapa: EtapaAvaliativa, dto: UpsertNotaPautaDto, usuarioId?: string) {
+  async salvar(matriculaDisciplinaId: string, dto: UpsertNotaPautaDto, usuarioId?: string) {
     const matricula = await this.prisma.matriculaDisciplina.findUnique({ where: { id: matriculaDisciplinaId } });
     if (!matricula) throw new NotFoundException('Matrícula não encontrada.');
 
-    const antes = await this.prisma.notaPauta.findUnique({
-      where: { matriculaDisciplinaId_etapa: { matriculaDisciplinaId, etapa } },
-    });
+    const antes = await this.prisma.notaPauta.findUnique({ where: { matriculaDisciplinaId } });
 
     const data = {
       av1: dto.av1 ?? null,
@@ -120,8 +119,8 @@ export class NotaPautaService {
     };
 
     const linha = await this.prisma.notaPauta.upsert({
-      where: { matriculaDisciplinaId_etapa: { matriculaDisciplinaId, etapa } },
-      create: { matriculaDisciplinaId, etapa, ...data },
+      where: { matriculaDisciplinaId },
+      create: { matriculaDisciplinaId, ...data },
       update: data,
     });
 
@@ -146,6 +145,6 @@ export class NotaPautaService {
       recuperacao: toNumOrNull(linha.recuperacao),
     };
 
-    return { matriculaDisciplinaId, etapa, ...row, faltas: linha.faltas, media: calcularMedia(row) };
+    return { matriculaDisciplinaId, ...row, faltas: linha.faltas, media: calcularMedia(row) };
   }
 }

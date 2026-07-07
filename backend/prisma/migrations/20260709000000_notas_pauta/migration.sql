@@ -1,11 +1,7 @@
--- CreateEnum
-CREATE TYPE "EtapaAvaliativa" AS ENUM ('BIMESTRE_1', 'BIMESTRE_2', 'BIMESTRE_3', 'BIMESTRE_4', 'PROVA_FINAL', 'RECUP_FINAL', 'RECUP_SEMESTRAL');
-
 -- CreateTable
 CREATE TABLE "notas_pauta" (
     "id"                    TEXT NOT NULL,
     "matriculaDisciplinaId" TEXT NOT NULL,
-    "etapa"                 "EtapaAvaliativa" NOT NULL,
     "av1"                   DECIMAL(4,2),
     "av2"                   DECIMAL(4,2),
     "av3"                   DECIMAL(4,2),
@@ -21,7 +17,7 @@ CREATE TABLE "notas_pauta" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "notas_pauta_matriculaDisciplinaId_etapa_key" ON "notas_pauta"("matriculaDisciplinaId", "etapa");
+CREATE UNIQUE INDEX "notas_pauta_matriculaDisciplinaId_key" ON "notas_pauta"("matriculaDisciplinaId");
 
 -- AddForeignKey
 ALTER TABLE "notas_pauta" ADD CONSTRAINT "notas_pauta_matriculaDisciplinaId_fkey"
