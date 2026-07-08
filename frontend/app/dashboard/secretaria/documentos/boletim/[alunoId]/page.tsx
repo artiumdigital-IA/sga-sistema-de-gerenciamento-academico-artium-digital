@@ -192,7 +192,7 @@ export default function BoletimPage() {
           Rio de Janeiro, {dataExtenso}.
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 48 }}>
+        <div className="assinatura" style={{ display: 'flex', justifyContent: 'space-around', marginTop: 48 }}>
           <div style={{ textAlign: 'center', width: 200 }}>
             <div style={{ borderTop: '1px solid #000', paddingTop: 8, fontSize: 12 }}>
               Secretaria Acadêmica<br />{branding.nomeInstituicao}
@@ -200,17 +200,35 @@ export default function BoletimPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: 48, fontSize: 10, color: '#6b7280', borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>
+        <div className="assinatura" style={{ marginTop: 48, fontSize: 10, color: '#6b7280', borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>
           Documento gerado eletronicamente em {new Date(data.geradoEm).toLocaleString('pt-BR')} pela plataforma acadêmica {branding.nomeInstituicao}.
           Este documento não dispensa a assinatura manual quando exigido.
         </div>
       </div>
 
       <style>{`
+        @page {
+          size: A4;
+          margin: 15mm 14mm;
+        }
         @media print {
+          html, body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
           .no-print { display: none !important; }
           body > * { display: none; }
-          #documento { display: block !important; padding: 0 !important; max-width: 100% !important; }
+          #documento {
+            display: block !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+          }
+          #documento table { border-collapse: collapse; }
+          #documento thead { display: table-header-group; }
+          #documento tfoot { display: table-footer-group; }
+          #documento tr { break-inside: avoid; page-break-inside: avoid; }
+          #documento .assinatura { break-inside: avoid; page-break-inside: avoid; }
         }
       `}</style>
     </>
