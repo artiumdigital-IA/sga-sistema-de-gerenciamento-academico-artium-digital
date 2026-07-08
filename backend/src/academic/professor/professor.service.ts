@@ -21,6 +21,7 @@ export class ProfessorService {
         cpf: dto.cpf,
         titulacao: dto.titulacao,
         regimeTrabalho: dto.regimeTrabalho,
+        corRaca: dto.corRaca,
         lattes: dto.lattes,
         email: dto.email,
         ...(dto.usuarioId ? { usuario: { connect: { id: dto.usuarioId } } } : {}),
@@ -52,6 +53,7 @@ export class ProfessorService {
         lattes: dto.lattes,
         titulacao: dto.titulacao,
         regimeTrabalho: dto.regimeTrabalho,
+        corRaca: dto.corRaca,
       },
     });
     if (usuarioId) {
@@ -65,7 +67,3 @@ export class ProfessorService {
     await this.prisma.professor.delete({ where: { id } });
     if (usuarioId) {
       await this.audit.log({ usuarioId, acao: 'DELETE', entidade: 'professor', entidadeId: id, dadosAntes: antes });
-    }
-    return { message: 'Professor removido.' };
-  }
-}

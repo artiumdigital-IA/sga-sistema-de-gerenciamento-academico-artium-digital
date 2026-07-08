@@ -10,6 +10,7 @@ type Resumo = {
   alunosPorCorRaca: { corRaca: string; total: number }[];
   docentesPorTitulacao: { titulacao: string; total: number }[];
   docentesPorRegime: { regime: string; total: number }[];
+  docentesPorCorRaca: { corRaca: string; total: number }[];
 };
 
 const LABELS: Record<string, string> = {
@@ -152,8 +153,4 @@ export default function CensoPage() {
         <GroupTable title="Por Titulacao" keyLabel="Titulacao"
           rows={resumo.docentesPorTitulacao.map(r => ({ key: r.titulacao, total: r.total }))} />
         <GroupTable title="Por Regime de Trabalho" keyLabel="Regime"
-          rows={resumo.docentesPorRegime.map(r => ({ key: r.regime, total: r.total }))} />
-      </div>
-    </div>
-  );
-}
+          rows={resumo.docentesPorRegime.map(r => ({ key: r.re

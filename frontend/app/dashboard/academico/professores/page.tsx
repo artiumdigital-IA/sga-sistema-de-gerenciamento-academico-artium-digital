@@ -6,6 +6,7 @@ import { apiFetch } from '@/lib/api';
 // ── tipos ──────────────────────────────────────────────────────────────
 type Titulacao = 'GRADUADO' | 'ESPECIALISTA' | 'MESTRE' | 'DOUTOR' | 'POS_DOUTOR';
 type RegimeTrabalho = 'HORISTA' | 'PARCIAL' | 'INTEGRAL';
+type CorRaca = 'BRANCA' | 'PRETA' | 'PARDA' | 'AMARELA' | 'INDIGENA' | 'NAO_DECLARADO';
 
 interface Professor {
   id: string;
@@ -13,6 +14,7 @@ interface Professor {
   cpf: string;
   titulacao: Titulacao;
   regimeTrabalho: RegimeTrabalho;
+  corRaca: CorRaca;
   lattes?: string;
   email: string;
   telefone?: string;
@@ -27,10 +29,14 @@ const TITULACAO_LABEL: Record<Titulacao, string> = {
 const REGIME_LABEL: Record<RegimeTrabalho, string> = {
   HORISTA: 'Horista', PARCIAL: 'Parcial (20h)', INTEGRAL: 'Integral (40h)',
 };
+const COR_LABEL: Record<CorRaca, string> = {
+  BRANCA: 'Branca', PRETA: 'Preta', PARDA: 'Parda', AMARELA: 'Amarela',
+  INDIGENA: 'Indígena', NAO_DECLARADO: 'Não declarado',
+};
 
 const EMPTY: FormData = {
   nome: '', cpf: '', titulacao: 'MESTRE', regimeTrabalho: 'HORISTA',
-  lattes: '', email: '', telefone: '',
+  corRaca: 'NAO_DECLARADO', lattes: '', email: '', telefone: '',
 };
 
 const BTN = (variant: 'primary' | 'danger' | 'ghost') => ({
@@ -51,7 +57,7 @@ function ProfessorModal({ professor, onClose, onSave }: {
   const [form, setForm] = useState<FormData>(
     professor
       ? { nome: professor.nome, cpf: professor.cpf, titulacao: professor.titulacao,
-          regimeTrabalho: professor.regimeTrabalho, lattes: professor.lattes ?? '',
+          regimeTrabalho: professor.regimeTrabalho, corRaca: professor.corRaca, lattes: professor.lattes ?? '',
           email: professor.email, telefone: professor.telefone ?? '' }
       : EMPTY
   );
@@ -122,6 +128,13 @@ function ProfessorModal({ professor, onClose, onSave }: {
                 {Object.entries(REGIME_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label style={LABEL}>Cor/Raça (Censo) *</label>
+            <select style={INPUT} value={form.corRaca} onChange={e => set('corRaca', e.target.value as CorRaca)}>
+              {Object.entries(COR_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -256,27 +269,4 @@ export default function ProfessoresPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(p)}>Editar</button>
-                        <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }}
-                          disabled={deleting === p.id} onClick={() => deleteProfessor(p.id)}>
-                          {deleting === p.id ? '...' : 'Excluir'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {modal !== null && (
-        <ProfessorModal
-          professor={modal === 'new' ? null : modal}
-          onClose={() => setModal(null)}
-          onSave={load}
-        />
-      )}
-    </div>
-  );
-}
+         

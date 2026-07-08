@@ -112,21 +112,4 @@ export default function CarteirinhaPage() {
         @media print {
           html, body {
             -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
-          .no-print { display: none !important; }
-          #documento {
-            display: flex !important;
-            padding: 0 !important;
-          }
-          #documento * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
-        }
-      `}</style>
-    </>
-  );
-}
+            print-color-adjust: exact !important

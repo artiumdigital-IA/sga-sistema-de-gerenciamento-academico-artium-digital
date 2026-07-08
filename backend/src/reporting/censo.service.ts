@@ -42,6 +42,11 @@ export class CensoService {
       _count: true,
     });
 
+    const docentesPorCorRaca = await this.prisma.professor.groupBy({
+      by: ['corRaca'],
+      _count: true,
+    });
+
     return {
       totais: { alunos: totalAlunos, professores: totalProfessores, cursos: totalCursos },
       alunosPorSituacao: alunosPorSituacao.map(r => ({ situacao: r.situacaoVinculo, total: r._count })),
@@ -50,6 +55,7 @@ export class CensoService {
       alunosPorCorRaca: alunosPorCorRaca.map(r => ({ corRaca: r.corRaca, total: r._count })),
       docentesPorTitulacao: docentesPorTitulacao.map(r => ({ titulacao: r.titulacao, total: r._count })),
       docentesPorRegime: docentesPorRegime.map(r => ({ regime: r.regimeTrabalho, total: r._count })),
+      docentesPorCorRaca: docentesPorCorRaca.map(r => ({ corRaca: r.corRaca, total: r._count })),
     };
   }
 
@@ -84,6 +90,7 @@ export class CensoService {
       CPF: p.cpf,
       Titulação: p.titulacao,
       'Regime de Trabalho': p.regimeTrabalho,
+      'Cor/Raça': p.corRaca,
       Lattes: p.lattes ?? '',
       Email: p.email,
     }));
@@ -97,12 +104,4 @@ export class CensoService {
     return cursos.map(c => ({
       Nome: c.nome,
       Grau: c.grau,
-      Modalidade: c.modalidade,
-      'Código e-MEC': c.codigoEmec,
-      'Carga Horária Total': c.cargaHorariaTotal,
-      'Prazo Integralização (semestres)': c.prazoIntegralizacaoSemestres,
-      Status: c.status,
-      'Total de Alunos': c._count.alunos,
-    }));
-  }
-}
+      Modalidade: c.modalida

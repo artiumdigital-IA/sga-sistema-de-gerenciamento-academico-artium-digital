@@ -217,6 +217,7 @@ model Professor {
   cpf            String          @unique
   titulacao      Titulacao       // [CENSO]
   regimeTrabalho RegimeTrabalho  // [CENSO]
+  corRaca        CorRaca         @default(NAO_DECLARADO) // [CENSO]
   lattes         String?
   email          String          @unique
   telefone       String?
@@ -1037,7 +1038,4 @@ model ConfiguracaoVisual {
   corSecundaria   String  @default("#C8102E")
 
   criadoEm     DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
-
-  @@map("configuracao_visual")
-}
+ 

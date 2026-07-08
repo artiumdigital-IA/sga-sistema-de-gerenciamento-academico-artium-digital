@@ -1,0 +1,1 @@
+ALTER TABLE "professores" ADD COLUMN "corRaca" "CorRaca" NOT NULL DEFAULT 'NAO_DECLARADO';
