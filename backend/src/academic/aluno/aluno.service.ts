@@ -83,9 +83,22 @@ export class AlunoService {
     throw ultimoErro;
   }
 
-  async findAll(cursoId?: string) {
+  async findAll(cursoId?: string, search?: string) {
+    const termo = search?.trim();
     return this.prisma.aluno.findMany({
-      where: cursoId ? { cursoId } : undefined,
+      where: {
+        ...(cursoId ? { cursoId } : {}),
+        ...(termo
+          ? {
+              OR: [
+                { nome: { contains: termo, mode: 'insensitive' as const } },
+                { ra: { contains: termo, mode: 'insensitive' as const } },
+                { cpf: { contains: termo } },
+                { email: { contains: termo, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
       include: { curso: { select: { nome: true } } },
       orderBy: { nome: 'asc' },
     });
