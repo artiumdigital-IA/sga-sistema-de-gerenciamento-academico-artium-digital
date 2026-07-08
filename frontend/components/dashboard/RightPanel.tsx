@@ -159,7 +159,7 @@ export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; 
   }, [busca, buscando]);
 
   return (
-    <div style={{
+    <div className="print-hide" style={{
       width, flexShrink: 0, background: 'var(--white)',
       borderLeft: '1px solid var(--gray-200)',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',

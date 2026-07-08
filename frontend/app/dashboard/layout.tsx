@@ -172,11 +172,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
+    <div className="app-shell" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
       background: 'var(--white)', fontFamily: 'var(--font-body)' }}>
 
       {/* ── TopNav ── */}
-      <div style={{
+      <div className="print-hide" style={{
         height: topH, flexShrink: 0, background: 'var(--blue-dark)',
         display: 'flex', alignItems: 'center', padding: '0 12px',
         gap: 8, zIndex: 20,
@@ -286,10 +286,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* ── Corpo ── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div className="app-body" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* Sidebar esquerdo — expansível */}
-        <div style={{
+        <div className="print-hide" style={{
           width: sideW, flexShrink: 0, background: 'var(--blue-dark)',
           display: 'flex', flexDirection: 'column',
           transition: 'width 0.22s ease',
@@ -335,7 +335,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Conteudo principal */}
-        <div style={{ flex: 1, overflow: 'auto', padding: 0 }}>
+        <div className="app-main" style={{ flex: 1, overflow: 'auto', padding: 0 }}>
           {children}
         </div>
 
@@ -344,7 +344,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* ── BottomBar ── */}
-      <div style={{
+      <div className="print-hide" style={{
         height: botH, flexShrink: 0, background: 'var(--white)',
         borderTop: '1px solid var(--gray-200)',
         display: 'flex', alignItems: 'center', padding: '0 12px', gap: 6,

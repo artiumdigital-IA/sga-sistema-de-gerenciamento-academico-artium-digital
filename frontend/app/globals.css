@@ -90,3 +90,28 @@ html.dark-theme {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+/* =============================================================================
+   Impressão de documentos — o layout do dashboard (TopNav, Sidebar, Painel
+   direito, BottomBar) usa altura fixa (100vh) + overflow: hidden, o que
+   cortava/escondia os documentos imprimíveis mesmo com #documento marcado
+   como display:block, porque um ancestral com display:none (ou altura fixa +
+   overflow:hidden) não pode ser "destravado" pelo filho. As páginas de
+   documento (Declaração, Boletim, Carteirinha, Histórico Oficial, Calendário
+   Acadêmico) usam essas classes no layout pra sumir com o chrome do app e
+   deixar o conteúdo fluir livremente pelas páginas impressas.
+   ============================================================================= */
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .print-hide {
+    display: none !important;
+  }
+  .app-shell, .app-body, .app-main {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+}

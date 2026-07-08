@@ -116,7 +116,6 @@ export default function CarteirinhaPage() {
             color-adjust: exact !important;
           }
           .no-print { display: none !important; }
-          body > * { display: none; }
           #documento {
             display: flex !important;
             padding: 0 !important;

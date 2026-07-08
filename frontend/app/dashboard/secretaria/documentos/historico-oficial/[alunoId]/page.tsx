@@ -249,7 +249,6 @@ export default function HistoricoOficialPage() {
             color-adjust: exact !important;
           }
           .no-print { display: none !important; }
-          body > * { display: none; }
           #documento {
             display: block !important;
             padding: 0 !important;
