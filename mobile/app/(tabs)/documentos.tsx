@@ -1,0 +1,110 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { apiFetch, apiFileUrl, ApiError } from '../../lib/api';
+import { useAuth } from '../../lib/auth-context';
+import { theme } from '../../lib/theme';
+import { Cartao, Carregando, LinhaDado, MensagemErro } from '../../lib/ui';
+
+type Declaracao = {
+  aluno: { nome: string; ra: string; situacaoVinculo: string; dataIngresso: string };
+  curso: { nome: string; grau: string; modalidade: string };
+  periodoAtual: { ano: number; semestre: string } | null;
+};
+
+type Carteirinha = {
+  aluno: { nome: string; ra: string; situacaoVinculo: string; fotoUrl: string | null };
+  curso: { nome: string; grau: string };
+  validaAte: string;
+  codigoValidacao: string;
+};
+
+function formatarData(iso: string) {
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
+
+/**
+ * V1: mostra os dados "crus" que a API já retorna (mesma fonte que o frontend
+ * web usa pra montar o PDF via impressão do browser). Ainda não gera um PDF
+ * bonito no app — ver ADR no README/escopo sobre WebView vs. expo-print.
+ */
+export default function DocumentosScreen() {
+  const { usuario } = useAuth();
+  const [declaracao, setDeclaracao] = useState<Declaracao | null>(null);
+  const [carteirinha, setCarteirinha] = useState<Carteirinha | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const carregar = useCallback(async () => {
+    if (!usuario?.alunoId) {
+      setErro('Esta conta não está vinculada a um aluno.');
+      return;
+    }
+    setErro(null);
+    try {
+      const [d, c] = await Promise.all([
+        apiFetch<Declaracao>(`/documentos/declaracao-matricula/${usuario.alunoId}`),
+        apiFetch<Carteirinha>(`/documentos/carteirinha/${usuario.alunoId}`),
+      ]);
+      setDeclaracao(d);
+      setCarteirinha(c);
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Não foi possível carregar os documentos.');
+    }
+  }, [usuario?.alunoId]);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  if (!declaracao && !carteirinha && !erro) return <Carregando />;
+  if (erro && !declaracao) return <MensagemErro mensagem={erro} aoTentarNovamente={carregar} />;
+
+  return (
+    <ScrollView contentContainerStyle={styles.conteudo}>
+      {carteirinha && (
+        <Cartao titulo="Carteirinha Estudantil">
+          <View style={styles.carteirinhaLinha}>
+            {carteirinha.aluno.fotoUrl ? (
+              <Image source={{ uri: apiFileUrl(carteirinha.aluno.fotoUrl) ?? undefined }} style={styles.foto} />
+            ) : (
+              <View style={[styles.foto, styles.fotoVazia]}>
+                <Text style={styles.fotoIniciais}>{carteirinha.aluno.nome.charAt(0)}</Text>
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.nomeCarteirinha}>{carteirinha.aluno.nome}</Text>
+              <Text style={styles.subCarteirinha}>{carteirinha.curso.nome}</Text>
+              <Text style={styles.subCarteirinha}>RA {carteirinha.aluno.ra}</Text>
+            </View>
+          </View>
+          <LinhaDado rotulo="Válida até" valor={formatarData(carteirinha.validaAte)} />
+          <LinhaDado rotulo="Código de validação" valor={carteirinha.codigoValidacao} />
+        </Cartao>
+      )}
+
+      {declaracao && (
+        <Cartao titulo="Declaração de Matrícula">
+          <LinhaDado rotulo="Curso" valor={declaracao.curso.nome} />
+          <LinhaDado rotulo="Grau" valor={declaracao.curso.grau} />
+          <LinhaDado rotulo="Situação" valor={declaracao.aluno.situacaoVinculo} />
+          <LinhaDado rotulo="Ingresso" valor={formatarData(declaracao.aluno.dataIngresso)} />
+          {declaracao.periodoAtual && (
+            <LinhaDado
+              rotulo="Período atual"
+              valor={`${declaracao.periodoAtual.ano}/${declaracao.periodoAtual.semestre === 'S1' ? '1' : '2'}`}
+            />
+          )}
+        </Cartao>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  conteudo: { padding: 16, gap: 12 },
+  carteirinhaLinha: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  foto: { width: 56, height: 56, borderRadius: 8 },
+  fotoVazia: { backgroundColor: theme.corPrimaria, alignItems: 'center', justifyContent: 'center' },
+  fotoIniciais: { color: theme.branco, fontSize: 22, fontWeight: '700' },
+  nomeCarteirinha: { fontSize: 14, fontWeight: '700', color: theme.cinza900 },
+  subCarteirinha: { fontSize: 12, color: theme.cinza500 },
+});
