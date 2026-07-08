@@ -1,9 +1,51 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+
+/** Gera um código de validação de carteirinha no formato NNNNNNNNNNNNN-NN
+ * (13 dígitos aleatórios + 2 dígitos de checksum, soma dos 13 primeiros mod 100) —
+ * só decorativo, a validação real é a existência do código no banco (@unique). */
+function gerarCodigoValidacao(): string {
+  let principal = '';
+  for (let i = 0; i < 13; i++) principal += randomInt(0, 10).toString();
+  let soma = 0;
+  for (const c of principal) soma += Number(c);
+  const checksum = (soma % 100).toString().padStart(2, '0');
+  return `${principal}-${checksum}`;
+}
 
 @Injectable()
 export class DocumentoService {
   constructor(private prisma: PrismaService) {}
+
+  /** Garante que o aluno tenha um código de validação de carteirinha + data de
+   * validade persistidos (gera na primeira emissão/impressão e reaproveita depois,
+   * pra QR code e "Validade" impressos nunca mudarem entre reimpressões). */
+  private async garantirCodigoValidacaoCarteirinha(alunoId: string): Promise<{ codigo: string; validaAte: Date }> {
+    const atual = await this.prisma.aluno.findUnique({
+      where: { id: alunoId },
+      select: { codigoValidacaoCarteirinha: true, carteirinhaValidaAte: true },
+    });
+    if (atual?.codigoValidacaoCarteirinha && atual.carteirinhaValidaAte) {
+      return { codigo: atual.codigoValidacaoCarteirinha, validaAte: atual.carteirinhaValidaAte };
+    }
+
+    const validaAte = new Date(new Date().getFullYear() + 1, 2, 31);
+    for (let tentativa = 0; tentativa < 5; tentativa++) {
+      const codigo = gerarCodigoValidacao();
+      try {
+        await this.prisma.aluno.update({
+          where: { id: alunoId },
+          data: { codigoValidacaoCarteirinha: codigo, carteirinhaValidaAte: validaAte },
+        });
+        return { codigo, validaAte };
+      } catch (err: any) {
+        if (err?.code === 'P2002') continue; // colisão rara de código único, tenta gerar outro
+        throw err;
+      }
+    }
+    throw new Error('Não foi possível gerar um código de validação único para a carteirinha.');
+  }
 
   async getDeclaracaoMatricula(alunoId: string) {
     const aluno = await this.prisma.aluno.findUnique({
@@ -132,7 +174,8 @@ export class DocumentoService {
     };
   }
 
-  /** "Emissão de Carteirinha" — dados básicos + foto (se houver, via Usuario.fotoUrl) */
+  /** "Emissão de Carteirinha" — dados básicos + foto (se houver, via Usuario.fotoUrl)
+   * + código de validação/QR (gerado uma única vez e reaproveitado nas próximas emissões). */
   async getCarteirinha(alunoId: string) {
     const aluno = await this.prisma.aluno.findUnique({
       where: { id: alunoId },
@@ -142,6 +185,8 @@ export class DocumentoService {
       },
     });
     if (!aluno) throw new NotFoundException('Aluno não encontrado');
+
+    const { codigo, validaAte } = await this.garantirCodigoValidacaoCarteirinha(alunoId);
 
     return {
       aluno: {
@@ -154,8 +199,38 @@ export class DocumentoService {
         fotoUrl: aluno.usuario?.fotoUrl ?? null,
       },
       curso: { nome: aluno.curso.nome, grau: aluno.curso.grau },
-      validaAte: new Date(new Date().getFullYear() + 1, 2, 31).toISOString(),
+      validaAte: validaAte.toISOString(),
+      codigoValidacao: codigo,
       geradoEm: new Date().toISOString(),
+    };
+  }
+
+  /** Validação pública da carteirinha (sem autenticação) a partir do código
+   * impresso/QR. Não expõe CPF nem outros dados sensíveis — só o necessário
+   * pra conferir a autenticidade visualmente (RA, nome, curso, foto, validade). */
+  async validarCarteirinha(codigo: string) {
+    const aluno = await this.prisma.aluno.findUnique({
+      where: { codigoValidacaoCarteirinha: codigo },
+      include: {
+        curso: { select: { nome: true, grau: true } },
+        usuario: { select: { fotoUrl: true } },
+      },
+    });
+
+    if (!aluno || !aluno.carteirinhaValidaAte) {
+      return { valido: false };
+    }
+
+    const dentroDoPrazo = new Date() <= aluno.carteirinhaValidaAte;
+    const vinculoAtivo = aluno.situacaoVinculo === 'CURSANDO';
+
+    return {
+      valido: dentroDoPrazo && vinculoAtivo,
+      ra: aluno.ra,
+      nome: aluno.nome,
+      curso: aluno.curso.nome,
+      fotoUrl: aluno.usuario?.fotoUrl ?? null,
+      validade: aluno.carteirinhaValidaAte.toISOString(),
     };
   }
 
@@ -249,91 +324,4 @@ export class DocumentoService {
         cargaHorariaTotal: aluno.curso.cargaHorariaTotal,
       },
       matriz: aluno.matrizCurricular
-        ? { versao: aluno.matrizCurricular.versao, anoVigencia: aluno.matrizCurricular.anoVigencia }
-        : null,
-      periodos,
-      cr,
-      integralizacao,
-      geradoEm: new Date().toISOString(),
-    };
-  }
-
-  /** Mesma regra de `AlunoService.calcularCR` — duplicada aqui pra manter o DocumentoService
-   * autocontido (padrão já usado pelos outros métodos desta classe: consulta direto via Prisma,
-   * sem depender de outro módulo). */
-  private calcularCR(matriculas: Array<{
-    isDependencia: boolean;
-    resultado: { mediaFinal: unknown; situacao: string } | null;
-    oferta: { disciplina: { creditos: number } };
-  }>): number {
-    let somaPonderada = 0;
-    let somaCreditos = 0;
-    for (const m of matriculas) {
-      if (m.isDependencia) continue;
-      if (!m.resultado || m.resultado.situacao !== 'APROVADO') continue;
-      const media = Number(m.resultado.mediaFinal);
-      const creditos = m.oferta.disciplina.creditos;
-      somaPonderada += media * creditos;
-      somaCreditos += creditos;
-    }
-    return somaCreditos > 0 ? Math.round((somaPonderada / somaCreditos) * 100) / 100 : 0;
-  }
-
-  /** Mesma regra de `AlunoService.calcularIntegralizacao` — ver nota acima. */
-  private calcularIntegralizacao(
-    matriculas: Array<{
-      resultado: { situacao: string } | null;
-      oferta: { disciplina: { id: string; cargaHoraria: number } };
-    }>,
-    chTotalCurso: number,
-  ): { chIntegralizada: number; chTotalCurso: number; percentual: number; disciplinasIntegralizadas: number } {
-    const disciplinasAprovadas = new Map<string, number>();
-    for (const m of matriculas) {
-      if (m.resultado?.situacao !== 'APROVADO') continue;
-      disciplinasAprovadas.set(m.oferta.disciplina.id, m.oferta.disciplina.cargaHoraria);
-    }
-    const chIntegralizada = Array.from(disciplinasAprovadas.values()).reduce((soma, ch) => soma + ch, 0);
-    const percentual = chTotalCurso > 0 ? Math.round((chIntegralizada / chTotalCurso) * 1000) / 10 : 0;
-    return {
-      chIntegralizada,
-      chTotalCurso,
-      percentual: Math.min(percentual, 100),
-      disciplinasIntegralizadas: disciplinasAprovadas.size,
-    };
-  }
-
-  async getCalendarioAcademico(periodoLetivoId: string) {
-    const periodo = await this.prisma.periodoLetivo.findUnique({
-      where: { id: periodoLetivoId },
-    });
-    if (!periodo) throw new NotFoundException('Período letivo não encontrado');
-
-    const eventos = await this.prisma.eventoCalendario.findMany({
-      where: { periodoLetivoId },
-      orderBy: [{ ordem: 'asc' }, { dataInicio: 'asc' }],
-    });
-
-    return {
-      periodo: {
-        id: periodo.id,
-        ano: periodo.ano,
-        semestre: periodo.semestre,
-        dataInicio: periodo.dataInicio,
-        dataFim: periodo.dataFim,
-        status: periodo.status,
-        semanasLetivas: periodo.semanasLetivas,
-        diasLetivos: periodo.diasLetivos,
-      },
-      eventos: eventos.map((e) => ({
-        id: e.id,
-        grupo: e.grupo,
-        titulo: e.titulo,
-        dataInicio: e.dataInicio,
-        dataFim: e.dataFim,
-        observacoes: e.observacoes,
-        ordem: e.ordem,
-      })),
-      geradoEm: new Date(),
-    };
-  }
-}
+        ? 

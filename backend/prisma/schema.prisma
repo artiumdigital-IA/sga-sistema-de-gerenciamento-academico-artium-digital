@@ -189,6 +189,9 @@ model Aluno {
   uf                 String?         @db.Char(2)
   municipio          String?
 
+  codigoValidacaoCarteirinha String?   @unique // código impresso/QR da carteirinha, para validação pública
+  carteirinhaValidaAte       DateTime?
+
   criadoEm   DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
@@ -1033,9 +1036,4 @@ model ConfiguracaoVisual {
   nomeInstituicao String  @default("FIURJ")
   nomeCompleto    String  @default("FIURJ — Faculdade Instituto Universitário do Rio de Janeiro")
   logoUrl         String?
-  simboloUrl      String?
-  corPrimaria     String  @default("#1C3A6B")
-  corSecundaria   String  @default("#C8102E")
-
-  criadoEm     DateTime @default(now())
- 
+  simbol

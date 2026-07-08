@@ -59,3 +59,4 @@ Thumbs.db
 # ── Uploads locais (fotos de perfil, etc.) ────────────────────────────────────
 # Persistidos via volume Docker em produção — nunca versionar o conteúdo
 backend/uploads/
+_to_delete/
