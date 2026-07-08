@@ -198,7 +198,7 @@ export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; 
               style={{
                 width: '100%', boxSizing: 'border-box', padding: '6px 8px 6px 26px',
                 fontSize: 11.5, borderRadius: 5, border: '1px solid var(--gray-200)',
-                background: 'var(--gray-50)', outline: 'none',
+                background: 'var(--gray-50)', color: 'var(--gray-700)', outline: 'none',
               }}
             />
             {buscando && (
