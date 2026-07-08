@@ -233,4 +233,9 @@ export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; 
                 </p>
               )
             )
-          : <MessagesP
+          : <MessagesPanel />
+        }
+      </div>
+    </div>
+  );
+}

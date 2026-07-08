@@ -33,4 +33,7 @@ export default function QrCode({ value, size = 96, fgColor = '#000000', bgColor 
       width={size}
       height={size}
       className={className}
-      style={{ display: 'block
+      style={{ display: 'block', width: size, height: size }}
+    />
+  );
+}

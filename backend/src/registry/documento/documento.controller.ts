@@ -41,4 +41,14 @@ export class DocumentoController {
   }
 
   @Get('historico-oficial/:alunoId')
-  @ApiOperation({ summary:
+  @ApiOperation({ summary: 'Dados para Histórico Escolar Oficial (por período, CR e integralização)' })
+  getHistoricoOficial(@Param('alunoId') alunoId: string) {
+    return this.service.getHistoricoOficial(alunoId);
+  }
+
+  @Get('calendario-academico/:periodoLetivoId')
+  @ApiOperation({ summary: 'Dados para documento imprimível do Calendário Acadêmico de um período letivo' })
+  getCalendarioAcademico(@Param('periodoLetivoId') periodoLetivoId: string) {
+    return this.service.getCalendarioAcademico(periodoLetivoId);
+  }
+}

@@ -67,3 +67,7 @@ export class ProfessorService {
     await this.prisma.professor.delete({ where: { id } });
     if (usuarioId) {
       await this.audit.log({ usuarioId, acao: 'DELETE', entidade: 'professor', entidadeId: id, dadosAntes: antes });
+    }
+    return { message: 'Professor removido.' };
+  }
+}

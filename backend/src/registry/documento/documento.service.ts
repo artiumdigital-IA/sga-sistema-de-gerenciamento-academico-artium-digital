@@ -324,4 +324,91 @@ export class DocumentoService {
         cargaHorariaTotal: aluno.curso.cargaHorariaTotal,
       },
       matriz: aluno.matrizCurricular
-        ? 
+        ? { versao: aluno.matrizCurricular.versao, anoVigencia: aluno.matrizCurricular.anoVigencia }
+        : null,
+      periodos,
+      cr,
+      integralizacao,
+      geradoEm: new Date().toISOString(),
+    };
+  }
+
+  /** Mesma regra de `AlunoService.calcularCR` — duplicada aqui pra manter o DocumentoService
+   * autocontido (padrão já usado pelos outros métodos desta classe: consulta direto via Prisma,
+   * sem depender de outro módulo). */
+  private calcularCR(matriculas: Array<{
+    isDependencia: boolean;
+    resultado: { mediaFinal: unknown; situacao: string } | null;
+    oferta: { disciplina: { creditos: number } };
+  }>): number {
+    let somaPonderada = 0;
+    let somaCreditos = 0;
+    for (const m of matriculas) {
+      if (m.isDependencia) continue;
+      if (!m.resultado || m.resultado.situacao !== 'APROVADO') continue;
+      const media = Number(m.resultado.mediaFinal);
+      const creditos = m.oferta.disciplina.creditos;
+      somaPonderada += media * creditos;
+      somaCreditos += creditos;
+    }
+    return somaCreditos > 0 ? Math.round((somaPonderada / somaCreditos) * 100) / 100 : 0;
+  }
+
+  /** Mesma regra de `AlunoService.calcularIntegralizacao` — ver nota acima. */
+  private calcularIntegralizacao(
+    matriculas: Array<{
+      resultado: { situacao: string } | null;
+      oferta: { disciplina: { id: string; cargaHoraria: number } };
+    }>,
+    chTotalCurso: number,
+  ): { chIntegralizada: number; chTotalCurso: number; percentual: number; disciplinasIntegralizadas: number } {
+    const disciplinasAprovadas = new Map<string, number>();
+    for (const m of matriculas) {
+      if (m.resultado?.situacao !== 'APROVADO') continue;
+      disciplinasAprovadas.set(m.oferta.disciplina.id, m.oferta.disciplina.cargaHoraria);
+    }
+    const chIntegralizada = Array.from(disciplinasAprovadas.values()).reduce((soma, ch) => soma + ch, 0);
+    const percentual = chTotalCurso > 0 ? Math.round((chIntegralizada / chTotalCurso) * 1000) / 10 : 0;
+    return {
+      chIntegralizada,
+      chTotalCurso,
+      percentual: Math.min(percentual, 100),
+      disciplinasIntegralizadas: disciplinasAprovadas.size,
+    };
+  }
+
+  async getCalendarioAcademico(periodoLetivoId: string) {
+    const periodo = await this.prisma.periodoLetivo.findUnique({
+      where: { id: periodoLetivoId },
+    });
+    if (!periodo) throw new NotFoundException('Período letivo não encontrado');
+
+    const eventos = await this.prisma.eventoCalendario.findMany({
+      where: { periodoLetivoId },
+      orderBy: [{ ordem: 'asc' }, { dataInicio: 'asc' }],
+    });
+
+    return {
+      periodo: {
+        id: periodo.id,
+        ano: periodo.ano,
+        semestre: periodo.semestre,
+        dataInicio: periodo.dataInicio,
+        dataFim: periodo.dataFim,
+        status: periodo.status,
+        semanasLetivas: periodo.semanasLetivas,
+        diasLetivos: periodo.diasLetivos,
+      },
+      eventos: eventos.map((e) => ({
+        id: e.id,
+        grupo: e.grupo,
+        titulo: e.titulo,
+        dataInicio: e.dataInicio,
+        dataFim: e.dataFim,
+        observacoes: e.observacoes,
+        ordem: e.ordem,
+      })),
+      geradoEm: new Date(),
+    };
+  }
+}

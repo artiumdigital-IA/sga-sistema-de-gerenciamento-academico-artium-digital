@@ -12,4 +12,6 @@ export class CreateProfessorDto {
   @ApiProperty({ enum: CorRaca }) @IsEnum(CorRaca) corRaca: CorRaca;
   @ApiPropertyOptional() @IsOptional() @IsString() lattes?: string;
   @ApiProperty() @IsEmail() email: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() tel
+  @ApiPropertyOptional() @IsOptional() @IsString() telefone?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() usuarioId?: string;
+}

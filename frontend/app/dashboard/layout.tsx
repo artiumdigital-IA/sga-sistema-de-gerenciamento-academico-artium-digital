@@ -376,4 +376,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}>
           <div style={{ height: '100%', width: '62%', background: 'var(--blue-dark)', borderRadius: 3 }} />
         </div>
-        <span style={{ fontSize: 10.5, color: 'var(--gray-400)' 
+        <span style={{ fontSize: 10.5, color: 'var(--gray-400)' }}>62% concluido</span>
+      </div>
+
+      <RamaisModal open={ramaisOpen} onClose={() => setRamaisOpen(false)} />
+    </div>
+  );
+}

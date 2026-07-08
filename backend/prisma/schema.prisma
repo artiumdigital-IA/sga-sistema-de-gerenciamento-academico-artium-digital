@@ -1036,4 +1036,12 @@ model ConfiguracaoVisual {
   nomeInstituicao String  @default("FIURJ")
   nomeCompleto    String  @default("FIURJ — Faculdade Instituto Universitário do Rio de Janeiro")
   logoUrl         String?
-  simbol
+  simboloUrl      String?
+  corPrimaria     String  @default("#1C3A6B")
+  corSecundaria   String  @default("#C8102E")
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("configuracao_visual")
+}

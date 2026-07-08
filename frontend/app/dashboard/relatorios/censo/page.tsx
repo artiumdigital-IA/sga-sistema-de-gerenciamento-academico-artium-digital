@@ -153,4 +153,10 @@ export default function CensoPage() {
         <GroupTable title="Por Titulacao" keyLabel="Titulacao"
           rows={resumo.docentesPorTitulacao.map(r => ({ key: r.titulacao, total: r.total }))} />
         <GroupTable title="Por Regime de Trabalho" keyLabel="Regime"
-          rows={resumo.docentesPorRegime.map(r => ({ key: r.re
+          rows={resumo.docentesPorRegime.map(r => ({ key: r.regime, total: r.total }))} />
+        <GroupTable title="Por Cor/Raca" keyLabel="Cor/Raca"
+          rows={resumo.docentesPorCorRaca.map(r => ({ key: r.corRaca, total: r.total }))} />
+      </div>
+    </div>
+  );
+}

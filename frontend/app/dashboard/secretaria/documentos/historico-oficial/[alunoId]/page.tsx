@@ -245,4 +245,22 @@ export default function HistoricoOficialPage() {
         @media print {
           html, body {
             -webkit-print-color-adjust: exact !important;
-            print-color-adjust:
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          .no-print { display: none !important; }
+          #documento {
+            display: block !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+          }
+          #documento table { border-collapse: collapse; }
+          #documento thead { display: table-header-group; }
+          #documento tfoot { display: table-footer-group; }
+          #documento tr { break-inside: avoid; page-break-inside: avoid; }
+          #documento .assinatura { break-inside: avoid; page-break-inside: avoid; }
+        }
+      `}</style>
+    </>
+  );
+}

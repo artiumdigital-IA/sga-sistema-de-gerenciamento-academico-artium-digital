@@ -104,4 +104,12 @@ export class CensoService {
     return cursos.map(c => ({
       Nome: c.nome,
       Grau: c.grau,
-      Modalidade: c.modalida
+      Modalidade: c.modalidade,
+      'Código e-MEC': c.codigoEmec,
+      'Carga Horária Total': c.cargaHorariaTotal,
+      'Prazo Integralização (semestres)': c.prazoIntegralizacaoSemestres,
+      Status: c.status,
+      'Total de Alunos': c._count.alunos,
+    }));
+  }
+}
