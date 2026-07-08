@@ -1,13 +1,15 @@
-'use client';
-
 /**
- * components/QrCode.tsx — Gera um QR code em <canvas> a partir de um texto
- * (usado na carteirinha do estudante para linkar à página pública de
- * validação). Usa a lib `qrcode` (client-side, sem dependência de servidor).
+ * components/QrCode.tsx — Renderiza um QR code (usado na carteirinha do
+ * estudante para linkar à página pública de validação).
+ *
+ * Implementado como uma simples <img> apontando pro serviço público
+ * api.qrserver.com (goqr.me), em vez de uma lib npm — evita depender de um
+ * pacote novo (e do respectivo package-lock.json, que não dá pra regenerar
+ * neste ambiente sem acesso à internet) só pra desenhar um QR code. Como a
+ * própria página já precisa de internet pra carregar (é uma tela do sistema,
+ * atrás de login), isso não adiciona nenhuma dependência de rede que não
+ * existisse antes.
  */
-import { useEffect, useRef, useState } from 'react';
-import QRCode from 'qrcode';
-
 interface QrCodeProps {
   value: string;
   size?: number;
@@ -17,26 +19,18 @@ interface QrCodeProps {
 }
 
 export default function QrCode({ value, size = 96, fgColor = '#000000', bgColor = '#ffffff', className }: QrCodeProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [erro, setErro] = useState(false);
-
-  useEffect(() => {
-    if (!canvasRef.current || !value) return;
-    setErro(false);
-    QRCode.toCanvas(canvasRef.current, value, {
-      width: size,
-      margin: 1,
-      color: { dark: fgColor, light: bgColor },
-    }).catch(() => setErro(true));
-  }, [value, size, fgColor, bgColor]);
-
   if (!value) return null;
 
+  const cor = fgColor.replace('#', '');
+  const fundo = bgColor.replace('#', '');
+  const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=1&qzone=1&color=${cor}&bgcolor=${fundo}&data=${encodeURIComponent(value)}`;
+
   return (
-    <div className={className} style={{ width: size, height: size, background: bgColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {erro
-        ? <span style={{ fontSize: 8, color: fgColor, textAlign: 'center' }}>QR indisponível</span>
-        : <canvas ref={canvasRef} style={{ width: size, height: size, display: 'block' }} />}
-    </div>
-  );
-}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt="QR code de validação da carteirinha"
+      width={size}
+      height={size}
+      className={className}
+      style={{ display: 'block
