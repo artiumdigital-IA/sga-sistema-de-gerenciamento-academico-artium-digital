@@ -8,7 +8,13 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma generate
+# RUN com retry: builds anteriores tiveram falha intermitente (rede/DNS
+# transiente dentro do passo de build) baixando o engine binary do
+# Prisma nesse host -- confirmado que o binario em si baixa normalmente
+# fora desse contexto especifico de build, entao um retry simples resolve.
+RUN npx prisma generate \
+  || (echo "prisma generate falhou, tentando novamente (1/2)..." && sleep 5 && npx prisma generate) \
+  || (echo "prisma generate falhou, tentando novamente (2/2)..." && sleep 10 && npx prisma generate)
 RUN npm run build
 
 # ── Stage 2: production ─────────────────────────────────────
