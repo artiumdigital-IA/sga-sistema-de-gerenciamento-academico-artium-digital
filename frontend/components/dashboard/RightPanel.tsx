@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { RpanelGroup, type RpanelItem } from './RpanelGroup';
 import { MessagesPanel } from './MessagesPanel';
+import { hrefHabilitado } from '@/lib/telas-sistema';
 
 const DIACRITICOS = new RegExp(String.fromCharCode(91, 92, 117, 48, 51, 48, 48, 45, 92, 117, 48, 51, 54, 102, 93), 'g');
 function normalizar(s: string): string {
@@ -142,7 +143,15 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
   ]},
 ];
 
-export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; tab: 'barra' | 'msg'; onTabChange: (t: 'barra' | 'msg') => void }) {
+export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas }: {
+  width?: number; tab: 'barra' | 'msg'; onTabChange: (t: 'barra' | 'msg') => void;
+  /** Chaves de tela habilitadas pro perfil logado — esconde da Barra Rápida
+   * qualquer item cuja tela esteja desativada. null = ainda carregando (não
+   * filtra nada ainda, evita a lista sumir e reaparecer sem necessidade —
+   * diferente da sidebar, aqui não há risco de vazar uma tela sensível
+   * porque são só rótulos/atalhos, o bloqueio de fato é o guard de rota). */
+  chavesHabilitadas: Set<string> | null;
+}) {
   const pathname = usePathname();
   const initialOpen = RPANEL_GROUPS.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
@@ -150,13 +159,20 @@ export function RightPanel({ width = 220, tab, onTabChange }: { width?: number; 
 
   const buscando = busca.trim().length > 0;
 
-  const gruposFiltrados = useMemo(() => {
-    if (!buscando) return RPANEL_GROUPS;
-    const alvo = normalizar(busca.trim());
+  const gruposPermitidos = useMemo(() => {
+    if (chavesHabilitadas === null) return RPANEL_GROUPS;
     return RPANEL_GROUPS
+      .map(g => ({ ...g, items: g.items.filter(i => hrefHabilitado(i.href, chavesHabilitadas)) }))
+      .filter(g => g.items.length > 0);
+  }, [chavesHabilitadas]);
+
+  const gruposFiltrados = useMemo(() => {
+    if (!buscando) return gruposPermitidos;
+    const alvo = normalizar(busca.trim());
+    return gruposPermitidos
       .map(g => ({ ...g, items: g.items.filter(i => normalizar(i.label).includes(alvo)) }))
       .filter(g => g.items.length > 0);
-  }, [busca, buscando]);
+  }, [busca, buscando, gruposPermitidos]);
 
   return (
     <div className="print-hide" style={{

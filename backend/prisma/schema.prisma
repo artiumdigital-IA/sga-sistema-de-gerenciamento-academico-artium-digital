@@ -400,6 +400,25 @@ model Auditoria {
   @@map("auditorias")
 }
 
+/**
+ * Matriz de permissoes de tela por perfil -- controla quais paginas do
+ * dashboard aparecem no menu (sidebar/Barra Rapida/BottomBar) pra cada
+ * perfil. Ausencia de registro pra um (perfil, chaveTela) = habilitada por
+ * padrao (default liberado); so grava explicitamente o que foi alternado.
+ * Gerenciada exclusivamente pela conta admin@fiurj.edu.br (ver
+ * AdminMasterGuard) -- nao pelo perfil ADMIN em geral.
+ */
+model PermissaoTela {
+  id           String   @id @default(uuid())
+  perfil       Perfil
+  chaveTela    String   // chave estavel definida em telas-sistema.ts (backend) / telas-sistema.ts (frontend)
+  habilitada   Boolean  @default(true)
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([perfil, chaveTela])
+  @@map("permissoes_tela")
+}
+
 model ConsentimentoLgpd {
   id          String   @id @default(uuid())
   alunoId     String

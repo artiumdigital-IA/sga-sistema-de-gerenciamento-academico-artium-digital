@@ -12,6 +12,7 @@ import { ReportingModule } from './reporting/reporting.module';
 import { FinancialModule } from './financial/financial.module';
 import { SystemModule } from './system/system.module';
 import { BrandingModule } from './branding/branding.module';
+import { PermissoesTelaModule } from './permissoes-tela/permissoes-tela.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 
@@ -29,6 +30,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     FinancialModule,
     SystemModule,
     BrandingModule,
+    PermissoesTelaModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

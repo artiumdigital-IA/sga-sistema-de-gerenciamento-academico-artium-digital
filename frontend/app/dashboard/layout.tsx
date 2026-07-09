@@ -8,6 +8,9 @@ import { apiFetch, apiFileUrl } from '@/lib/api';
 import { useBranding } from '@/lib/branding';
 import { RightPanel } from '@/components/dashboard/RightPanel';
 import { RamaisModal } from '@/components/dashboard/RamaisModal';
+import { hrefHabilitado } from '@/lib/telas-sistema';
+
+const EMAIL_ADMIN_MASTER = 'admin@fiurj.edu.br';
 
 const SIDEBAR_ITEMS = [
   { label: 'Painel',      d: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',                                                                                                                       href: '/dashboard' },
@@ -29,6 +32,7 @@ const SIDEBAR_ITEMS = [
   { label: 'Usuários',    d: 'M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm10-10V7a4 4 0 0 0-8 0v4h8z',                                                    href: '/dashboard/admin/usuarios' },
   { label: 'Avisos',      d: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',                                                                                                href: '/dashboard/secretaria/avisos' },
   { label: 'Bem-estar',   d: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',                         href: null },
+  { label: 'Permissões',  d: 'M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm10-10V7a4 4 0 0 0-8 0v4h8z', href: '/dashboard/admin/permissoes' },
 ];
 
 const PERFIL_LABEL: Record<string, string> = {
@@ -86,11 +90,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const simboloUrl = apiFileUrl(branding.simboloUrl) || apiFileUrl(branding.logoUrl);
   const router = useRouter();
   const pathname = usePathname();
+  const [chavesHabilitadas, setChavesHabilitadas] = useState<Set<string> | null>(null);
 
   useEffect(() => {
     const t = getToken();
     if (t) setUser(parseJwt(t));
   }, []);
+
+  // Permissoes de tela do proprio perfil — alimenta o filtro do menu
+  // (sidebar/Barra Rapida/atalhos) e o guard de rota abaixo. Ausencia de
+  // token so acontece durante o redirect do middleware pra /login, entao nao
+  // precisa de tratamento especial aqui.
+  useEffect(() => {
+    apiFetch<string[]>('/permissoes-tela/minhas')
+      .then(chaves => setChavesHabilitadas(new Set(chaves)))
+      .catch(() => setChavesHabilitadas(new Set())); // falha de rede -> fail-closed (esconde tudo)
+  }, []);
+
+  // Bloqueia navegacao direta por URL pra uma tela desativada pro perfil
+  // atual — a sidebar ja esconde o link, isso cobre quem digita/cola a URL.
+  useEffect(() => {
+    if (chavesHabilitadas === null) return; // ainda carregando, nao decide nada ainda
+    if (!hrefHabilitado(pathname, chavesHabilitadas)) {
+      router.replace('/dashboard');
+    }
+  }, [pathname, chavesHabilitadas, router]);
 
   function carregarPerfil() {
     apiFetch<{ nome: string | null; fotoUrl: string | null }>('/usuarios/me')
@@ -159,6 +183,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       document.exitFullscreen?.();
     }
   };
+
+  const souAdminMaster = user?.email === EMAIL_ADMIN_MASTER;
 
   const topH = 44;
   const sideW = sidebarOpen ? 210 : 52;
@@ -297,7 +323,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}>
           {/* Itens de navegação */}
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {SIDEBAR_ITEMS.map((item) => {
+            {SIDEBAR_ITEMS
+              .filter(item => item.href !== '/dashboard/admin/permissoes' || souAdminMaster)
+              .filter(item => hrefHabilitado(item.href, chavesHabilitadas))
+              .map((item) => {
               const isActive = item.href
                 ? (item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href))
                 : false;
@@ -340,7 +369,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Painel direito */}
-        <RightPanel width={rightW} tab={rightTab} onTabChange={setRightTab} />
+        <RightPanel width={rightW} tab={rightTab} onTabChange={setRightTab} chavesHabilitadas={chavesHabilitadas} />
       </div>
 
       {/* ── BottomBar ── */}
@@ -354,7 +383,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { label: 'Nova Turma', href: '/dashboard/academico/ofertas' },
           { label: 'Lançamento de Notas', href: '/dashboard/academico/notas' },
           { label: 'Relatório', href: '/dashboard/academico/mapao' },
-        ].map(({ label, href }) => (
+        ].filter(({ href }) => hrefHabilitado(href, chavesHabilitadas)).map(({ label, href }) => (
           <button key={label} onClick={() => href && router.push(href)} style={{
             height: 26, padding: '0 10px', border: '1px solid var(--gray-200)',
             borderRadius: 3, background: 'transparent', cursor: href ? 'pointer' : 'default',
