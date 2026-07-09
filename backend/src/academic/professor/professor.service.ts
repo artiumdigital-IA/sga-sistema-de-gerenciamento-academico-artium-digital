@@ -34,7 +34,10 @@ export class ProfessorService {
   }
 
   async findAll() {
-    return this.prisma.professor.findMany({ orderBy: { nome: 'asc' } });
+    return this.prisma.professor.findMany({
+      include: { usuario: { select: { id: true } } },
+      orderBy: { nome: 'asc' },
+    });
   }
 
   async findOne(id: string) {

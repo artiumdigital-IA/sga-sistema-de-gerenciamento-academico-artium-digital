@@ -102,6 +102,89 @@ const BtnSecondary = ({ children, ...p }: React.ButtonHTMLAttributes<HTMLButtonE
   <button {...p} style={{ padding: '7px 16px', border: '1px solid var(--gray-300)', borderRadius: 6, background: 'var(--white)', cursor: 'pointer', fontSize: 13, ...p.style }}>{children}</button>
 );
 
+type OpcaoVinculo = { id: string; label: string; sublabel: string };
+
+/** Seletor com busca por nome — troca o antigo campo de "cole o UUID aqui" por
+ * uma lista filtrada, buscando de /alunos ou /professores e escondendo quem
+ * ja tem login (alunoId/professorId sao @unique em Usuario no schema). */
+function BuscaVinculo({
+  tipo, valor, onSelecionar,
+}: { tipo: 'ALUNO' | 'PROFESSOR'; valor: string; onSelecionar: (id: string, label: string) => void }) {
+  const [opcoes, setOpcoes] = useState<OpcaoVinculo[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [busca, setBusca] = useState('');
+  const [labelSelecionado, setLabelSelecionado] = useState('');
+
+  useEffect(() => {
+    let cancelado = false;
+    setCarregando(true);
+    apiFetch<any[]>(tipo === 'ALUNO' ? '/alunos' : '/professores')
+      .then(lista => {
+        if (cancelado) return;
+        const semLogin = lista.filter(item => !item.usuario);
+        setOpcoes(semLogin.map(item => ({
+          id: item.id,
+          label: item.nome,
+          sublabel: tipo === 'ALUNO'
+            ? `RA ${item.ra}${item.curso?.nome ? ' · ' + item.curso.nome : ''}`
+            : item.email,
+        })));
+      })
+      .catch(() => { if (!cancelado) setOpcoes([]); })
+      .finally(() => { if (!cancelado) setCarregando(false); });
+    return () => { cancelado = true; };
+  }, [tipo]);
+
+  if (valor && labelSelecionado) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 6, fontSize: 13,
+      }}>
+        <span>{labelSelecionado}</span>
+        <button type="button" onClick={() => { onSelecionar('', ''); setLabelSelecionado(''); setBusca(''); }}
+          style={{ border: 'none', background: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+          Trocar
+        </button>
+      </div>
+    );
+  }
+
+  const termo = busca.toLowerCase();
+  const filtradas = opcoes.filter(o => !termo || o.label.toLowerCase().includes(termo) || o.sublabel.toLowerCase().includes(termo));
+
+  return (
+    <div>
+      <input
+        placeholder={`Buscar ${tipo === 'ALUNO' ? 'aluno' : 'professor'} por nome...`}
+        value={busca}
+        onChange={e => setBusca(e.target.value)}
+        style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 6, fontSize: 13, marginBottom: 6, boxSizing: 'border-box' }}
+      />
+      <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid var(--gray-200)', borderRadius: 6 }}>
+        {carregando ? (
+          <p style={{ padding: 8, fontSize: 12, color: 'var(--gray-500)', margin: 0 }}>Carregando...</p>
+        ) : filtradas.length === 0 ? (
+          <p style={{ padding: 8, fontSize: 12, color: 'var(--gray-500)', margin: 0 }}>
+            {opcoes.length === 0
+              ? `Nenhum ${tipo === 'ALUNO' ? 'aluno' : 'professor'} sem login disponivel pra vincular.`
+              : 'Nenhum resultado.'}
+          </p>
+        ) : filtradas.map((o, i) => (
+          <div key={o.id} onClick={() => { onSelecionar(o.id, o.label); setLabelSelecionado(o.label); }}
+            style={{
+              padding: '6px 10px', cursor: 'pointer',
+              borderBottom: i < filtradas.length - 1 ? '1px solid var(--gray-100)' : 'none',
+            }}>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>{o.label}</div>
+            <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>{o.sublabel}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── componente principal ─────────────────────────────────────────────────────
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -313,12 +396,18 @@ export default function UsuariosPage() {
               {(Object.keys(PERFIL_LABEL) as Perfil[]).map(p => <option key={p} value={p}>{PERFIL_LABEL[p]}</option>)}
             </FieldSelect>
             {criar.perfil === 'ALUNO' && (
-              <FieldInput label="ID do Aluno (opcional)" placeholder="uuid do aluno" value={criar.alunoId}
-                onChange={e => setCriar(p => ({ ...p, alunoId: e.target.value }))} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)' }}>Vincular a um aluno (opcional)</label>
+                <BuscaVinculo tipo="ALUNO" valor={criar.alunoId}
+                  onSelecionar={id => setCriar(p => ({ ...p, alunoId: id }))} />
+              </div>
             )}
             {criar.perfil === 'PROFESSOR' && (
-              <FieldInput label="ID do Professor (opcional)" placeholder="uuid do professor" value={criar.professorId}
-                onChange={e => setCriar(p => ({ ...p, professorId: e.target.value }))} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)' }}>Vincular a um professor (opcional)</label>
+                <BuscaVinculo tipo="PROFESSOR" valor={criar.professorId}
+                  onSelecionar={id => setCriar(p => ({ ...p, professorId: id }))} />
+              </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
               <BtnSecondary type="button" onClick={() => setModalCriar(false)}>Cancelar</BtnSecondary>

@@ -99,7 +99,10 @@ export class AlunoService {
             }
           : {}),
       },
-      include: { curso: { select: { nome: true } } },
+      include: {
+        curso: { select: { nome: true } },
+        usuario: { select: { id: true } },
+      },
       orderBy: { nome: 'asc' },
     });
   }
