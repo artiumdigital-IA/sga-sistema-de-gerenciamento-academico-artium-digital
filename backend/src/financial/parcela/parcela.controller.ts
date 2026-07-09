@@ -3,10 +3,12 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ParcelaService } from './parcela.service';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Financeiro — Parcelas')
 @ApiBearerAuth()
 @Controller('financeiro/parcelas')
+@Tela('contratos')
 export class ParcelaController {
   constructor(private readonly service: ParcelaService) {}
 

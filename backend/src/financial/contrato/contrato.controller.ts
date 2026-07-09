@@ -4,10 +4,12 @@ import { ContratoService } from './contrato.service';
 import { CreateContratoDto } from './contrato.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Financeiro — Contratos')
 @ApiBearerAuth()
 @Controller('financeiro/contratos')
+@Tela('contratos')
 export class ContratoController {
   constructor(private readonly service: ContratoService) {}
 

@@ -5,10 +5,12 @@ import { CreateRequerimentoDto } from './dto/create-requerimento.dto';
 import { UpdateRequerimentoDto } from './dto/update-requerimento.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Requerimentos')
 @ApiBearerAuth()
 @Controller('requerimentos')
+@Tela('requerimentos')
 export class RequerimentoController {
   constructor(private readonly service: RequerimentoService) {}
 

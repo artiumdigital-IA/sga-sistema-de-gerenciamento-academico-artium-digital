@@ -5,10 +5,12 @@ import { CreateInscricaoDto } from './dto/create-inscricao.dto';
 import { UpdateInscricaoDto } from './dto/update-inscricao.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Inscrições')
 @ApiBearerAuth()
 @Controller('inscricoes')
+@Tela('processos-seletivos')
 export class InscricaoController {
   constructor(private readonly service: InscricaoService) {}
 

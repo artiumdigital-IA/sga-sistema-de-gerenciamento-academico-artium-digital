@@ -3,11 +3,13 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AuditService } from './audit.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Auditoria')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN)
 @Controller('auditoria')
+@Tela('log')
 export class AuditController {
   constructor(private readonly service: AuditService) {}
 

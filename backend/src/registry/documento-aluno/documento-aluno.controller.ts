@@ -17,6 +17,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagg
 import { DocumentoAlunoService } from './documento-aluno.service';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 const UPLOAD_DIR = './uploads/documentos';
 const TIPOS_PERMITIDOS = /\/(jpg|jpeg|png|webp|pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
@@ -38,6 +39,7 @@ interface ArquivoUpload {
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
 @Controller('documentos-aluno')
+@Tela('alunos')
 export class DocumentoAlunoController {
   constructor(private readonly service: DocumentoAlunoService) {}
 

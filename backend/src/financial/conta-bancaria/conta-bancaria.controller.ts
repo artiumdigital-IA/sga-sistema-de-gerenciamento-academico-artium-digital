@@ -5,11 +5,13 @@ import { CreateContaBancariaDto } from './dto/create-conta-bancaria.dto';
 import { UpdateContaBancariaDto } from './dto/update-conta-bancaria.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Financeiro — Contas Bancárias')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
 @Controller('financeiro/contas-bancarias')
+@Tela('contas-bancarias')
 export class ContaBancariaController {
   constructor(private readonly service: ContaBancariaService) {}
 

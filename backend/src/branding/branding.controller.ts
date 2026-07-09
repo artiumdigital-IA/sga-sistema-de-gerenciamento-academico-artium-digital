@@ -16,6 +16,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagg
 import { Perfil } from '@prisma/client';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 import { BrandingService } from './branding.service';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 
@@ -42,6 +43,8 @@ interface ArquivoUpload {
 export class BrandingController {
   constructor(private readonly service: BrandingService) {}
 
+  // Deliberadamente SEM @Tela() -- publico, usado ate na tela de login
+  // (antes de existir usuario autenticado pra ter perfil nenhum).
   @Public()
   @Get()
   @ApiOperation({ summary: 'Configuração visual da instituição (nome, logo, símbolo, cores) — público, usado até na tela de login' })
@@ -49,8 +52,12 @@ export class BrandingController {
     return this.service.getConfig();
   }
 
+  // @Tela('visual') abaixo -- correspondem a tela "Identidade Visual"
+  // (/dashboard/admin/visual) da matriz de Permissoes de Tela.
+
   @ApiBearerAuth()
   @Roles(Perfil.ADMIN)
+  @Tela('visual')
   @Put()
   @ApiOperation({ summary: 'Atualizar nome/cores da instituição (ADMIN)' })
   update(@Body() dto: UpdateBrandingDto, @Request() req: any) {
@@ -59,6 +66,7 @@ export class BrandingController {
 
   @ApiBearerAuth()
   @Roles(Perfil.ADMIN)
+  @Tela('visual')
   @Post('logo')
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Enviar logo da instituição (ADMIN)' })
@@ -86,6 +94,7 @@ export class BrandingController {
 
   @ApiBearerAuth()
   @Roles(Perfil.ADMIN)
+  @Tela('visual')
   @Post('simbolo')
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Enviar símbolo/ícone da instituição — usado como favicon (ADMIN)' })

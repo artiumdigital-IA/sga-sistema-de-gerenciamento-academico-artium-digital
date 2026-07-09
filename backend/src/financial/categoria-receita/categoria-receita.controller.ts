@@ -5,11 +5,13 @@ import { CreateCategoriaReceitaDto } from './dto/create-categoria-receita.dto';
 import { UpdateCategoriaReceitaDto } from './dto/update-categoria-receita.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Financeiro — Receitas')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
 @Controller('financeiro/receitas')
+@Tela('receitas')
 export class CategoriaReceitaController {
   constructor(private readonly service: CategoriaReceitaService) {}
 

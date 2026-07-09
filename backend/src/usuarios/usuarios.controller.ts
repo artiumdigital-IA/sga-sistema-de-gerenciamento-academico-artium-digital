@@ -16,6 +16,7 @@ import { extname } from 'path';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Perfil } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 import { UsuariosService } from './usuarios.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
@@ -47,8 +48,11 @@ export class UsuariosController {
   constructor(private readonly service: UsuariosService) {}
 
   // ── Gestao de usuarios (ADMIN only) ─────────────────────────────────────
+  // @Tela('usuarios') aqui -- essas rotas correspondem a tela "Usuarios"
+  // (/dashboard/admin/usuarios) da matriz de Permissoes de Tela.
 
   @Roles(Perfil.ADMIN)
+  @Tela('usuarios')
   @Post()
   @ApiOperation({ summary: 'Criar usuario (ADMIN)' })
   create(@Body() dto: CreateUsuarioDto, @Request() req: any) {
@@ -56,6 +60,7 @@ export class UsuariosController {
   }
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Tela('usuarios')
   @Get()
   @ApiOperation({ summary: 'Listar todos os usuarios (ADMIN/SECRETARIA — SECRETARIA precisa pra escolher destinatário de Mensagens)' })
   findAll() {
@@ -66,6 +71,11 @@ export class UsuariosController {
   // IMPORTANTE: estas rotas literais ('me', 'me/senha', 'me/foto') precisam
   // vir ANTES das rotas com ':id' abaixo, senao o Nest tenta casar "me" como
   // se fosse um :id (Express casa por ordem de declaracao).
+  //
+  // Deliberadamente SEM @Tela() -- perfil/senha/foto proprios sao
+  // autoatendimento, acessivel independente da tela "Usuarios" estar
+  // habilitada ou nao pro perfil (senao um perfil sem acesso a essa tela
+  // nao conseguiria nem trocar a propria senha).
 
   @Get('me')
   @ApiOperation({ summary: 'Retorna o perfil completo do usuario autenticado' })
@@ -116,6 +126,7 @@ export class UsuariosController {
   // ── Gestao de usuarios (ADMIN only) — rotas ':id' ───────────────────────
 
   @Roles(Perfil.ADMIN)
+  @Tela('usuarios')
   @Get(':id')
   @ApiOperation({ summary: 'Buscar usuario por ID (ADMIN)' })
   findOne(@Param('id') id: string) {
@@ -123,6 +134,7 @@ export class UsuariosController {
   }
 
   @Roles(Perfil.ADMIN)
+  @Tela('usuarios')
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar perfil/status de usuario (ADMIN)' })
   update(@Param('id') id: string, @Body() dto: UpdateUsuarioDto, @Request() req: any) {
@@ -130,6 +142,7 @@ export class UsuariosController {
   }
 
   @Roles(Perfil.ADMIN)
+  @Tela('usuarios')
   @Post(':id/bloquear')
   @ApiOperation({ summary: 'Bloquear usuario (ADMIN)' })
   bloquear(@Param('id') id: string, @Request() req: any) {
@@ -137,6 +150,7 @@ export class UsuariosController {
   }
 
   @Roles(Perfil.ADMIN)
+  @Tela('usuarios')
   @Post(':id/ativar')
   @ApiOperation({ summary: 'Reativar usuario bloqueado (ADMIN)' })
   ativar(@Param('id') id: string, @Request() req: any) {
@@ -144,6 +158,7 @@ export class UsuariosController {
   }
 
   @Roles(Perfil.ADMIN)
+  @Tela('usuarios')
   @Post(':id/resetar-senha')
   @ApiOperation({ summary: 'Resetar senha de qualquer usuario (ADMIN)' })
   resetarSenha(@Param('id') id: string, @Body() dto: ResetSenhaDto, @Request() req: any) {

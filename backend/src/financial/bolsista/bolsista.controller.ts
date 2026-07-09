@@ -5,11 +5,13 @@ import { CreateBolsistaDto } from './dto/create-bolsista.dto';
 import { UpdateBolsistaDto } from './dto/update-bolsista.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Financeiro — Bolsistas')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.FINANCEIRO, Perfil.SECRETARIA)
 @Controller('bolsistas')
+@Tela('bolsistas')
 export class BolsistaController {
   constructor(private readonly service: BolsistaService) {}
 

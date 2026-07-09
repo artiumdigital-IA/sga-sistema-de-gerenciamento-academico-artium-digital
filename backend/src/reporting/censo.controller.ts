@@ -3,11 +3,13 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { CensoService } from './censo.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Relatórios — Censo')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
 @Controller('relatorios/censo')
+@Tela('censo')
 export class CensoController {
   constructor(private readonly service: CensoService) {}
 

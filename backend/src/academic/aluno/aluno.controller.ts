@@ -7,10 +7,12 @@ import { MudarSituacaoDto } from './dto/mudar-situacao.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('alunos')
 @ApiBearerAuth()
 @Controller('alunos')
+@Tela('alunos')
 export class AlunoController {
   constructor(private readonly service: AlunoService) {}
 

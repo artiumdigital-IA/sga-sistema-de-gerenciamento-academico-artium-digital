@@ -4,10 +4,12 @@ import { NotaPautaService } from './nota-pauta.service';
 import { UpsertNotaPautaDto } from './dto/upsert-nota-pauta.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Notas por Pauta')
 @ApiBearerAuth()
 @Controller('notas-pauta')
+@Tela('pauta')
 export class NotaPautaController {
   constructor(private readonly service: NotaPautaService) {}
 

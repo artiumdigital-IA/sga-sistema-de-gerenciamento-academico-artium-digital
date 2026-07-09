@@ -4,10 +4,12 @@ import { FrequenciaService } from './frequencia.service';
 import { LancarFrequenciaDto } from './dto/lancar-frequencia.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Frequência Diária')
 @ApiBearerAuth()
 @Controller('frequencia')
+@Tela('frequencia')
 export class FrequenciaController {
   constructor(private readonly service: FrequenciaService) {}
 

@@ -5,6 +5,7 @@ import { CreateMotivoTransferenciaDto } from './dto/create-motivo-transferencia.
 import { UpdateMotivoTransferenciaDto } from './dto/update-motivo-transferencia.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 // Sem @Roles() no GET: o catálogo alimenta o <datalist> de sugestão do campo
 // motivo em Transferência de Turma e Mudança de Situação, usados também por
@@ -14,6 +15,7 @@ import { Perfil } from '@prisma/client';
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
 @Controller('motivos-transferencia')
+@Tela('motivos-transferencia')
 export class MotivoTransferenciaController {
   constructor(private readonly service: MotivoTransferenciaService) {}
 

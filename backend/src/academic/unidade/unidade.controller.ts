@@ -5,10 +5,12 @@ import { CreateUnidadeDto } from './dto/create-unidade.dto';
 import { UpdateUnidadeDto } from './dto/update-unidade.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('unidades')
 @ApiBearerAuth()
 @Controller('unidades')
+@Tela('unidades')
 export class UnidadeController {
   constructor(private readonly service: UnidadeService) {}
 

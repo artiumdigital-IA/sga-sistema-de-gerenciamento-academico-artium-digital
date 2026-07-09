@@ -7,5 +7,6 @@ import { AuditModule } from '../audit/audit.module';
   imports: [AuditModule],
   controllers: [PermissoesTelaController],
   providers: [PermissoesTelaService],
+  exports: [PermissoesTelaService],
 })
 export class PermissoesTelaModule {}

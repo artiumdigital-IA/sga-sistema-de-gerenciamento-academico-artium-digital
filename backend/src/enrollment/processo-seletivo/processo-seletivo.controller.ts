@@ -5,10 +5,12 @@ import { CreateProcessoSeletivoDto } from './dto/create-processo-seletivo.dto';
 import { UpdateProcessoSeletivoDto } from './dto/update-processo-seletivo.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Processo Seletivo')
 @ApiBearerAuth()
 @Controller('processos-seletivos')
+@Tela('processos-seletivos')
 export class ProcessoSeletivoController {
   constructor(private readonly service: ProcessoSeletivoService) {}
 

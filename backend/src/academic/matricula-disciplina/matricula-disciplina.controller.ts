@@ -7,10 +7,16 @@ import { TransferirTurmaDto } from './dto/transferir-turma.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
+// @Tela('matriculas') é o default do controller (a maioria das rotas é a
+// tela "Matrículas"), com duas exceções pontuais abaixo que sobrescrevem
+// com sua própria chave: "mapao" (tela "Mapa de Notas / Relatório") e
+// "transferir" (tela "Transferência de Turma").
 @ApiTags('Matrículas por Disciplina')
 @ApiBearerAuth()
 @Controller('matriculas')
+@Tela('matriculas')
 export class MatriculaDisciplinaController {
   constructor(private readonly service: MatriculaDisciplinaService) {}
 
@@ -32,6 +38,7 @@ export class MatriculaDisciplinaController {
     return this.service.findAll(alunoId, ofertaId);
   }
 
+  @Tela('mapao')
   @Get('mapao/:ofertaId')
   @ApiOperation({ summary: 'Mapão — notas e frequência de todos os alunos de uma oferta' })
   mapao(@Param('ofertaId') ofertaId: string) {
@@ -52,6 +59,7 @@ export class MatriculaDisciplinaController {
   }
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Tela('transferencia')
   @Post(':id/transferir')
   @ApiOperation({ summary: 'Transferir aluno de turma (mesma disciplina)' })
   transferir(@Param('id') id: string, @Body() dto: TransferirTurmaDto, @Request() req: any) {

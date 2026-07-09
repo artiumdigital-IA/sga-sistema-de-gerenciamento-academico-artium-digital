@@ -3,11 +3,13 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { FinanceiroRelatoriosService } from './financeiro.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Relatórios — Financeiro')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.FINANCEIRO, Perfil.SECRETARIA)
 @Controller('relatorios/financeiro')
+@Tela('relatorio-financeiro')
 export class FinanceiroRelatoriosController {
   constructor(private readonly service: FinanceiroRelatoriosService) {}
 

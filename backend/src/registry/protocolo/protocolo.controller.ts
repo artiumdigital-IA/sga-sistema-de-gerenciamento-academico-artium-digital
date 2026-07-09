@@ -5,11 +5,13 @@ import { CreateProtocoloDto } from './dto/create-protocolo.dto';
 import { UpdateProtocoloStatusDto } from './dto/update-protocolo-status.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Protocolos')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
 @Controller('protocolos')
+@Tela('protocolos')
 export class ProtocoloController {
   constructor(private readonly service: ProtocoloService) {}
 

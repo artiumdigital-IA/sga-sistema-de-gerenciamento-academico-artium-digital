@@ -6,10 +6,12 @@ import { UpdateProfessorDto } from './dto/update-professor.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('professores')
 @ApiBearerAuth()
 @Controller('professores')
+@Tela('professores')
 export class ProfessorController {
   constructor(private readonly service: ProfessorService) {}
 

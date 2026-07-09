@@ -17,10 +17,12 @@ import { UpdateMatrizDto } from './dto/update-matriz.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Matrizes Curriculares')
 @ApiBearerAuth()
 @Controller('matrizes')
+@Tela('matrizes')
 export class MatrizCurricularController {
   constructor(private readonly matrizService: MatrizCurricularService) {}
 

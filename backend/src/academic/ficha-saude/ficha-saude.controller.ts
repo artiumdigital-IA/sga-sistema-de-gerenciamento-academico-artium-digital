@@ -4,12 +4,14 @@ import { FichaSaudeService } from './ficha-saude.service';
 import { UpsertFichaSaudeDto } from './dto/upsert-ficha-saude.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 // Dado sensível (LGPD) — restrito a ADMIN/SECRETARIA em toda a rota, leitura inclusive.
 @ApiTags('fichas-saude')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
 @Controller('fichas-saude')
+@Tela('alunos')
 export class FichaSaudeController {
   constructor(private readonly service: FichaSaudeService) {}
 

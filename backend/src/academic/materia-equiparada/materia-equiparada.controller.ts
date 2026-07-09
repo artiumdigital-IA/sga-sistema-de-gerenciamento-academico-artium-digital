@@ -4,11 +4,13 @@ import { MateriaEquiparadaService } from './materia-equiparada.service';
 import { CreateMateriaEquiparadaDto } from './dto/create-materia-equiparada.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Matérias Equiparadas')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
 @Controller('materias-equiparadas')
+@Tela('alunos')
 export class MateriaEquiparadaController {
   constructor(private readonly service: MateriaEquiparadaService) {}
 

@@ -23,10 +23,12 @@ import { AddPrerequisitoDto } from './dto/add-prerequisito.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Disciplinas')
 @ApiBearerAuth()
 @Controller('disciplinas')
+@Tela('disciplinas')
 export class DisciplinaController {
   constructor(private readonly disciplinaService: DisciplinaService) {}
 

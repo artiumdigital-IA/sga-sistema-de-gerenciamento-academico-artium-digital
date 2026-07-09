@@ -6,10 +6,12 @@ import { UpdateEventoCalendarioDto } from './dto/update-evento-calendario.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Calendário Acadêmico')
 @ApiBearerAuth()
 @Controller('eventos-calendario')
+@Tela('periodos')
 export class EventoCalendarioController {
   constructor(private readonly service: EventoCalendarioService) {}
 

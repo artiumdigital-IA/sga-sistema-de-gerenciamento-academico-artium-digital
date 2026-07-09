@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Body, Param, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 import { MensagemService } from './mensagem.service';
 import { CreateMensagemDto } from './dto/create-mensagem.dto';
 import { EnviarConversaDto } from './dto/enviar-conversa.dto';
@@ -13,6 +14,10 @@ export class MensagemController {
   // ── Painel de comunicação (conversa 1-a-1, "Mensagens" na Barra Rápida) ──
   // Rotas literais ('conversas', 'contatos') declaradas antes de 'conversas/:usuarioId'
   // pra evitar o Nest casar errado (mesmo cuidado de sempre nesse projeto).
+  //
+  // Deliberadamente SEM @Tela() -- esse é o chat 1-a-1 (MessagesPanel),
+  // acessível pra qualquer perfil autenticado a partir de qualquer tela do
+  // sistema, não a tela dedicada "Mensagens" (broadcast) da Secretaria.
 
   @Get('contatos')
   @ApiOperation({ summary: 'Lista mínima de usuários pra iniciar uma nova conversa' })
@@ -41,25 +46,30 @@ export class MensagemController {
   }
 
   // ── Compor/manutenção "broadcast" (tela dedicada em Secretaria > Mensagens) ──
+  // @Tela('mensagens') abaixo -- essas sim correspondem à tela dedicada.
 
+  @Tela('mensagens')
   @Post()
   @ApiOperation({ summary: 'Compor mensagem direcionada a um usuário' })
   create(@Body() dto: CreateMensagemDto, @Request() req: { user?: { id?: string } }) {
     return this.service.create(dto, req.user!.id!);
   }
 
+  @Tela('mensagens')
   @Get('enviadas')
   @ApiOperation({ summary: 'Manutenção de Mensagens Enviadas — minhas mensagens enviadas' })
   enviadas(@Request() req: { user?: { id?: string } }) {
     return this.service.findEnviadas(req.user!.id!);
   }
 
+  @Tela('mensagens')
   @Get('recebidas')
   @ApiOperation({ summary: 'Minhas mensagens recebidas' })
   recebidas(@Request() req: { user?: { id?: string } }) {
     return this.service.findRecebidas(req.user!.id!);
   }
 
+  @Tela('mensagens')
   @Patch(':id/lida')
   @ApiOperation({ summary: 'Marcar mensagem recebida como lida' })
   marcarLida(@Param('id') id: string, @Request() req: { user?: { id?: string } }) {

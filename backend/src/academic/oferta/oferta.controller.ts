@@ -6,6 +6,7 @@ import { UpdateOfertaDto } from './dto/update-oferta.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Ofertas')
 @ApiBearerAuth()
@@ -14,12 +15,15 @@ export class OfertaController {
   constructor(private readonly service: OfertaService) {}
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Tela('ofertas')
   @Post()
   @ApiOperation({ summary: 'Criar oferta de disciplina' })
   create(@Body() dto: CreateOfertaDto, @Request() req: any) {
     return this.service.create(dto, req.user?.id);
   }
 
+  // Deliberadamente SEM @Tela() -- alimenta o widget "Grade Horária" do
+  // Painel inicial pra qualquer perfil, além da tela dedicada de Ofertas.
   @Get()
   @ApiOperation({ summary: 'Listar ofertas (opcional: filtrar por periodoLetivoId)' })
   @ApiQuery({ name: 'periodoLetivoId', required: false })
@@ -27,6 +31,7 @@ export class OfertaController {
     return this.service.findAll(periodoLetivoId);
   }
 
+  @Tela('ofertas')
   @Get(':id')
   @ApiOperation({ summary: 'Buscar oferta por ID (inclui alunos matriculados)' })
   findOne(@Param('id') id: string) {
@@ -34,6 +39,7 @@ export class OfertaController {
   }
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Tela('ofertas')
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar oferta' })
   update(@Param('id') id: string, @Body() dto: UpdateOfertaDto, @Request() req: any) {
@@ -41,6 +47,7 @@ export class OfertaController {
   }
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Tela('ofertas')
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover oferta' })

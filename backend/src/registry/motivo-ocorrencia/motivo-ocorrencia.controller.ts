@@ -5,11 +5,13 @@ import { CreateMotivoOcorrenciaDto } from './dto/create-motivo-ocorrencia.dto';
 import { UpdateMotivoOcorrenciaDto } from './dto/update-motivo-ocorrencia.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Motivos de Ocorrência')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
 @Controller('motivos-ocorrencia')
+@Tela('motivos-ocorrencia')
 export class MotivoOcorrenciaController {
   constructor(private readonly service: MotivoOcorrenciaService) {}
 

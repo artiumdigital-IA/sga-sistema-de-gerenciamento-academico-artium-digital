@@ -20,10 +20,12 @@ import { UpdateCursoDto } from './dto/update-curso.dto';
 
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Cursos')
 @ApiBearerAuth()
 @Controller('cursos')
+@Tela('cursos')
 export class CursoController {
   constructor(private readonly cursoService: CursoService) {}
 

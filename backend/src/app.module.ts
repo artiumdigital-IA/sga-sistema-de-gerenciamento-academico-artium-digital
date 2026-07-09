@@ -15,6 +15,7 @@ import { BrandingModule } from './branding/branding.module';
 import { PermissoesTelaModule } from './permissoes-tela/permissoes-tela.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guard';
 
 @Module({
   imports: [
@@ -35,6 +36,12 @@ import { RolesGuard } from './auth/guards/roles.guard';
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    // TelaPermissaoGuard roda por ultimo, depois de autenticacao (JWT) e
+    // perfil (@Roles). Fecha a lacuna da nota de seguranca da tela de
+    // Permissoes: bloqueia tambem a chamada direta ao endpoint quando a
+    // tela correspondente esta desabilitada pro perfil do usuario, nao so
+    // o icone/link no menu do frontend. Ver permissoes-tela/decorators/tela.decorator.ts.
+    { provide: APP_GUARD, useClass: TelaPermissaoGuard },
   ],
 })
 export class AppModule {}

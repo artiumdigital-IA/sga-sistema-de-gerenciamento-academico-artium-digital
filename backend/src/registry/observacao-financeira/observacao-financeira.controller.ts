@@ -4,11 +4,13 @@ import { ObservacaoFinanceiraService } from './observacao-financeira.service';
 import { CreateObservacaoFinanceiraDto } from './dto/create-observacao-financeira.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
+import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Observações Financeiras')
 @ApiBearerAuth()
 @Roles(Perfil.ADMIN, Perfil.FINANCEIRO, Perfil.SECRETARIA)
 @Controller('observacoes-financeiras')
+@Tela('alunos')
 export class ObservacaoFinanceiraController {
   constructor(private readonly service: ObservacaoFinanceiraService) {}
 
