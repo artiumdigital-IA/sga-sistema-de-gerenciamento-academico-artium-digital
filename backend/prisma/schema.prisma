@@ -1062,4 +1062,3 @@ model ConfiguracaoVisual {
 
   @@map("configuracao_visual")
 }
-        
