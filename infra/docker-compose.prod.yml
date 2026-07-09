@@ -52,20 +52,25 @@ services:
       - fiurj_net
     ports:
       - "3001:3001"
-    # Labels manuais do Traefik (Coolify) pra rotear /api/v1 pro backend SEM
-    # remover o prefixo do path. O campo Domains do Coolify sempre gera um
-    # middleware stripprefix, mas o Nest ja expoe tudo sob /api/v1
-    # internamente (ver main.ts) -- se o Traefik tirar o prefixo antes de
-    # encaminhar, o Nest recebe a rota sem prefixo e devolve 404. Por isso
-    # essas labels ficam manuais aqui, e o campo Domains for backend no
-    # Coolify deve ficar vazio, senao os dois roteadores entram em conflito.
+    # Labels manuais do Traefik (Coolify) pra rotear /api/v1 E /uploads pro
+    # backend SEM remover o prefixo do path. O campo Domains do Coolify
+    # sempre gera um middleware stripprefix, mas o Nest ja expoe tudo sob
+    # /api/v1 internamente (ver main.ts) -- se o Traefik tirar o prefixo
+    # antes de encaminhar, o Nest recebe a rota sem prefixo e devolve 404.
+    # /uploads tambem precisa estar aqui: o Nest serve os arquivos estaticos
+    # (avatar de usuario, simbolo/logo da instituicao em branding, etc.) via
+    # app.useStaticAssets com prefix '/uploads' (fora do /api/v1) -- sem essa
+    # rota o navegador pede http://host/uploads/... e cai no frontend (que
+    # nao tem essa rota), daí o icone da marca e o avatar do usuario
+    # aparecem quebrados. O campo Domains for backend no Coolify deve
+    # ficar vazio, senao os roteadores entram em conflito.
     # traefik.docker.network fixa qual rede Traefik usa pra alcancar o
     # container -- sem isso o Traefik fica em duvida entre a rede interna
     # do Coolify e a rede fiurj_net do compose (o container esta nas duas)
     # e a requisicao trava sem resposta em vez de falhar rapido.
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.fiurj-backend-api.rule=Host(`187.77.56.182`) && PathPrefix(`/api/v1`)"
+      - "traefik.http.routers.fiurj-backend-api.rule=Host(`187.77.56.182`) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
       - traefik.http.routers.fiurj-backend-api.entrypoints=http
       - traefik.http.services.fiurj-backend-api.loadbalancer.server.port=3001
       - traefik.docker.network=v10jck0yzwz1d35xxcj6akxt
