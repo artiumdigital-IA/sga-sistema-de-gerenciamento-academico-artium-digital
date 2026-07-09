@@ -2,16 +2,33 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl curl
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
-# RUN com retry: builds anteriores tiveram falha intermitente (rede/DNS
-# transiente dentro do passo de build) baixando o engine binary do
-# Prisma nesse host -- confirmado que o binario em si baixa normalmente
-# fora desse contexto especifico de build, entao um retry simples resolve.
+
+# O download automatico do engine binary do Prisma durante "prisma generate"
+# se mostrou consistentemente instavel especificamente dentro do pipeline de
+# build do Coolify nesse servidor (falhou 5/5 vezes, sempre no mesmo passo,
+# mesmo com retry -- e mesmo o binario baixando normal via curl fora desse
+# contexto de build). Em vez de depender do fetch interno do Prisma, baixamos
+# o engine nos mesmos (com curl, que se mostrou 100% confiavel nos testes) e
+# apontamos o Prisma pra ele via PRISMA_QUERY_ENGINE_LIBRARY, que e o
+# mecanismo oficial do Prisma pra pular o download interno. A versao do
+# engine e lida do pacote instalado (nao fixa no Dockerfile), entao continua
+# acompanhando upgrades futuros do prisma no package.json.
+RUN ENGINE_VERSION=$(node -p "require('@prisma/engines-version').enginesVersion") \
+  && echo "Prisma engine version: $ENGINE_VERSION" \
+  && mkdir -p /tmp/prisma-engines \
+  && curl -fsSL -o /tmp/prisma-engines/libquery_engine.so.node.gz \
+       "https://binaries.prisma.sh/all_commits/${ENGINE_VERSION}/linux-musl-openssl-3.0.x/libquery_engine.so.node.gz" \
+  && gunzip /tmp/prisma-engines/libquery_engine.so.node.gz \
+  && chmod +x /tmp/prisma-engines/libquery_engine.so.node \
+  || echo "pre-download do engine falhou, prisma generate vai tentar baixar sozinho"
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/tmp/prisma-engines/libquery_engine.so.node
+
 RUN npx prisma generate \
   || (echo "prisma generate falhou, tentando novamente (1/2)..." && sleep 5 && npx prisma generate) \
   || (echo "prisma generate falhou, tentando novamente (2/2)..." && sleep 10 && npx prisma generate)
