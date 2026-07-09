@@ -59,11 +59,16 @@ services:
     # encaminhar, o Nest recebe a rota sem prefixo e devolve 404. Por isso
     # essas labels ficam manuais aqui, e o campo Domains for backend no
     # Coolify deve ficar vazio, senao os dois roteadores entram em conflito.
+    # traefik.docker.network fixa qual rede Traefik usa pra alcancar o
+    # container -- sem isso o Traefik fica em duvida entre a rede interna
+    # do Coolify e a rede fiurj_net do compose (o container esta nas duas)
+    # e a requisicao trava sem resposta em vez de falhar rapido.
     labels:
       - traefik.enable=true
       - "traefik.http.routers.fiurj-backend-api.rule=Host(`187.77.56.182`) && PathPrefix(`/api/v1`)"
       - traefik.http.routers.fiurj-backend-api.entrypoints=http
       - traefik.http.services.fiurj-backend-api.loadbalancer.server.port=3001
+      - traefik.docker.network=v10jck0yzwz1d35xxcj6akxt
 
   frontend:
     build:
