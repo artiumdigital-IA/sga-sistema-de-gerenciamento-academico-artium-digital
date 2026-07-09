@@ -1,6 +1,6 @@
-# docker-compose de PRODUÇÃO
+# docker-compose de PRODUCAO
 # Usado pelo Coolify ou diretamente na VPS
-# Variáveis sensíveis vêm de .env (nunca commitar o .env real)
+# Variaveis sensiveis vem de .env (nunca commitar o .env real)
 
 version: '3.9'
 
@@ -52,6 +52,18 @@ services:
       - fiurj_net
     ports:
       - "3001:3001"
+    # Labels manuais do Traefik (Coolify) pra rotear /api/v1 pro backend SEM
+    # remover o prefixo do path. O campo Domains do Coolify sempre gera um
+    # middleware stripprefix, mas o Nest ja expoe tudo sob /api/v1
+    # internamente (ver main.ts) -- se o Traefik tirar o prefixo antes de
+    # encaminhar, o Nest recebe a rota sem prefixo e devolve 404. Por isso
+    # essas labels ficam manuais aqui, e o campo Domains for backend no
+    # Coolify deve ficar vazio, senao os dois roteadores entram em conflito.
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.fiurj-backend-api.rule=Host(`187.77.56.182`) && PathPrefix(`/api/v1`)"
+      - traefik.http.routers.fiurj-backend-api.entrypoints=http
+      - traefik.http.services.fiurj-backend-api.loadbalancer.server.port=3001
 
   frontend:
     build:
