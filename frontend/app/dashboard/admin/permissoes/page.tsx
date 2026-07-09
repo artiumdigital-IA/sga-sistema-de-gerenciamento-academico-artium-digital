@@ -92,9 +92,9 @@ export default function PermissoesTelaPage() {
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Permissões de Tela</h1>
         <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--gray-500)', maxWidth: 720 }}>
           Controla o que cada perfil enxerga no sistema. Desmarcar uma célula esconde o ícone/link
-          dessa tela no menu (sidebar, Barra Rápida e atalhos) só pra aquele perfil — e bloqueia
-          acesso direto pela URL. Isso NÃO revoga permissões que a API já concede por perfil (ver
-          nota de segurança no fim da página).
+          dessa tela no menu (sidebar, Barra Rápida e atalhos) só pra aquele perfil, bloqueia
+          acesso direto pela URL e também bloqueia a chamada à API por trás da tela (ver nota de
+          segurança no fim da página).
         </p>
       </div>
 
@@ -166,15 +166,16 @@ export default function PermissoesTelaPage() {
         </div>
       )}
 
-      <div style={{ marginTop: 18, padding: 14, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, maxWidth: 720 }}>
-        <p style={{ margin: 0, fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
-          <strong>Nota de segurança:</strong> esta matriz controla o que aparece no menu e bloqueia
-          navegação direta por URL dentro do app. Ela ainda NÃO bloqueia a chamada à API por trás de
-          cada tela — um perfil que hoje tem acesso de API a um endpoint (via <code>@Roles</code> no
-          backend) continua tecnicamente conseguindo chamá-lo direto, mesmo com a tela desativada
-          aqui. Pra fechar essa lacuna seria necessário um guard adicional no backend, tela por tela
-          — ainda não construído. Trate isto como controle de visibilidade de menu, não como o
-          único controle de acesso a dado sensível.
+      <div style={{ marginTop: 18, padding: 14, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, maxWidth: 720 }}>
+        <p style={{ margin: 0, fontSize: 12, color: '#166534', lineHeight: 1.5 }}>
+          <strong>Nota de segurança:</strong> esta matriz controla o que aparece no menu, bloqueia
+          navegação direta por URL dentro do app <em>e também</em> bloqueia a chamada à API por trás
+          de cada tela — um <code>TelaPermissaoGuard</code> global no backend confere, em cada
+          endpoint marcado, se a tela correspondente está habilitada pro perfil do usuário antes de
+          liberar a chamada, mesmo que o perfil já tenha acesso via <code>@Roles</code>. Poucas rotas
+          de autoatendimento (ex: meu perfil, minha senha) e widgets compartilhados em toda a
+          aplicação (ex: Painel inicial, chat de Mensagens, modal de Ramais) ficam de propósito fora
+          desse bloqueio, pra continuarem acessíveis independente da tela de gestão estar habilitada.
         </p>
       </div>
     </div>
