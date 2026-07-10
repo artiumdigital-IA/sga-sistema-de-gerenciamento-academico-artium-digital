@@ -29,14 +29,20 @@ ENV NODE_ENV=production
 # OpenSSL necessário para o Prisma schema engine
 RUN apk add --no-cache openssl
 
-# Dependências de produção + Prisma CLI (necessário para migrate deploy)
+# Dependências de produção + Prisma CLI (necessário para migrate deploy) +
+# ts-node/typescript (necessário para "npx prisma db seed", que roda
+# prisma/seed.ts diretamente -- sem isso o seed falha em produção com
+# "ts-node: not found", porque ts-node/typescript são devDependencies e o
+# --omit=dev acima não os instala).
 COPY package*.json ./
-RUN npm ci --omit=dev && npm install prisma && npm cache clean --force
+RUN npm ci --omit=dev && npm install prisma ts-node typescript && npm cache clean --force
 
-# Artefatos do build + Prisma
+# Artefatos do build + Prisma + tsconfig (necessário pro ts-node do "prisma
+# db seed" compilar prisma/seed.ts com as mesmas opções do resto do projeto)
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
+COPY tsconfig.json ./
 
 EXPOSE 3001
 
