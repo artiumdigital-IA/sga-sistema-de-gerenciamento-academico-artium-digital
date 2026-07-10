@@ -725,8 +725,14 @@ async function main() {
     // ── Tipos de protocolo + protocolos ──────────────────────────────
     const tipoProtocoloDoc = await prisma.tipoProtocolo.create({ data: { nome: 'Solicitação de Documento' } });
     await prisma.tipoProtocolo.createMany({ data: [{ nome: 'Reclamação' }, { nome: 'Recurso Administrativo' }] });
-    await prisma.protocolo.create({
-      data: {
+    // upsert (não create) — `numero` é @unique; evita P2002 se sobrar um
+    // Protocolo de uma rodada de seed anterior que não chegou a criar o
+    // Aviso-marcador (guarda `jaTemMassaTesteLegada` lá em cima), o que faria
+    // esse bloco inteiro re-rodar e colidir num `numero` já existente.
+    await prisma.protocolo.upsert({
+      where: { numero: '2026/000001' },
+      update: {},
+      create: {
         numero: '2026/000001', tipoId: tipoProtocoloDoc.id, alunoId: alunos['2024001'].id,
         assunto: 'Solicitação de declaração de matrícula', status: 'ABERTO', usuarioAberturaId: sec.id,
       },
