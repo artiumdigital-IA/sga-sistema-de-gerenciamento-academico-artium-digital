@@ -27,22 +27,24 @@ WORKDIR /app
 # OpenSSL necessário para o Prisma schema engine
 RUN apk add --no-cache openssl
 
-# Instala TODAS as dependências (incluindo devDependencies: ts-node,
-# typescript, prisma) via "npm ci" direto do package-lock.json.
+# Instala TODAS as dependências, incluindo devDependencies (ts-node,
+# typescript, prisma) -- necessárias em runtime pro "npx prisma db seed"
+# rodar prisma/seed.ts diretamente.
 #
-# Importante: isso precisa rodar ANTES do "ENV NODE_ENV=production" logo
-# abaixo. Com NODE_ENV=production já setado no ambiente, o npm entra em modo
-# de produção por padrão e passa a tratar qualquer pacote listado em
-# devDependencies como "omitido" -- inclusive quando pedido explicitamente
-# por nome (ex.: "npm install ts-node typescript"), o que gerou o bug real:
-# um "npm ci --omit=dev && npm install prisma ts-node typescript" rodava sem
-# erro nenhum, mas não instalava ts-node/typescript de verdade (silenciosos,
-# sem aviso), e o "npx prisma db seed" falhava em produção com
-# "spawn ts-node ENOENT". Rodando o "npm ci" completo antes de setar
-# NODE_ENV=production evita esse comportamento e garante ts-node/typescript
-# presentes de verdade.
+# O Coolify injeta automaticamente o NODE_ENV=production (definido no
+# "environment:" do docker-compose.prod.yml) como build arg logo no topo de
+# CADA estágio deste Dockerfile ("Inject Build Args to Dockerfile"),
+# independente de onde a gente colocar um ENV NODE_ENV manual aqui. Com
+# NODE_ENV=production já ativo desde o início do estágio, o npm passa a
+# tratar qualquer devDependency como "omitida" por padrão -- mesmo pedida
+# explicitamente por nome -- o que fazia "npm ci" (e antes, "npm install
+# prisma ts-node typescript") rodar sem erro nenhum mas não instalar
+# ts-node/typescript de verdade, quebrando o seed em produção com
+# "spawn ts-node ENOENT". A flag "--include=dev" abaixo força a instalação
+# das devDependencies mesmo com NODE_ENV=production, resolvendo isso na
+# raiz (não depende mais da ordem das instruções no Dockerfile).
 COPY package*.json ./
-RUN npm ci && npm cache clean --force
+RUN npm ci --include=dev && npm cache clean --force
 
 ENV NODE_ENV=production
 
