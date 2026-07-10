@@ -11,6 +11,18 @@
 import { useState, useEffect } from 'react';
 import { apiFetch, apiFileUrl } from './api';
 
+/** Uma imagem da galeria de publicidade exibida no /dashboard do perfil
+ * ALUNO (ver ConfiguracaoVisual.galeriaPublicidade no backend). Gerenciada
+ * em /dashboard/admin/visual. */
+export interface ImagemGaleria {
+  id: string;
+  url: string;
+  ordem: number;
+  ativa: boolean;
+  link: string | null;
+  criadoEm: string;
+}
+
 export interface BrandingConfig {
   id: string;
   nomeInstituicao: string;
@@ -19,6 +31,7 @@ export interface BrandingConfig {
   simboloUrl: string | null;
   corPrimaria: string;
   corSecundaria: string;
+  galeriaPublicidade: ImagemGaleria[];
 }
 
 export const BRANDING_CACHE_KEY = 'fiurj_branding_cache';
@@ -32,6 +45,7 @@ export const BRANDING_PADRAO: BrandingConfig = {
   simboloUrl: null,
   corPrimaria: '#1C3A6B',
   corSecundaria: '#C8102E',
+  galeriaPublicidade: [],
 };
 
 export function getCachedBranding(): BrandingConfig | null {

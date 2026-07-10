@@ -369,7 +369,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Painel direito */}
-        <RightPanel width={rightW} tab={rightTab} onTabChange={setRightTab} chavesHabilitadas={chavesHabilitadas} />
+        <RightPanel width={rightW} tab={rightTab} onTabChange={setRightTab} chavesHabilitadas={chavesHabilitadas} perfil={user?.perfil} />
       </div>
 
       {/* ── BottomBar ── */}
@@ -400,12 +400,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           Ramais
         </button>
         <div style={{ flex: 1 }} />
-        <div style={{
-          height: 6, width: 140, background: 'var(--gray-200)', borderRadius: 3, overflow: 'hidden',
-        }}>
-          <div style={{ height: '100%', width: '62%', background: 'var(--blue-dark)', borderRadius: 3 }} />
-        </div>
-        <span style={{ fontSize: 10.5, color: 'var(--gray-400)' }}>62% concluido</span>
+        {/* A barra "XX% concluído" que ficava aqui era fixa (62% hardcoded, igual pra
+            todo mundo) — foi removida de todas as telas. O progresso real do aluno no
+            curso agora aparece só no /dashboard dele mesmo (ver ProgressoCurso, usado
+            em app/dashboard/page.tsx), calculado a partir dos períodos letivos cursados. */}
       </div>
 
       <RamaisModal open={ramaisOpen} onClose={() => setRamaisOpen(false)} />

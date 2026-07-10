@@ -1056,6 +1056,12 @@ model ConfiguracaoVisual {
   simboloUrl      String?
   corPrimaria     String  @default("#1C3A6B")
   corSecundaria   String  @default("#C8102E")
+  // Galeria de imagens de publicidade exibida no /dashboard do perfil ALUNO
+  // (no lugar dos 3 boxes de estatísticas). Array de
+  // { id, url, ordem, ativa, link? } guardado como JSON — poucas dezenas de
+  // itens no máximo, não justifica uma tabela própria. Gerenciada em
+  // /dashboard/admin/visual (mesma tela de Identidade Visual).
+  galeriaPublicidade Json @default("[]")
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt

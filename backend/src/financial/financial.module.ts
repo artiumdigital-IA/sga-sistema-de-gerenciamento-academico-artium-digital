@@ -15,5 +15,8 @@ import { BolsistaService } from './bolsista/bolsista.service';
   imports: [AuditModule],
   controllers: [ContratoController, ParcelaController, ContaBancariaController, CategoriaReceitaController, BolsistaController],
   providers: [ContratoService, ParcelaService, ContaBancariaService, CategoriaReceitaService, BolsistaService],
+  // ContratoService exportado pro DiscenteModule reaproveitar a listagem de
+  // contratos/parcelas (autoatendimento — "Financeiro" do aluno, somente leitura).
+  exports: [ContratoService],
 })
 export class FinancialModule {}

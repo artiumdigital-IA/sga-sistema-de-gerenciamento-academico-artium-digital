@@ -13,6 +13,7 @@ import { FinancialModule } from './financial/financial.module';
 import { SystemModule } from './system/system.module';
 import { BrandingModule } from './branding/branding.module';
 import { PermissoesTelaModule } from './permissoes-tela/permissoes-tela.module';
+import { DiscenteModule } from './discente/discente.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guard';
@@ -32,6 +33,7 @@ import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guar
     SystemModule,
     BrandingModule,
     PermissoesTelaModule,
+    DiscenteModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

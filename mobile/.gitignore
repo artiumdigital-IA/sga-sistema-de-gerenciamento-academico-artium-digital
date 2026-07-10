@@ -13,4 +13,3 @@ web-build/
 npm-debug.*
 *.log
 .DS_Store
-expo-env.d.ts

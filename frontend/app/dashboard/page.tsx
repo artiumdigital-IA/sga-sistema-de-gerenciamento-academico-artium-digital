@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { getToken } from '@/lib/auth';
+import { getToken, parseJwt } from '@/lib/auth';
 import { apiFetch, apiUpload, apiFileUrl } from '@/lib/api';
 import { useBranding } from '@/lib/branding';
+import { GaleriaPublicidade } from '@/components/dashboard/GaleriaPublicidade';
+import { ProgressoCurso } from '@/components/dashboard/ProgressoCurso';
 import Image from 'next/image';
 
 /* ─── Tipos ─── */
@@ -765,6 +767,14 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({ cursos: 0, alunos: 0, professores: 0, loading: true });
   const [banner, setBanner] = useState<{ id: string; titulo: string; texto: string } | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  // Perfil ALUNO vê a Galeria de Publicidade + Progresso no Curso no lugar dos
+  // 3 boxes de estatísticas (Cursos/Alunos/Professores) — ver `souAluno` abaixo.
+  const [perfil, setPerfil] = useState<string | null>(null);
+  useEffect(() => {
+    const t = getToken();
+    if (t) setPerfil(parseJwt(t)?.perfil ?? null);
+  }, []);
+  const souAluno = perfil === 'ALUNO';
 
   useEffect(() => {
     const token = getToken();
@@ -894,7 +904,14 @@ export default function DashboardPage() {
       {/* ── Views ── */}
       {activeView === 'painel' && (
         <div>
-        <StatsBar stats={stats} />
+        {souAluno ? (
+          <>
+            <GaleriaPublicidade />
+            <ProgressoCurso />
+          </>
+        ) : (
+          <StatsBar stats={stats} />
+        )}
         <div style={{
           display: 'grid',
           gridTemplateColumns: colMode === '2' ? '1fr 1fr' : '1fr',

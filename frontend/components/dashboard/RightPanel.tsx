@@ -10,9 +10,40 @@ function normalizar(s: string): string {
   return s.normalize('NFD').replace(DIACRITICOS, '').toLowerCase();
 }
 
+// "Menu Discente" — autoatendimento do próprio aluno. Só aparece na Barra Rápida
+// quando o perfil logado é ALUNO (ver `gruposBase` abaixo), e SUBSTITUI todos os
+// outros grupos (um aluno não navega pelos menus de secretaria/financeiro/admin).
+// Cada item já tem uma tela própria em telas-sistema.ts (grupo "Menu Discente"),
+// então cada um pode ser ativado/desativado independentemente em
+// /dashboard/admin/permissoes — inclusive os ainda "em construção" (eles têm uma
+// página real, só que com aviso de que o conteúdo entra depois; por isso, ao
+// contrário do resto da Barra Rápida, não usam href: null).
+const MENU_DISCENTE_GROUP: { title: string; items: RpanelItem[] } = {
+  title: 'Menu Discente',
+  items: [
+    { label: 'Quadro de Horários', href: '/dashboard/discente/horarios' },
+    { label: 'Pendências de Documentos', href: '/dashboard/discente/documentos' },
+    { label: 'Protocolo (Abertura/Consulta)', href: '/dashboard/discente/protocolo' },
+    { label: 'Carteira de Estudante', href: '/dashboard/discente/carteira' },
+    { label: 'Minha Renovação', href: '/dashboard/discente/renovacao' },
+    { label: 'Disciplinas e Avaliações', href: '/dashboard/discente/disciplinas' },
+    { label: 'Notas e Histórico', href: '/dashboard/discente/historico' },
+    { label: 'Conquistas e Avaliações', href: '/dashboard/discente/conquistas' },
+    { label: 'Provas no Polo', href: '/dashboard/discente/provas-polo' },
+    { label: 'Horas AAC', href: '/dashboard/discente/aac' },
+    { label: 'Certificações', href: '/dashboard/discente/certificacoes' },
+    { label: 'Conteúdos Extras', href: '/dashboard/discente/conteudos-extras' },
+    { label: 'Financeiro', href: '/dashboard/discente/financeiro' },
+    { label: 'Carreiras', href: '/dashboard/discente/carreiras' },
+    { label: 'Suporte', href: '/dashboard/discente/suporte' },
+    { label: 'Perfil', href: '/dashboard/discente/perfil' },
+  ],
+};
+
 // Mapeamento "Barra Rápida" (nomenclatura/estrutura de menu da Kirsch, levantada no spike de
 // migração) -> telas equivalentes já existentes na plataforma nova. href: null = ainda não
 // construído aqui (fica visível, porém desabilitado, pra deixar claro o que falta).
+// Não é exibido pro perfil ALUNO (ver MENU_DISCENTE_GROUP acima).
 const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
   { title: 'Arquivos', items: [
     { label: 'Cadastro de Alunos', href: '/dashboard/academico/alunos' },
@@ -143,7 +174,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
   ]},
 ];
 
-export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas }: {
+export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, perfil }: {
   width?: number; tab: 'barra' | 'msg'; onTabChange: (t: 'barra' | 'msg') => void;
   /** Chaves de tela habilitadas pro perfil logado — esconde da Barra Rápida
    * qualquer item cuja tela esteja desativada. null = ainda carregando (não
@@ -151,20 +182,28 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas }:
    * diferente da sidebar, aqui não há risco de vazar uma tela sensível
    * porque são só rótulos/atalhos, o bloqueio de fato é o guard de rota). */
   chavesHabilitadas: Set<string> | null;
+  /** Perfil do usuário logado — ALUNO vê SÓ o "Menu Discente" na Barra Rápida
+   * (nada dos menus de secretaria/financeiro/admin); os demais perfis veem os
+   * grupos de sempre, sem o Menu Discente. undefined/null = ainda carregando
+   * o JWT, trata como não-aluno até saber (evita mostrar o Menu Discente e
+   * sumir em seguida). */
+  perfil?: string | null;
 }) {
   const pathname = usePathname();
-  const initialOpen = RPANEL_GROUPS.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
+  const gruposBase = perfil === 'ALUNO' ? [MENU_DISCENTE_GROUP] : RPANEL_GROUPS;
+  const initialOpen = gruposBase.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
   const [busca, setBusca] = useState('');
 
   const buscando = busca.trim().length > 0;
 
   const gruposPermitidos = useMemo(() => {
-    if (chavesHabilitadas === null) return RPANEL_GROUPS;
-    return RPANEL_GROUPS
+    if (chavesHabilitadas === null) return gruposBase;
+    return gruposBase
       .map(g => ({ ...g, items: g.items.filter(i => hrefHabilitado(i.href, chavesHabilitadas)) }))
       .filter(g => g.items.length > 0);
-  }, [chavesHabilitadas]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chavesHabilitadas, perfil]);
 
   const gruposFiltrados = useMemo(() => {
     if (!buscando) return gruposPermitidos;

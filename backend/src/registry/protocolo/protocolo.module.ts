@@ -7,5 +7,8 @@ import { AuditModule } from '../../audit/audit.module';
   imports: [AuditModule],
   controllers: [ProtocoloController],
   providers: [ProtocoloService],
+  // Exportado pro DiscenteModule reaproveitar a mesma lógica de numeração
+  // sequencial na abertura de protocolo pelo próprio aluno (autoatendimento).
+  exports: [ProtocoloService],
 })
 export class ProtocoloModule {}

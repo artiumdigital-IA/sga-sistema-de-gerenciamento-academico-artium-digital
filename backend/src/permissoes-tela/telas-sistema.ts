@@ -84,4 +84,26 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   // ── Utilitários ──────────────────────────────────────────────────────
   { chave: 'calculadora', label: 'Calculadora', grupo: 'Utilitários', prefixos: ['/dashboard/utilitarios/calculadora'] },
   { chave: 'ramais', label: 'Ramais', grupo: 'Utilitários', prefixos: ['/dashboard/utilitarios/ramais'] },
+
+  // ── Menu Discente (autoatendimento do ALUNO — ver components/dashboard/RightPanel.tsx) ──
+  // As 8 primeiras já têm dado real (aluno próprio, via /discente/*); as 8 seguintes
+  // (marcadas "placeholder") ainda são só uma tela "Em construção" — o módulo de dados
+  // (Horas AAC, Certificações etc.) entra depois, item por item. Todas ficam aqui pra já
+  // poderem ser ativadas/desativadas por perfil na matriz de Permissões de Tela.
+  { chave: 'discente-horarios', label: 'Quadro de Horários', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/horarios'] },
+  { chave: 'discente-documentos', label: 'Pendências de Documentos', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/documentos'] },
+  { chave: 'discente-protocolo', label: 'Protocolo (Abertura/Consulta)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/protocolo'] },
+  { chave: 'discente-carteira', label: 'Carteira de Estudante', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/carteira'] },
+  { chave: 'discente-disciplinas', label: 'Disciplinas e Avaliações', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/disciplinas'] },
+  { chave: 'discente-historico', label: 'Notas e Histórico', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/historico'] },
+  { chave: 'discente-financeiro', label: 'Financeiro (Aluno)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/financeiro'] },
+  { chave: 'discente-perfil', label: 'Perfil', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/perfil'] },
+  { chave: 'discente-renovacao', label: 'Minha Renovação (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/renovacao'] },
+  { chave: 'discente-conquistas', label: 'Conquistas e Avaliações (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/conquistas'] },
+  { chave: 'discente-provas-polo', label: 'Provas no Polo (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/provas-polo'] },
+  { chave: 'discente-aac', label: 'Horas AAC (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/aac'] },
+  { chave: 'discente-certificacoes', label: 'Certificações (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/certificacoes'] },
+  { chave: 'discente-conteudos-extras', label: 'Conteúdos Extras (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/conteudos-extras'] },
+  { chave: 'discente-carreiras', label: 'Carreiras (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/carreiras'] },
+  { chave: 'discente-suporte', label: 'Suporte (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/suporte'] },
 ];

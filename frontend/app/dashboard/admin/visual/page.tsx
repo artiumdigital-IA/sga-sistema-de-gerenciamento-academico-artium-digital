@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch, apiUpload, apiFileUrl } from '@/lib/api';
 import { getToken, parseJwt } from '@/lib/auth';
-import { notificarBrandingAtualizada, BRANDING_PADRAO, type BrandingConfig } from '@/lib/branding';
+import { notificarBrandingAtualizada, BRANDING_PADRAO, type BrandingConfig, type ImagemGaleria } from '@/lib/branding';
 
 const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' };
 const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 6 };
@@ -28,10 +28,12 @@ export default function VisualPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingSimbolo, setUploadingSimbolo] = useState(false);
+  const [uploadingGaleria, setUploadingGaleria] = useState(false);
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const simboloInputRef = useRef<HTMLInputElement>(null);
+  const galeriaInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -81,6 +83,46 @@ export default function VisualPage() {
       setMsg({ tipo: 'erro', texto: err instanceof Error ? err.message : 'Erro ao enviar arquivo.' });
     } finally {
       setUploading(false);
+    }
+  }
+
+  // ── Galeria de Publicidade (imagens do /dashboard do aluno) ────────────
+  const galeria = [...config.galeriaPublicidade].sort((a, b) => a.ordem - b.ordem);
+
+  async function enviarImagemGaleria(file: File) {
+    setUploadingGaleria(true); setMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append('arquivo', file);
+      const lista = await apiUpload<ImagemGaleria[]>('/branding/galeria', fd);
+      setConfig(c => ({ ...c, galeriaPublicidade: lista }));
+      notificarBrandingAtualizada();
+      setMsg({ tipo: 'ok', texto: 'Imagem adicionada à galeria.' });
+    } catch (err: unknown) {
+      setMsg({ tipo: 'erro', texto: err instanceof Error ? err.message : 'Erro ao enviar imagem.' });
+    } finally {
+      setUploadingGaleria(false);
+    }
+  }
+
+  async function atualizarImagemGaleria(id: string, dto: { ativa?: boolean; ordem?: number; link?: string | null }) {
+    try {
+      const lista = await apiFetch<ImagemGaleria[]>(`/branding/galeria/${id}`, { method: 'PATCH', body: JSON.stringify(dto) });
+      setConfig(c => ({ ...c, galeriaPublicidade: lista }));
+      notificarBrandingAtualizada();
+    } catch (err: unknown) {
+      setMsg({ tipo: 'erro', texto: err instanceof Error ? err.message : 'Erro ao atualizar imagem.' });
+    }
+  }
+
+  async function removerImagemGaleria(id: string) {
+    try {
+      const lista = await apiFetch<ImagemGaleria[]>(`/branding/galeria/${id}`, { method: 'DELETE' });
+      setConfig(c => ({ ...c, galeriaPublicidade: lista }));
+      notificarBrandingAtualizada();
+      setMsg({ tipo: 'ok', texto: 'Imagem removida.' });
+    } catch (err: unknown) {
+      setMsg({ tipo: 'erro', texto: err instanceof Error ? err.message : 'Erro ao remover imagem.' });
     }
   }
 
@@ -207,6 +249,58 @@ export default function VisualPage() {
       <button style={BTN('primary')} disabled={saving} onClick={salvar}>
         {saving ? 'Salvando...' : 'Salvar alterações'}
       </button>
+
+      <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16, marginTop: 24 }}>
+        <div style={LABEL}>Galeria de Publicidade (dashboard do aluno)</div>
+        <p style={{ fontSize: 11.5, color: 'var(--gray-400)', margin: '0 0 14px' }}>
+          Imagens exibidas em rodízio no topo do /dashboard de quem tem perfil Aluno, no lugar dos boxes de estatísticas.
+          Desative uma imagem pra tirá-la de circulação sem perder o arquivo; a ordem define a sequência do rodízio.
+        </p>
+
+        {galeria.length === 0 && (
+          <p style={{ fontSize: 12.5, color: 'var(--gray-400)', marginBottom: 12 }}>Nenhuma imagem cadastrada ainda.</p>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+          {galeria.map(img => (
+            <div key={img.id} style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px',
+              border: '1px solid var(--gray-200)', borderRadius: 6, opacity: img.ativa ? 1 : 0.5,
+            }}>
+              <div style={{ width: 80, height: 45, borderRadius: 4, overflow: 'hidden', background: 'var(--gray-50)', flexShrink: 0 }}>
+                <img src={apiFileUrl(img.url) ?? ''} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--gray-600)' }}>
+                  <input type="checkbox" checked={img.ativa} onChange={e => atualizarImagemGaleria(img.id, { ativa: e.target.checked })} />
+                  Ativa
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--gray-400)' }}>
+                  Ordem:
+                  <input
+                    type="number" defaultValue={img.ordem}
+                    onBlur={e => { const n = Number(e.target.value); if (!Number.isNaN(n)) atualizarImagemGaleria(img.id, { ordem: n }); }}
+                    style={{ width: 56, padding: '3px 6px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 11.5 }}
+                  />
+                </div>
+              </div>
+              <button onClick={() => removerImagemGaleria(img.id)} style={{
+                border: 'none', background: 'transparent', color: '#dc2626', cursor: 'pointer', fontSize: 12,
+              }}>
+                Remover
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <input
+          ref={galeriaInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) enviarImagemGaleria(f); e.target.value = ''; }}
+        />
+        <button style={BTN('ghost')} disabled={uploadingGaleria} onClick={() => galeriaInputRef.current?.click()}>
+          {uploadingGaleria ? 'Enviando...' : '+ Adicionar imagem'}
+        </button>
+      </div>
     </div>
   );
 }

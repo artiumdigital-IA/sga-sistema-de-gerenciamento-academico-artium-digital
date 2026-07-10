@@ -7,5 +7,8 @@ import { AuditModule } from '../../audit/audit.module';
   imports: [AuditModule],
   controllers: [DocumentoAlunoController],
   providers: [DocumentoAlunoService],
+  // Exportado pro DiscenteModule reaproveitar a listagem de documentos
+  // digitalizados do aluno (autoatendimento — "Pendências de Documentos").
+  exports: [DocumentoAlunoService],
 })
 export class DocumentoAlunoModule {}
