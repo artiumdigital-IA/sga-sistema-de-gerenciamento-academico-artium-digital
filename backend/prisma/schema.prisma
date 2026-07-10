@@ -435,10 +435,21 @@ model ConsentimentoLgpd {
 // =============================================================================
 
 // --- Censo ---
+// Graus de graduação (BACHARELADO/LICENCIATURA/TECNOLOGO) alimentam o Censo
+// da Educação Superior (INEP) -- nunca remover. Os 4 valores abaixo cobrem
+// pós-graduação (lato sensu / stricto sensu), que é reportada num censo
+// separado (Censo da Pós-Graduação) -- adicionados pra podermos cadastrar os
+// cursos de mestrado/doutorado/pós-doutorado (UAL/UPT/USAL) e a
+// especialização (FIURJ) no mesmo model Curso, já que a plataforma inteira
+// (Aluno, Oferta, ProcessoSeletivo etc.) já gira em torno de um Curso único.
 enum Grau {
   BACHARELADO
   LICENCIATURA
   TECNOLOGO
+  ESPECIALIZACAO
+  MESTRADO
+  DOUTORADO
+  POS_DOUTORADO
 }
 
 enum Modalidade {

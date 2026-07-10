@@ -29,7 +29,7 @@ type HistoricoOficialData = {
 };
 
 const SEXO_LABEL: Record<string, string> = { MASCULINO: 'Masculino', FEMININO: 'Feminino', NAO_DECLARADO: 'Não declarado' };
-const GRAU_LABEL: Record<string, string> = { BACHARELADO: 'Bacharelado', LICENCIATURA: 'Licenciatura', TECNOLOGO: 'Tecnólogo' };
+const GRAU_LABEL: Record<string, string> = { BACHARELADO: 'Bacharelado', LICENCIATURA: 'Licenciatura', TECNOLOGO: 'Tecnólogo', ESPECIALIZACAO: 'Especialização', MESTRADO: 'Mestrado', DOUTORADO: 'Doutorado', POS_DOUTORADO: 'Pós-Doutorado' };
 const MODALIDADE_LABEL: Record<string, string> = { PRESENCIAL: 'Presencial', EAD: 'EAD', SEMIPRESENCIAL: 'Semipresencial' };
 const INGRESSO_LABEL: Record<string, string> = {
   VESTIBULAR: 'Vestibular', ENEM: 'ENEM', TRANSFERENCIA_EXTERNA: 'Transferência externa',

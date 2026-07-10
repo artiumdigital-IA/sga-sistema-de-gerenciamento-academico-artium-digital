@@ -12,7 +12,10 @@ interface Carteirinha {
   geradoEm: string;
 }
 
-const GRAU_LABEL: Record<string, string> = { BACHARELADO: 'Bacharelado', LICENCIATURA: 'Licenciatura', TECNOLOGO: 'Tecnólogo' };
+const GRAU_LABEL: Record<string, string> = {
+  BACHARELADO: 'Bacharelado', LICENCIATURA: 'Licenciatura', TECNOLOGO: 'Tecnólogo',
+  ESPECIALIZACAO: 'Especialização', MESTRADO: 'Mestrado', DOUTORADO: 'Doutorado', POS_DOUTORADO: 'Pós-Doutorado',
+};
 
 export default function CarteiraEstudantePage() {
   const branding = useBranding();

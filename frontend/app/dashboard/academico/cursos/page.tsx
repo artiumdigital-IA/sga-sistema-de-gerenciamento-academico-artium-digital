@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 
 // ── tipos ──────────────────────────────────────────────────────────────
-type Grau = 'BACHARELADO' | 'LICENCIATURA' | 'TECNOLOGO';
+type Grau = 'BACHARELADO' | 'LICENCIATURA' | 'TECNOLOGO' | 'ESPECIALIZACAO' | 'MESTRADO' | 'DOUTORADO' | 'POS_DOUTORADO';
 type Modalidade = 'PRESENCIAL' | 'EAD' | 'SEMIPRESENCIAL';
 type CursoStatus = 'ATIVO' | 'ENCERRADO';
 
@@ -25,6 +25,10 @@ const GRAU_LABEL: Record<Grau, string> = {
   BACHARELADO: 'Bacharelado',
   LICENCIATURA: 'Licenciatura',
   TECNOLOGO: 'Tecnólogo',
+  ESPECIALIZACAO: 'Especialização (Pós-Graduação Lato Sensu)',
+  MESTRADO: 'Mestrado',
+  DOUTORADO: 'Doutorado',
+  POS_DOUTORADO: 'Pós-Doutorado',
 };
 const MODALIDADE_LABEL: Record<Modalidade, string> = {
   PRESENCIAL: 'Presencial',

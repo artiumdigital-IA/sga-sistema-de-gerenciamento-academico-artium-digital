@@ -3,11 +3,234 @@
  *
  * Executar:  npx prisma db seed
  * (ou)       npm run seed
+ *
+ * ── Massa de cursos (Jul/2026) ───────────────────────────────────────────
+ * Os cursos cadastrados abaixo são os 9 cursos REAIS oferecidos pela FIURJ
+ * e parceiras internacionais (UAL/UPT/USAL), extraídos dos materiais oficiais
+ * de cada programa. Substituem os 3 cursos genéricos de teste (Direito,
+ * Gestão Pública, Administração) que existiam antes — o bloco `limparCursosDeTesteAntigos()`
+ * remove essa estrutura antiga (e tudo que dependia dela: matrizes, disciplinas,
+ * ofertas, matrículas) e realoca os alunos de teste que apontavam pra ela.
+ * Script segue idempotente: pode rodar de novo sem duplicar nada.
  */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Grau, Modalidade, Turno } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
+
+// =============================================================================
+// CATÁLOGO REAL DE CURSOS
+// =============================================================================
+
+interface CursoConfig {
+  nome: string;
+  grau: Grau;
+  modalidade: Modalidade;
+  codigoEmec: string;
+  cargaHorariaTotal: number;
+  prazoIntegralizacaoSemestres: number;
+  prefixoCodigo: string;
+  cargaHorariaDisciplina: number;
+  creditosDisciplina: number;
+  disciplinasPorPeriodo: string[][];
+}
+
+const CURSOS_REAIS: CursoConfig[] = [
+  {
+    // Fonte: FIURJgraduacaoemdireito.pdf — 10 semestres, 3780h, 100% presencial.
+    nome: 'Direito',
+    grau: 'BACHARELADO',
+    modalidade: 'PRESENCIAL',
+    codigoEmec: 'FIURJ-DIR-GRAD',
+    cargaHorariaTotal: 3780,
+    prazoIntegralizacaoSemestres: 10,
+    prefixoCodigo: 'FIURJ-DIR',
+    cargaHorariaDisciplina: 80,
+    creditosDisciplina: 4,
+    disciplinasPorPeriodo: [
+      ['Comunicação e Expressão', 'Direitos Humanos, Sociedade e Relações Étnico-Raciais', 'Teoria Geral do Direito Civil', 'Pensamento Jurídico Brasileiro', 'Teoria do Estado Democrático', 'Teoria do Direito Constitucional', 'Crime e Sociedade (Direito Penal I)'],
+      ['Economia', 'Metodologia Científica e da Pesquisa', 'Teoria do Direito', 'Penas e Medidas Alternativas (Direito Penal II)', 'Relações e Conflitos Consumeristas', 'Análise Econômica do Direito', 'Organização do Estado e Direitos Fundamentais'],
+      ['Responsabilidade Social, Acessibilidade, Educação Ambiental e Recursos Naturais', 'Empreendedorismo, Inovação e Economia Criativa', 'Obrigações e Contratos', 'Teoria Geral da Empresa', 'Teorias da Justiça', 'Direito Global', 'Teoria Geral do Processo', 'Finanças Públicas'],
+      ['Neurolinguística', 'Relações Interpessoais e Multiprofissionais', 'Optativa I', 'Teoria do Direito Administrativo', 'Sistema Tributário Nacional', 'Tipos Societários', 'Teoria da Decisão', 'Direito da Propriedade', 'Direito Transnacional'],
+      ['Relações de Trabalho', 'Direito da Regulação', 'Processo Civil (Execução e Legislação Especial)', 'Processo do Trabalho', 'Direito Ambiental'],
+      ['Optativa II', 'Direito da Concorrência', 'Compliance e Lei de Garantia e Proteção de Dados (LGPD)', 'Processo Penal', 'Integrador Vivências Jurídicas II', 'Laboratório de Prática Jurídica'],
+      ['Métodos Adequados de Solução de Conflitos', 'Interpretação Jurisprudencial', 'Direito Ambiental II', 'Direito da Regulação II', 'Núcleo de Prática Jurídica I'],
+      ['Direito para Startups', 'Internet e Responsabilidade Civil', 'Concorrência em Mercados Digitais', 'Impacto das Tecnologias no Ordenamento Jurídico', 'Núcleo de Prática Jurídica II'],
+      ['Cybersegurança', 'Trabalho de Conclusão de Curso I', 'Comunicação Ativa', 'Contratos Eletrônicos', 'Núcleo de Prática Jurídica III'],
+      ['Trabalho de Conclusão de Curso II', 'Business Intelligence', 'Visual Law', 'Núcleo de Prática Jurídica IV', 'Atividade Complementar (120h)'],
+    ],
+  },
+  {
+    // Fonte: FIURJposgraduacaoemcienciascriminais.pdf — 18 meses, 360h, sábados 09h-13h.
+    nome: 'Pós-Graduação em Ciências Criminais',
+    grau: 'ESPECIALIZACAO',
+    modalidade: 'PRESENCIAL',
+    codigoEmec: 'FIURJ-POS-CRIM',
+    cargaHorariaTotal: 360,
+    prazoIntegralizacaoSemestres: 3,
+    prefixoCodigo: 'FIURJ-CRIM',
+    cargaHorariaDisciplina: 60,
+    creditosDisciplina: 3,
+    disciplinasPorPeriodo: [
+      ['Propedêutica e Garantias Fundamentais', 'Direito Penal'],
+      ['Direito Penal Econômico', 'Direito Processual Penal', 'Metodologia e Laboratório de Iniciação Científica'],
+      ['Criminologia'],
+    ],
+  },
+  {
+    // Fonte: UALmestradoemdireitocienciasjuridicopoliciais.pdf — 2 anos, 120 ECTS, semipresencial (1º ano mediado por tecnologia + viagens presenciais a Lisboa).
+    nome: 'Mestrado em Direito: Ciências Jurídico-Policiais',
+    grau: 'MESTRADO',
+    modalidade: 'SEMIPRESENCIAL',
+    codigoEmec: 'UAL-MEST-POLICIAIS',
+    cargaHorariaTotal: 3360,
+    prazoIntegralizacaoSemestres: 4,
+    prefixoCodigo: 'UAL-POL',
+    cargaHorariaDisciplina: 300,
+    creditosDisciplina: 12,
+    disciplinasPorPeriodo: [
+      ['Metodologia da Investigação', 'Direito da Segurança', 'Filosofia do Direito', 'Direito Contraordenacional'],
+      ['Direito Penal Avançado', 'Direito Digital e Cibercriminalidade', 'Direito Constitucional: Direitos Fundamentais no Espaço de Liberdade, Segurança e Justiça', 'Criminologia — Seminário de Investigação: Cooperação'],
+    ],
+  },
+  {
+    // Fonte: UALmestradoemdireitocienciasjuridicas.pdf — 2 anos, 120 ECTS.
+    nome: 'Mestrado em Direito: Ciências Jurídico-Políticas',
+    grau: 'MESTRADO',
+    modalidade: 'SEMIPRESENCIAL',
+    codigoEmec: 'UAL-MEST-POLITICAS',
+    cargaHorariaTotal: 3360,
+    prazoIntegralizacaoSemestres: 4,
+    prefixoCodigo: 'UAL-PLT',
+    cargaHorariaDisciplina: 300,
+    creditosDisciplina: 12,
+    disciplinasPorPeriodo: [
+      ['Ciência Política', 'Direito Constitucional e Administrativo da UE', 'Metodologia da Investigação Jurídica', 'Teoria Política'],
+      ['Responsabilidade Internacional', 'Direito do Mar', 'Direitos Humanos'],
+    ],
+  },
+  {
+    // Fonte: UPTmestradoEmCineciasJuridicoAdministrativasTributarias.pdf — 2 anos, 120 ECTS.
+    nome: 'Mestrado em Direito: Ciências Jurídico-Administrativas e Tributárias',
+    grau: 'MESTRADO',
+    modalidade: 'SEMIPRESENCIAL',
+    codigoEmec: 'UPT-MEST-ADMTRIB',
+    cargaHorariaTotal: 3360,
+    prazoIntegralizacaoSemestres: 4,
+    prefixoCodigo: 'UPT-ADT',
+    cargaHorariaDisciplina: 300,
+    creditosDisciplina: 12,
+    disciplinasPorPeriodo: [
+      ['Procedimento Administrativo', 'Contratos Públicos', 'Ciência Política', 'Metodologia da Investigação Jurídica'],
+      ['Processo Administrativo', 'Impostos em Especial', 'Teoria Política', 'Direito Tributário Europeu e Internacional'],
+    ],
+  },
+  {
+    // Fonte: UPTmestradoEmCineciasJuridicoPoliticas.pdf — 2 anos, 120 ECTS.
+    nome: 'Mestrado em Direito: Ciências Jurídico-Políticas',
+    grau: 'MESTRADO',
+    modalidade: 'SEMIPRESENCIAL',
+    codigoEmec: 'UPT-MEST-POLITICAS',
+    cargaHorariaTotal: 3360,
+    prazoIntegralizacaoSemestres: 4,
+    prefixoCodigo: 'UPT-PLT',
+    cargaHorariaDisciplina: 300,
+    creditosDisciplina: 12,
+    disciplinasPorPeriodo: [
+      ['Ciência Política', 'Direito Constitucional e Administrativo da UE', 'Metodologia da Investigação Jurídica', 'Teoria Política'],
+      ['Responsabilidade Internacional', 'Direito do Mar', 'Direitos Humanos'],
+    ],
+  },
+  {
+    // Fonte: UPTmestradoEmDireitoTransnacional.pdf — 2 anos, 120 ECTS.
+    nome: 'Mestrado em Direito Transnacional',
+    grau: 'MESTRADO',
+    modalidade: 'SEMIPRESENCIAL',
+    codigoEmec: 'UPT-MEST-TRANSNACIONAL',
+    cargaHorariaTotal: 3360,
+    prazoIntegralizacaoSemestres: 4,
+    prefixoCodigo: 'UPT-TRN',
+    cargaHorariaDisciplina: 300,
+    creditosDisciplina: 12,
+    disciplinasPorPeriodo: [
+      ['Direito Administrativo Global', 'Direito Constitucional Europeu', 'Direito Internacional Privado Europeu', 'Direito Transnacional', 'Governança Global e Organizações Internacionais'],
+      ['Direito Europeu de Defesa do Consumidor', 'Direito Europeu do Mar e do Ambiente', 'Direito Internacional e Europeu do Trabalho', 'Direito Tributário Europeu e Internacional', 'Sistema Financeiro Internacional e Europeu'],
+    ],
+  },
+  {
+    // Fonte: USALdoutoradoDireitoSalamanca.pdf — 4 linhas de pesquisa, seminários presenciais.
+    nome: 'Doutorado em Direito',
+    grau: 'DOUTORADO',
+    modalidade: 'PRESENCIAL',
+    codigoEmec: 'USAL-DOUT-DIREITO',
+    cargaHorariaTotal: 1600,
+    prazoIntegralizacaoSemestres: 2,
+    prefixoCodigo: 'USAL-DOU',
+    cargaHorariaDisciplina: 400,
+    creditosDisciplina: 16,
+    disciplinasPorPeriodo: [
+      ['Administração, Finanças e Justiça no Estado Social', 'Direito Privado'],
+      ['Estado de Direito e Governança Global', 'Estudos Interdisciplinares de Gênero e Políticas de Igualdade'],
+    ],
+  },
+  {
+    // Fonte: USALposdoutoradodireitoshumanosfontesinvestigacaoehistoriasalamanca.pdf — seminários presenciais (jun/2026) + trabalho final.
+    nome: 'Pós-Doutorado em Direito: Fontes, Investigação e História dos Direitos Humanos',
+    grau: 'POS_DOUTORADO',
+    modalidade: 'PRESENCIAL',
+    codigoEmec: 'USAL-POSDOC-DH',
+    cargaHorariaTotal: 200,
+    prazoIntegralizacaoSemestres: 2,
+    prefixoCodigo: 'USAL-PDC',
+    cargaHorariaDisciplina: 100,
+    creditosDisciplina: 4,
+    disciplinasPorPeriodo: [
+      ['Seminários: Fontes, Investigação e História dos Direitos Humanos'],
+      ['Trabalho Final de Investigação (Direitos Humanos)'],
+    ],
+  },
+];
+
+async function criarCursoComMatriz(cfg: CursoConfig) {
+  const curso = await prisma.curso.upsert({
+    where: { codigoEmec: cfg.codigoEmec },
+    update: {
+      nome: cfg.nome, grau: cfg.grau, modalidade: cfg.modalidade,
+      cargaHorariaTotal: cfg.cargaHorariaTotal, prazoIntegralizacaoSemestres: cfg.prazoIntegralizacaoSemestres,
+      status: 'ATIVO',
+    },
+    create: {
+      nome: cfg.nome, grau: cfg.grau, modalidade: cfg.modalidade, codigoEmec: cfg.codigoEmec,
+      cargaHorariaTotal: cfg.cargaHorariaTotal, prazoIntegralizacaoSemestres: cfg.prazoIntegralizacaoSemestres,
+      status: 'ATIVO',
+    },
+  });
+  const matriz = await prisma.matrizCurricular.upsert({
+    where: { cursoId_versao: { cursoId: curso.id, versao: '2026.1' } },
+    update: {},
+    create: { cursoId: curso.id, versao: '2026.1', anoVigencia: 2026, status: 'VIGENTE' },
+  });
+
+  const disciplinas: { id: string; codigo: string; nome: string }[] = [];
+  let seq = 0;
+  for (let periodoIdx = 0; periodoIdx < cfg.disciplinasPorPeriodo.length; periodoIdx++) {
+    for (const nomeDisc of cfg.disciplinasPorPeriodo[periodoIdx]) {
+      seq += 1;
+      const codigo = `${cfg.prefixoCodigo}-${String(seq).padStart(3, '0')}`;
+      const disc = await prisma.disciplina.upsert({
+        where: { matrizCurricularId_codigo: { matrizCurricularId: matriz.id, codigo } },
+        update: { nome: nomeDisc, periodoSugerido: periodoIdx + 1 },
+        create: {
+          matrizCurricularId: matriz.id, codigo, nome: nomeDisc,
+          cargaHoraria: cfg.cargaHorariaDisciplina, creditos: cfg.creditosDisciplina,
+          periodoSugerido: periodoIdx + 1,
+        },
+      });
+      disciplinas.push({ id: disc.id, codigo: disc.codigo, nome: disc.nome });
+    }
+  }
+  return { curso, matriz, disciplinas };
+}
 
 async function main() {
   console.log('🌱 Iniciando seed...');
@@ -89,6 +312,8 @@ async function main() {
 
   console.log(`✅ ${periodos.length} períodos letivos de teste (calendário acadêmico)`);
 
+  const periodo2026S1 = await prisma.periodoLetivo.findUnique({ where: { ano_semestre: { ano: 2026, semestre: 'S1' } } });
+
   // ── Itens de teste do Calendário Acadêmico (marcos/eventos) para 2026/S2 ──
   // Modelado no formato da Deliberação nº 41/2025 (UERJ) trazida como referência:
   // marco/etapa + data única ou intervalo, com grupos de 2 níveis (ex. Exames Finais).
@@ -147,15 +372,15 @@ async function main() {
   // ingresso, secretaria etc. Cobre praticamente todas as telas do sistema
   // pra facilitar teste manual de ponta a ponta com cada perfil.
   // Usa upsert nos modelos com campo único natural (email/cpf/ra/codigo) —
-  // pode rodar de novo sem duplicar. O bloco grande do meio (ofertas,
-  // matrículas, avisos, financeiro, ingresso...) é protegido por uma
-  // checagem de idempotência única (ver `jaTemMassaTeste` abaixo).
+  // pode rodar de novo sem duplicar.
   // =========================================================================
 
   // ── Unidades ──────────────────────────────────────────────────
   const unidadesData = [
-    { nome: 'FIURJ Campos Centro', cidade: 'Campos dos Goytacazes', uf: 'RJ' },
+    { nome: 'FIURJ Centro Rio de Janeiro', cidade: 'Rio de Janeiro', uf: 'RJ' as string | null },
     { nome: 'UAL Lisboa', cidade: 'Lisboa', uf: null as string | null },
+    { nome: 'UPT Porto', cidade: 'Porto', uf: null as string | null },
+    { nome: 'USAL Salamanca', cidade: 'Salamanca', uf: null as string | null },
   ];
   for (const u of unidadesData) {
     const existe = await prisma.unidade.findFirst({ where: { nome: u.nome } });
@@ -163,79 +388,25 @@ async function main() {
   }
   console.log(`✅ ${unidadesData.length} unidades de teste`);
 
-  // ── Cursos ────────────────────────────────────────────────────
-  const cursoDireito = await prisma.curso.upsert({
-    where: { codigoEmec: 'DIR2024' },
-    update: {},
-    create: {
-      nome: 'Direito', grau: 'BACHARELADO', modalidade: 'PRESENCIAL', codigoEmec: 'DIR2024',
-      cargaHorariaTotal: 3700, prazoIntegralizacaoSemestres: 10, status: 'ATIVO',
-    },
-  });
-  const cursoGestaoPublica = await prisma.curso.upsert({
-    where: { codigoEmec: 'GESPUB2024' },
-    update: {},
-    create: {
-      nome: 'Gestão Pública', grau: 'TECNOLOGO', modalidade: 'EAD', codigoEmec: 'GESPUB2024',
-      cargaHorariaTotal: 1600, prazoIntegralizacaoSemestres: 6, status: 'ATIVO',
-    },
-  });
-  const cursoAdministracao = await prisma.curso.upsert({
-    where: { codigoEmec: 'ADM2024' },
-    update: {},
-    create: {
-      nome: 'Administração', grau: 'BACHARELADO', modalidade: 'PRESENCIAL', codigoEmec: 'ADM2024',
-      cargaHorariaTotal: 3000, prazoIntegralizacaoSemestres: 8, status: 'ATIVO',
-    },
-  });
-  console.log('✅ 3 cursos de teste (Direito, Gestão Pública, Administração)');
+  // ── Cursos reais (FIURJ + UAL + UPT + USAL) ─────────────────────
+  const [
+    { curso: cursoFiurjDireito, matriz: matrizFiurjDireito, disciplinas: discFiurjDireito },
+    { curso: cursoFiurjCriminais, matriz: matrizFiurjCriminais, disciplinas: discFiurjCriminais },
+    { curso: cursoUalPoliciais, matriz: matrizUalPoliciais, disciplinas: discUalPoliciais },
+    { curso: cursoUalPoliticas, matriz: matrizUalPoliticas, disciplinas: discUalPoliticas },
+    { curso: cursoUptAdmTrib, matriz: matrizUptAdmTrib, disciplinas: discUptAdmTrib },
+    { curso: cursoUptPoliticas, matriz: matrizUptPoliticas, disciplinas: discUptPoliticas },
+    { curso: cursoUptTransnacional, matriz: matrizUptTransnacional, disciplinas: discUptTransnacional },
+    { curso: cursoUsalDoutorado, matriz: matrizUsalDoutorado, disciplinas: discUsalDoutorado },
+    { curso: cursoUsalPosDoc, matriz: matrizUsalPosDoc, disciplinas: discUsalPosDoc },
+  ] = await Promise.all(CURSOS_REAIS.map(criarCursoComMatriz));
 
-  // ── Matrizes curriculares (1 por curso) ─────────────────────────
-  const matrizDireito = await prisma.matrizCurricular.upsert({
-    where: { cursoId_versao: { cursoId: cursoDireito.id, versao: '2024.1' } },
-    update: {},
-    create: { cursoId: cursoDireito.id, versao: '2024.1', anoVigencia: 2024, status: 'VIGENTE' },
-  });
-  const matrizGestaoPublica = await prisma.matrizCurricular.upsert({
-    where: { cursoId_versao: { cursoId: cursoGestaoPublica.id, versao: '2024.1' } },
-    update: {},
-    create: { cursoId: cursoGestaoPublica.id, versao: '2024.1', anoVigencia: 2024, status: 'VIGENTE' },
-  });
-  const matrizAdministracao = await prisma.matrizCurricular.upsert({
-    where: { cursoId_versao: { cursoId: cursoAdministracao.id, versao: '2024.1' } },
-    update: {},
-    create: { cursoId: cursoAdministracao.id, versao: '2024.1', anoVigencia: 2024, status: 'VIGENTE' },
-  });
-  console.log('✅ 3 matrizes curriculares de teste');
+  console.log(`✅ ${CURSOS_REAIS.length} cursos reais cadastrados (FIURJ Graduação/Pós, UAL x2, UPT x3, USAL x2)`);
 
-  // ── Disciplinas (4 por curso) ────────────────────────────────────
-  const disciplinasData: { matrizId: string; codigo: string; nome: string; periodoSugerido: number }[] = [
-    { matrizId: matrizDireito.id, codigo: 'DIR101', nome: 'Introdução ao Direito', periodoSugerido: 1 },
-    { matrizId: matrizDireito.id, codigo: 'DIR102', nome: 'Direito Constitucional I', periodoSugerido: 1 },
-    { matrizId: matrizDireito.id, codigo: 'DIR103', nome: 'Direito Civil I', periodoSugerido: 2 },
-    { matrizId: matrizDireito.id, codigo: 'DIR104', nome: 'Direito Penal I', periodoSugerido: 2 },
-    { matrizId: matrizGestaoPublica.id, codigo: 'GP101', nome: 'Administração Pública', periodoSugerido: 1 },
-    { matrizId: matrizGestaoPublica.id, codigo: 'GP102', nome: 'Direito Administrativo', periodoSugerido: 1 },
-    { matrizId: matrizGestaoPublica.id, codigo: 'GP103', nome: 'Economia do Setor Público', periodoSugerido: 2 },
-    { matrizId: matrizGestaoPublica.id, codigo: 'GP104', nome: 'Políticas Públicas', periodoSugerido: 2 },
-    { matrizId: matrizAdministracao.id, codigo: 'ADM101', nome: 'Teoria Geral da Administração', periodoSugerido: 1 },
-    { matrizId: matrizAdministracao.id, codigo: 'ADM102', nome: 'Contabilidade Geral', periodoSugerido: 1 },
-    { matrizId: matrizAdministracao.id, codigo: 'ADM103', nome: 'Matemática Financeira', periodoSugerido: 2 },
-    { matrizId: matrizAdministracao.id, codigo: 'ADM104', nome: 'Marketing', periodoSugerido: 2 },
-  ];
-  const disciplinas: Record<string, { id: string }> = {};
-  for (const d of disciplinasData) {
-    const disc = await prisma.disciplina.upsert({
-      where: { matrizCurricularId_codigo: { matrizCurricularId: d.matrizId, codigo: d.codigo } },
-      update: {},
-      create: {
-        matrizCurricularId: d.matrizId, codigo: d.codigo, nome: d.nome,
-        cargaHoraria: 80, creditos: 4, periodoSugerido: d.periodoSugerido,
-      },
-    });
-    disciplinas[d.codigo] = disc;
-  }
-  console.log(`✅ ${disciplinasData.length} disciplinas de teste`);
+  // ── Limpeza dos 3 cursos de teste genéricos antigos (Direito/Gestão
+  // Pública/Administração) e de toda a estrutura que dependia deles. Roda só
+  // uma vez: se os códigos antigos não existirem mais, é um no-op. ────────
+  await limparCursosDeTesteAntigos(cursoFiurjDireito.id, matrizFiurjDireito.id);
 
   // ── Professores ───────────────────────────────────────────────
   const professoresData = [
@@ -243,6 +414,12 @@ async function main() {
     { nome: 'Fernanda Souza Lima', cpf: '22233344455', titulacao: 'MESTRE' as const, regime: 'PARCIAL' as const, email: 'fernanda.lima@fiurj.edu.br' },
     { nome: 'Ricardo Almeida Santos', cpf: '33344455566', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'ricardo.santos@fiurj.edu.br' },
     { nome: 'Juliana Costa Pereira', cpf: '44455566677', titulacao: 'DOUTOR' as const, regime: 'INTEGRAL' as const, email: 'juliana.pereira@fiurj.edu.br' },
+    { nome: 'António Cardoso Guedes', cpf: '55511122233', titulacao: 'DOUTOR' as const, regime: 'PARCIAL' as const, email: 'antonio.guedes@ual.fiurj.edu.br' },
+    { nome: 'Inês Salgado Matos', cpf: '55522233344', titulacao: 'DOUTOR' as const, regime: 'PARCIAL' as const, email: 'ines.matos@upt.fiurj.edu.br' },
+    { nome: 'Rui Manuel Pinto Duarte', cpf: '55533344455', titulacao: 'DOUTOR' as const, regime: 'PARCIAL' as const, email: 'rui.duarte@upt.fiurj.edu.br' },
+    { nome: 'Javier Fernández Ruiz', cpf: '55544455566', titulacao: 'DOUTOR' as const, regime: 'PARCIAL' as const, email: 'javier.fernandez@usal.fiurj.edu.br' },
+    { nome: 'Lourenço Bastos Vidal', cpf: '55555566677', titulacao: 'POS_DOUTOR' as const, regime: 'HORISTA' as const, email: 'lourenco.vidal@usal.fiurj.edu.br' },
+    { nome: 'Esperanza Martín Quintela', cpf: '55566677788', titulacao: 'POS_DOUTOR' as const, regime: 'HORISTA' as const, email: 'esperanza.quintela@usal.fiurj.edu.br' },
   ];
   const professores: Record<string, { id: string }> = {};
   for (const p of professoresData) {
@@ -272,27 +449,33 @@ async function main() {
   });
   console.log('✅ Usuário professor: professor@fiurj.edu.br  (senha: prof123)');
 
-  // ── Alunos ────────────────────────────────────────────────────
+  // ── Alunos — 8 já existentes (RAs 2024001-2024008) realocados pros cursos
+  // reais + 2 novos (2024009/2024010) pra cobrir Doutorado e Pós-Doutorado
+  // da USAL, que não tinham nenhum aluno de teste correspondente. ────────
   const alunosData: {
     ra: string; nome: string; cpf: string; email: string; cursoId: string; matrizId: string;
     sexo: 'MASCULINO' | 'FEMININO'; corRaca: 'BRANCA' | 'PRETA' | 'PARDA' | 'AMARELA' | 'INDIGENA';
-    formaIngresso: 'VESTIBULAR' | 'ENEM' | 'TRANSFERENCIA_EXTERNA'; situacao: 'CURSANDO' | 'TRANCADO' | 'EVADIDO';
+    formaIngresso: 'VESTIBULAR' | 'ENEM' | 'TRANSFERENCIA_EXTERNA' | 'CONVENIO'; situacao: 'CURSANDO' | 'TRANCADO' | 'EVADIDO';
     codigoValidacaoCarteirinha?: string;
   }[] = [
-    { ra: '2024001', nome: 'Mariana Alves Ferreira', cpf: '55566677788', email: 'mariana.ferreira@aluno.fiurj.edu.br', cursoId: cursoDireito.id, matrizId: matrizDireito.id, sexo: 'FEMININO', corRaca: 'PARDA', formaIngresso: 'ENEM', situacao: 'CURSANDO', codigoValidacaoCarteirinha: 'FIURJ-2026-000001' },
-    { ra: '2024002', nome: 'Pedro Henrique Souza', cpf: '66677788899', email: 'pedro.souza@aluno.fiurj.edu.br', cursoId: cursoDireito.id, matrizId: matrizDireito.id, sexo: 'MASCULINO', corRaca: 'BRANCA', formaIngresso: 'VESTIBULAR', situacao: 'CURSANDO' },
-    { ra: '2024003', nome: 'Beatriz Lima Rodrigues', cpf: '77788899900', email: 'beatriz.rodrigues@aluno.fiurj.edu.br', cursoId: cursoGestaoPublica.id, matrizId: matrizGestaoPublica.id, sexo: 'FEMININO', corRaca: 'PRETA', formaIngresso: 'ENEM', situacao: 'CURSANDO' },
-    { ra: '2024004', nome: 'Lucas Gabriel Martins', cpf: '88899900011', email: 'lucas.martins@aluno.fiurj.edu.br', cursoId: cursoGestaoPublica.id, matrizId: matrizGestaoPublica.id, sexo: 'MASCULINO', corRaca: 'PARDA', formaIngresso: 'TRANSFERENCIA_EXTERNA', situacao: 'CURSANDO' },
-    { ra: '2024005', nome: 'Camila Santos Oliveira', cpf: '99900011122', email: 'camila.oliveira@aluno.fiurj.edu.br', cursoId: cursoAdministracao.id, matrizId: matrizAdministracao.id, sexo: 'FEMININO', corRaca: 'BRANCA', formaIngresso: 'ENEM', situacao: 'CURSANDO' },
-    { ra: '2024006', nome: 'Rafael Costa Silva', cpf: '00011122233', email: 'rafael.silva@aluno.fiurj.edu.br', cursoId: cursoAdministracao.id, matrizId: matrizAdministracao.id, sexo: 'MASCULINO', corRaca: 'AMARELA', formaIngresso: 'VESTIBULAR', situacao: 'TRANCADO' },
-    { ra: '2024007', nome: 'Amanda Pereira Gomes', cpf: '11223344556', email: 'amanda.gomes@aluno.fiurj.edu.br', cursoId: cursoDireito.id, matrizId: matrizDireito.id, sexo: 'FEMININO', corRaca: 'INDIGENA', formaIngresso: 'ENEM', situacao: 'EVADIDO' },
-    { ra: '2024008', nome: 'Gabriel Rocha Barbosa', cpf: '22334455667', email: 'gabriel.barbosa@aluno.fiurj.edu.br', cursoId: cursoAdministracao.id, matrizId: matrizAdministracao.id, sexo: 'MASCULINO', corRaca: 'PARDA', formaIngresso: 'ENEM', situacao: 'CURSANDO' },
+    { ra: '2024001', nome: 'Mariana Alves Ferreira', cpf: '55566677788', email: 'mariana.ferreira@aluno.fiurj.edu.br', cursoId: cursoFiurjDireito.id, matrizId: matrizFiurjDireito.id, sexo: 'FEMININO', corRaca: 'PARDA', formaIngresso: 'ENEM', situacao: 'CURSANDO', codigoValidacaoCarteirinha: 'FIURJ-2026-000001' },
+    { ra: '2024002', nome: 'Pedro Henrique Souza', cpf: '66677788899', email: 'pedro.souza@aluno.fiurj.edu.br', cursoId: cursoFiurjDireito.id, matrizId: matrizFiurjDireito.id, sexo: 'MASCULINO', corRaca: 'BRANCA', formaIngresso: 'VESTIBULAR', situacao: 'CURSANDO' },
+    { ra: '2024003', nome: 'Beatriz Lima Rodrigues', cpf: '77788899900', email: 'beatriz.rodrigues@aluno.fiurj.edu.br', cursoId: cursoFiurjCriminais.id, matrizId: matrizFiurjCriminais.id, sexo: 'FEMININO', corRaca: 'PRETA', formaIngresso: 'ENEM', situacao: 'CURSANDO' },
+    { ra: '2024004', nome: 'Lucas Gabriel Martins', cpf: '88899900011', email: 'lucas.martins@aluno.fiurj.edu.br', cursoId: cursoUalPoliciais.id, matrizId: matrizUalPoliciais.id, sexo: 'MASCULINO', corRaca: 'PARDA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
+    { ra: '2024005', nome: 'Camila Santos Oliveira', cpf: '99900011122', email: 'camila.oliveira@aluno.fiurj.edu.br', cursoId: cursoUalPoliticas.id, matrizId: matrizUalPoliticas.id, sexo: 'FEMININO', corRaca: 'BRANCA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
+    { ra: '2024006', nome: 'Rafael Costa Silva', cpf: '00011122233', email: 'rafael.silva@aluno.fiurj.edu.br', cursoId: cursoUptAdmTrib.id, matrizId: matrizUptAdmTrib.id, sexo: 'MASCULINO', corRaca: 'AMARELA', formaIngresso: 'CONVENIO', situacao: 'TRANCADO' },
+    { ra: '2024007', nome: 'Amanda Pereira Gomes', cpf: '11223344556', email: 'amanda.gomes@aluno.fiurj.edu.br', cursoId: cursoUptPoliticas.id, matrizId: matrizUptPoliticas.id, sexo: 'FEMININO', corRaca: 'INDIGENA', formaIngresso: 'CONVENIO', situacao: 'EVADIDO' },
+    { ra: '2024008', nome: 'Gabriel Rocha Barbosa', cpf: '22334455667', email: 'gabriel.barbosa@aluno.fiurj.edu.br', cursoId: cursoUptTransnacional.id, matrizId: matrizUptTransnacional.id, sexo: 'MASCULINO', corRaca: 'PARDA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
+    { ra: '2024009', nome: 'Rodrigo Nunes Carvalho', cpf: '33445566779', email: 'rodrigo.carvalho@aluno.fiurj.edu.br', cursoId: cursoUsalDoutorado.id, matrizId: matrizUsalDoutorado.id, sexo: 'MASCULINO', corRaca: 'BRANCA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
+    { ra: '2024010', nome: 'Patrícia Menezes Duarte', cpf: '44556677890', email: 'patricia.duarte@aluno.fiurj.edu.br', cursoId: cursoUsalPosDoc.id, matrizId: matrizUsalPosDoc.id, sexo: 'FEMININO', corRaca: 'PARDA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
   ];
   const alunos: Record<string, { id: string }> = {};
   for (const a of alunosData) {
     const aluno = await prisma.aluno.upsert({
       where: { ra: a.ra },
-      update: {},
+      update: {
+        cursoId: a.cursoId, matrizCurricularId: a.matrizId, situacaoVinculo: a.situacao,
+      },
       create: {
         ra: a.ra, nome: a.nome, cpf: a.cpf, email: a.email,
         cursoId: a.cursoId, matrizCurricularId: a.matrizId,
@@ -305,9 +488,9 @@ async function main() {
     });
     alunos[a.ra] = aluno;
   }
-  console.log(`✅ ${alunosData.length} alunos de teste`);
+  console.log(`✅ ${alunosData.length} alunos de teste (realocados pros 9 cursos reais)`);
 
-  // Usuário de login pro perfil ALUNO (Mariana Alves Ferreira, RA 2024001)
+  // Usuário de login pro perfil ALUNO (Mariana Alves Ferreira, RA 2024001 — agora em Direito/FIURJ)
   const senhaAlunoHash = await bcrypt.hash('aluno123', 12);
   await prisma.usuario.upsert({
     where: { email: 'aluno@fiurj.edu.br' },
@@ -319,81 +502,132 @@ async function main() {
   });
   console.log('✅ Usuário aluno: aluno@fiurj.edu.br  (senha: aluno123)');
 
-  // ── Bloco grande — protegido por checagem de idempotência única ────────
-  const jaTemMassaTeste = await prisma.oferta.findFirst({ where: { disciplina: { codigo: 'DIR101' } } });
+  // ── Ofertas (turmas) + matrículas nos 9 cursos reais, período 2026/S2 ──
+  // Protegido por checagem de idempotência própria (existência de uma oferta
+  // da primeira disciplina de Direito/FIURJ), independente do bloco legado
+  // de avisos/financeiro/etc. logo abaixo.
+  const jaTemOfertasReais = periodo2026S2
+    ? await prisma.oferta.findFirst({ where: { disciplina: { codigo: discFiurjDireito[0].codigo } } })
+    : true;
 
-  if (!jaTemMassaTeste && periodo2026S2) {
-    // Ofertas (turmas) no período 2026/S2
-    const ofertasData = [
-      { codigo: 'DIR101', profEmail: 'carlos.ramos@fiurj.edu.br', turno: 'NOITE' as const, vagas: 40, sala: '101' },
-      { codigo: 'DIR102', profEmail: 'carlos.ramos@fiurj.edu.br', turno: 'NOITE' as const, vagas: 40, sala: '102' },
-      { codigo: 'GP101', profEmail: 'fernanda.lima@fiurj.edu.br', turno: 'INTEGRAL' as const, vagas: 50, sala: 'EAD' },
-      { codigo: 'GP102', profEmail: 'fernanda.lima@fiurj.edu.br', turno: 'INTEGRAL' as const, vagas: 50, sala: 'EAD' },
-      { codigo: 'ADM101', profEmail: 'ricardo.santos@fiurj.edu.br', turno: 'MANHA' as const, vagas: 35, sala: '201' },
-      { codigo: 'ADM102', profEmail: 'juliana.pereira@fiurj.edu.br', turno: 'TARDE' as const, vagas: 35, sala: '202' },
+  if (!jaTemOfertasReais && periodo2026S2) {
+    type CursoTurma = { disciplinas: { id: string; codigo: string; nome: string }[]; profEmail: string; profEmail2?: string; turno: Turno; sala: string; horario: string };
+    const turmasPorCurso: CursoTurma[] = [
+      { disciplinas: discFiurjDireito, profEmail: 'carlos.ramos@fiurj.edu.br', turno: 'NOITE', sala: '101', horario: '19h-22h30' },
+      { disciplinas: discFiurjCriminais, profEmail: 'fernanda.lima@fiurj.edu.br', turno: 'MANHA', sala: '201', horario: 'Sábados 09h-13h' },
+      { disciplinas: discUalPoliciais, profEmail: 'antonio.guedes@ual.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Lisboa 18h-19h' },
+      { disciplinas: discUalPoliticas, profEmail: 'antonio.guedes@ual.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Lisboa 18h-19h' },
+      { disciplinas: discUptAdmTrib, profEmail: 'ines.matos@upt.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Porto 18h-19h' },
+      { disciplinas: discUptPoliticas, profEmail: 'ines.matos@upt.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Porto 18h-19h' },
+      { disciplinas: discUptTransnacional, profEmail: 'rui.duarte@upt.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Porto 18h-19h' },
+      { disciplinas: discUsalDoutorado, profEmail: 'juliana.pereira@fiurj.edu.br', profEmail2: 'javier.fernandez@usal.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 12h30-16h30' },
+      { disciplinas: discUsalPosDoc, profEmail: 'lourenco.vidal@usal.fiurj.edu.br', profEmail2: 'esperanza.quintela@usal.fiurj.edu.br', turno: 'MANHA', sala: 'Presencial — Salamanca', horario: 'Espanha 10h-14h30' },
     ];
-    const ofertas: Record<string, { id: string }> = {};
-    for (const o of ofertasData) {
-      const oferta = await prisma.oferta.create({
-        data: {
-          disciplinaId: disciplinas[o.codigo].id,
-          periodoLetivoId: periodo2026S2.id,
-          professorId: professores[o.profEmail].id,
-          vagas: o.vagas, turno: o.turno, sala: o.sala, horario: '19h-22h30',
-        },
-      });
-      ofertas[o.codigo] = oferta;
-    }
-    console.log(`✅ ${ofertasData.length} ofertas (turmas) de teste`);
 
-    // Matrículas
-    const matriculasData = [
-      { ra: '2024001', codigo: 'DIR101' },
-      { ra: '2024001', codigo: 'DIR102' },
-      { ra: '2024002', codigo: 'DIR101' },
-      { ra: '2024003', codigo: 'GP101' },
-      { ra: '2024004', codigo: 'GP101' },
-      { ra: '2024005', codigo: 'ADM101' },
-      { ra: '2024005', codigo: 'ADM102' },
-      { ra: '2024008', codigo: 'ADM101' },
+    const ofertasPorCurso: { id: string; disciplinaCodigo: string }[][] = [];
+    for (const t of turmasPorCurso) {
+      const ofertasDoCurso: { id: string; disciplinaCodigo: string }[] = [];
+      const disciplinasParaOferta = t.disciplinas.slice(0, 2); // 2 primeiras disciplinas de cada curso viram turma
+      for (let i = 0; i < disciplinasParaOferta.length; i++) {
+        const profEmail = i === 0 ? t.profEmail : (t.profEmail2 ?? t.profEmail);
+        const oferta = await prisma.oferta.create({
+          data: {
+            disciplinaId: disciplinasParaOferta[i].id,
+            periodoLetivoId: periodo2026S2.id,
+            professorId: professores[profEmail].id,
+            vagas: 30, turno: t.turno, sala: t.sala, horario: t.horario,
+          },
+        });
+        ofertasDoCurso.push({ id: oferta.id, disciplinaCodigo: disciplinasParaOferta[i].codigo });
+      }
+      ofertasPorCurso.push(ofertasDoCurso);
+    }
+    console.log(`✅ ${ofertasPorCurso.flat().length} ofertas (turmas) de teste, 2 por curso real, em 2026/2`);
+
+    // Matrículas — 1 aluno de cada curso (o 1º cadastrado nele) nas 2 ofertas do curso
+    const matriculaPorCursoIdx: { ra: string; cursoIdx: number; status: 'MATRICULADO' | 'TRANCADO' | 'CANCELADO' }[] = [
+      { ra: '2024001', cursoIdx: 0, status: 'MATRICULADO' },
+      { ra: '2024002', cursoIdx: 0, status: 'MATRICULADO' },
+      { ra: '2024003', cursoIdx: 1, status: 'MATRICULADO' },
+      { ra: '2024004', cursoIdx: 2, status: 'MATRICULADO' },
+      { ra: '2024005', cursoIdx: 3, status: 'MATRICULADO' },
+      { ra: '2024006', cursoIdx: 4, status: 'TRANCADO' },
+      { ra: '2024007', cursoIdx: 5, status: 'CANCELADO' },
+      { ra: '2024008', cursoIdx: 6, status: 'MATRICULADO' },
+      { ra: '2024009', cursoIdx: 7, status: 'MATRICULADO' },
+      { ra: '2024010', cursoIdx: 8, status: 'MATRICULADO' },
     ];
-    const matriculas: { id: string; ra: string; codigo: string }[] = [];
-    for (const m of matriculasData) {
-      const matricula = await prisma.matriculaDisciplina.create({
-        data: { alunoId: alunos[m.ra].id, ofertaId: ofertas[m.codigo].id, status: 'MATRICULADO' },
-      });
-      matriculas.push({ id: matricula.id, ra: m.ra, codigo: m.codigo });
+    let totalMatriculas = 0;
+    const matriculaMarianaPorDisciplina: Record<string, string> = {};
+    for (const m of matriculaPorCursoIdx) {
+      for (const oferta of ofertasPorCurso[m.cursoIdx]) {
+        const matricula = await prisma.matriculaDisciplina.create({
+          data: { alunoId: alunos[m.ra].id, ofertaId: oferta.id, status: m.status },
+        });
+        totalMatriculas += 1;
+        if (m.ra === '2024001') matriculaMarianaPorDisciplina[oferta.disciplinaCodigo] = matricula.id;
+      }
     }
-    console.log(`✅ ${matriculasData.length} matrículas de teste`);
+    console.log(`✅ ${totalMatriculas} matrículas de teste nos cursos reais (2026/2)`);
 
-    // Notas (pauta), frequência e avaliação avulsa pra Mariana em DIR101 —
-    // dá pra ver Lançamento de Notas, Frequência, Pauta e Mapão populados.
-    const matriculaMarianaDir101 = matriculas.find(m => m.ra === '2024001' && m.codigo === 'DIR101');
-    if (matriculaMarianaDir101) {
+    // Notas (pauta), frequência e avaliação avulsa pra Mariana na 1ª disciplina
+    // de Direito/FIURJ — dá pra ver Lançamento de Notas, Frequência, Pauta e
+    // Mapão populados.
+    const matriculaMarianaDir1 = matriculaMarianaPorDisciplina[discFiurjDireito[0].codigo];
+    if (matriculaMarianaDir1) {
       await prisma.notaPauta.create({
         data: {
-          matriculaDisciplinaId: matriculaMarianaDir101.id,
+          matriculaDisciplinaId: matriculaMarianaDir1,
           av1: 8.0, av2: 7.5, av3: 9.0, av4: 8.5, faltas: 2,
         },
       });
       await prisma.registroFrequencia.create({
         data: {
-          matriculaDisciplinaId: matriculaMarianaDir101.id,
+          matriculaDisciplinaId: matriculaMarianaDir1,
           data: new Date('2026-07-06'), quantidadeAulas: 4, faltas: 0,
         },
       });
       await prisma.registroFrequencia.create({
         data: {
-          matriculaDisciplinaId: matriculaMarianaDir101.id,
+          matriculaDisciplinaId: matriculaMarianaDir1,
           data: new Date('2026-07-13'), quantidadeAulas: 4, faltas: 2, observacao: 'Atestado médico',
         },
       });
       await prisma.avaliacao.create({
-        data: { matriculaDisciplinaId: matriculaMarianaDir101.id, tipo: 'PROVA', nota: 8.0, peso: 1 },
+        data: { matriculaDisciplinaId: matriculaMarianaDir1, tipo: 'PROVA', nota: 8.0, peso: 1 },
       });
-      console.log('✅ Notas/frequência/avaliação de teste (Mariana em Introdução ao Direito)');
+      console.log(`✅ Notas/frequência/avaliação de teste (Mariana em ${discFiurjDireito[0].nome})`);
     }
 
+    // Disciplina já concluída por Mariana em 2026/1 (período ENCERRADO) — pra
+    // Notas e Histórico / CR / Integralização terem o que mostrar além do
+    // período em andamento.
+    if (periodo2026S1 && discFiurjDireito[2]) {
+      const ofertaConcluida = await prisma.oferta.create({
+        data: {
+          disciplinaId: discFiurjDireito[2].id, periodoLetivoId: periodo2026S1.id,
+          professorId: professores['carlos.ramos@fiurj.edu.br'].id,
+          vagas: 40, turno: 'NOITE', sala: '101', horario: '19h-22h30',
+        },
+      });
+      const matriculaConcluida = await prisma.matriculaDisciplina.create({
+        data: { alunoId: alunos['2024001'].id, ofertaId: ofertaConcluida.id, status: 'APROVADO' },
+      });
+      await prisma.resultadoDisciplina.create({
+        data: { matriculaDisciplinaId: matriculaConcluida.id, mediaFinal: 8.2, faltas: 3, frequenciaPercentual: 92.5, situacao: 'APROVADO' },
+      });
+      console.log(`✅ 1 disciplina concluída de teste (Mariana, ${discFiurjDireito[2].nome}, 2026/1 — APROVADO)`);
+    }
+  } else {
+    console.log('↷ Ofertas/matrículas de teste dos cursos reais já existem, seed não duplicou.');
+  }
+
+  // ── Bloco legado — avisos, financeiro, secretaria, ingresso etc.
+  // Protegido por checagem de idempotência própria (não depende mais dos
+  // cursos/disciplinas de teste antigos, que foram removidos). ───────────
+  const jaTemMassaTesteLegada = await prisma.aviso.findFirst({ where: { titulo: 'Bem-vindos ao 2º semestre de 2026' } });
+
+  if (!jaTemMassaTesteLegada && periodo2026S2) {
     // ── Avisos (mural do Painel inicial) ──────────────────────────
     await prisma.aviso.createMany({
       data: [
@@ -425,7 +659,7 @@ async function main() {
     // ── Categorias de receita ────────────────────────────────────────
     await prisma.categoriaReceita.createMany({
       data: [
-        { nome: 'Mensalidade', descricao: 'Mensalidade de graduação' },
+        { nome: 'Mensalidade', descricao: 'Mensalidade de graduação/pós-graduação' },
         { nome: 'Taxa de Matrícula', descricao: 'Taxa cobrada no ato da matrícula' },
         { nome: 'Segunda Via de Documentos', descricao: 'Emissão de segunda via de documentos' },
       ],
@@ -470,7 +704,7 @@ async function main() {
         { nome: 'Secretaria Geral', setor: 'Secretaria', numero: '2000' },
         { nome: 'Financeiro', setor: 'Financeiro', numero: '2001' },
         { nome: 'Coordenação de Direito', setor: 'Coordenação', numero: '2002' },
-        { nome: 'Coordenação de Gestão Pública', setor: 'Coordenação', numero: '2003' },
+        { nome: 'Coordenação de Pós-Graduação e Convênios Internacionais', setor: 'Coordenação', numero: '2003' },
         { nome: 'TI / Suporte', setor: 'TI', numero: '2004' },
       ],
     });
@@ -484,7 +718,7 @@ async function main() {
 
     // ── Bolsista ──────────────────────────────────────────────────────
     await prisma.bolsista.create({
-      data: { alunoId: alunos['2024003'].id, tipoBolsa: 'PROUNI Integral', percentual: 100, dataInicio: new Date('2024-02-05'), ativo: true },
+      data: { alunoId: alunos['2024003'].id, tipoBolsa: 'Convênio Institucional', percentual: 10, dataInicio: new Date('2024-02-05'), ativo: true },
     });
     console.log('✅ 1 bolsista de teste');
 
@@ -519,7 +753,7 @@ async function main() {
     // ── Processo seletivo + candidatos + inscrições (Ingresso) ────────
     const processoSeletivo = await prisma.processoSeletivo.create({
       data: {
-        nome: 'Vestibular 2026/2', tipo: 'VESTIBULAR', cursoId: cursoDireito.id,
+        nome: 'Vestibular 2026/2 — Direito', tipo: 'VESTIBULAR', cursoId: cursoFiurjDireito.id,
         periodoLetivoId: periodo2026S2.id, vagas: 60,
         dataAbertura: new Date('2026-05-01'), dataEncerramento: new Date('2026-06-15'), status: 'ENCERRADO',
       },
@@ -551,11 +785,60 @@ async function main() {
     });
     console.log('✅ 2 requerimentos de teste');
   } else {
-    console.log('↷ Massa de teste (ofertas/matrículas/financeiro/ingresso/etc.) já existe, seed não duplicou.');
+    console.log('↷ Massa de teste legada (avisos/financeiro/ingresso/secretaria/etc.) já existe, seed não duplicou.');
   }
 
   console.log('\n⚠️  ATENÇÃO: Altere as senhas em produção!');
   console.log('🏁 Seed concluído.');
+}
+
+/**
+ * Remove os 3 cursos de teste genéricos antigos (Direito/Gestão Pública/
+ * Administração — códigos DIR2024/GESPUB2024/ADM2024) e toda a estrutura
+ * que dependia deles (matrizes, disciplinas, ofertas, matrículas e o que
+ * penduricava nelas). Antes de apagar, realoca qualquer Aluno/ProcessoSeletivo
+ * que ainda aponte pra eles pro curso real de Direito da FIURJ (os alunos já
+ * são realocados de forma definitiva no upsert de `alunosData` logo depois —
+ * isso aqui é só a rede de segurança que libera a FK pra podermos apagar os
+ * cursos antigos com segurança, mesmo se a ordem do script mudar no futuro).
+ * Idempotente: se os códigos antigos não existirem (2ª execução em diante),
+ * é um no-op.
+ */
+async function limparCursosDeTesteAntigos(cursoFallbackId: string, matrizFallbackId: string) {
+  const codigosAntigos = ['DIR2024', 'GESPUB2024', 'ADM2024'];
+  const cursosAntigos = await prisma.curso.findMany({ where: { codigoEmec: { in: codigosAntigos } } });
+  if (cursosAntigos.length === 0) return;
+
+  const cursoIds = cursosAntigos.map(c => c.id);
+
+  await prisma.aluno.updateMany({
+    where: { cursoId: { in: cursoIds } },
+    data: { cursoId: cursoFallbackId, matrizCurricularId: matrizFallbackId },
+  });
+  await prisma.processoSeletivo.updateMany({ where: { cursoId: { in: cursoIds } }, data: { cursoId: cursoFallbackId } });
+
+  const matrizes = await prisma.matrizCurricular.findMany({ where: { cursoId: { in: cursoIds } } });
+  const matrizIds = matrizes.map(m => m.id);
+  const disciplinasAntigas = await prisma.disciplina.findMany({ where: { matrizCurricularId: { in: matrizIds } } });
+  const disciplinaIds = disciplinasAntigas.map(d => d.id);
+  const ofertasAntigas = await prisma.oferta.findMany({ where: { disciplinaId: { in: disciplinaIds } } });
+  const ofertaIds = ofertasAntigas.map(o => o.id);
+  const matriculasAntigas = await prisma.matriculaDisciplina.findMany({ where: { ofertaId: { in: ofertaIds } } });
+  const matriculaIds = matriculasAntigas.map(m => m.id);
+
+  await prisma.avaliacao.deleteMany({ where: { matriculaDisciplinaId: { in: matriculaIds } } });
+  await prisma.registroFrequencia.deleteMany({ where: { matriculaDisciplinaId: { in: matriculaIds } } });
+  await prisma.notaPauta.deleteMany({ where: { matriculaDisciplinaId: { in: matriculaIds } } });
+  await prisma.resultadoDisciplina.deleteMany({ where: { matriculaDisciplinaId: { in: matriculaIds } } });
+  await prisma.matriculaDisciplina.deleteMany({ where: { id: { in: matriculaIds } } });
+  await prisma.oferta.deleteMany({ where: { id: { in: ofertaIds } } });
+  await prisma.disciplinaPrerequisito.deleteMany({ where: { OR: [{ disciplinaId: { in: disciplinaIds } }, { prerequisitoId: { in: disciplinaIds } }] } });
+  await prisma.materiaEquiparada.deleteMany({ where: { disciplinaId: { in: disciplinaIds } } });
+  await prisma.disciplina.deleteMany({ where: { id: { in: disciplinaIds } } });
+  await prisma.matrizCurricular.deleteMany({ where: { id: { in: matrizIds } } });
+  await prisma.curso.deleteMany({ where: { id: { in: cursoIds } } });
+
+  console.log(`🧹 Removidos ${cursosAntigos.length} cursos de teste antigos (Direito/Gestão Pública/Administração genéricos) e toda a estrutura dependente (matrizes, disciplinas, ofertas, matrículas).`);
 }
 
 main()

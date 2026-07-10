@@ -13,7 +13,7 @@ type CarteirinhaData = {
   geradoEm: string;
 };
 
-const GRAU: Record<string, string> = { BACHARELADO: 'Bacharelado', LICENCIATURA: 'Licenciatura', TECNOLOGO: 'Tecnólogo' };
+const GRAU: Record<string, string> = { BACHARELADO: 'Bacharelado', LICENCIATURA: 'Licenciatura', TECNOLOGO: 'Tecnólogo', ESPECIALIZACAO: 'Especialização', MESTRADO: 'Mestrado', DOUTORADO: 'Doutorado', POS_DOUTORADO: 'Pós-Doutorado' };
 
 export default function CarteirinhaPage() {
   const { alunoId } = useParams<{ alunoId: string }>();
