@@ -1,25 +1,21 @@
-import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { Tabs, useRouter } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
 import { theme } from '../../lib/theme';
 
 /**
- * Ícones e cores da barra de abas espelham a identidade visual do sidebar
- * esquerdo do sistema web (ver frontend/app/dashboard/layout.tsx e
- * frontend/app/globals.css): fundo azul (--blue-dark, igual a
- * theme.corPrimaria), item ativo em vermelho (--red, igual a
- * theme.corSecundaria) com ícone/texto branco, item inativo em branco com
- * opacidade reduzida — mesmo esquema do sidebar (ativo = fundo vermelho +
- * texto branco, inativo = texto branco 70% opaco).
+ * Barra de abas redesenhada pra seguir a referência visual que o usuário
+ * mandou (prints de outro app de portal do aluno): 5 abas embaixo (Início,
+ * Carreiras, Financeiro, Suporte, Perfil), fundo branco, ícone/label azul
+ * quando ativo -- igual ao print de referência.
  *
- * Ícones via Feather (@expo/vector-icons — já vem junto do pacote "expo",
- * não é dependência nova). O sidebar web usa SVGs customizados desenhados
- * no mesmo estilo do Feather/lucide (traço, cantos arredondados), então
- * Feather é o equivalente mais próximo disponível no React Native sem
- * adicionar pacote novo. Mapeamento (mesmo ícone do item equivalente no
- * sidebar web, quando existe): Início→home, Boletim→edit-3 (o sidebar usa
- * lápis pra "Notas"), Documentos→file-text, Avisos→bell. "Histórico" não
- * tem item próprio no sidebar web (só aparece dentro do perfil do aluno),
- * usamos book-open por ser o mais coerente com o conteúdo.
+ * As 4 telas antigas (Boletim, Histórico, Documentos, Avisos) continuam
+ * existindo e com dado real, só que agora são alcançadas por cartões/links
+ * dentro das novas telas (ver "Meu curso" em index.tsx) em vez de aba
+ * própria -- por isso usam `href: null` (fica de fora da barra debaixo, mas
+ * continua navegável via router.push) e ganham um cabeçalho próprio com
+ * seta de voltar, já que a barra de abas não é uma pilha (Tabs), então sem
+ * isso não teria como voltar visualmente pro Início.
  */
 type IconName = keyof typeof Feather.glyphMap;
 
@@ -27,56 +23,63 @@ function TabIcon({ name, color }: { name: IconName; color: string }) {
   return <Feather name={name} size={22} color={color} />;
 }
 
+function BotaoVoltar() {
+  const router = useRouter();
+  return (
+    <TouchableOpacity onPress={() => router.back()} style={{ paddingHorizontal: 12, paddingVertical: 4 }}>
+      <Feather name="chevron-left" size={24} color={theme.branco} />
+    </TouchableOpacity>
+  );
+}
+
+function opcoesTelaAntiga(title: string) {
+  return {
+    href: null,
+    headerShown: true,
+    title,
+    headerStyle: { backgroundColor: theme.corPrimaria },
+    headerTintColor: theme.branco,
+    headerTitleStyle: { fontWeight: '600' as const },
+    headerLeft: () => <BotaoVoltar />,
+  } as const;
+}
+
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: theme.corPrimaria },
-        headerTintColor: theme.branco,
-        headerTitleStyle: { fontWeight: '600' },
-        tabBarStyle: { backgroundColor: theme.corPrimaria, borderTopWidth: 0 },
-        tabBarActiveTintColor: theme.branco,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.7)',
-        tabBarActiveBackgroundColor: theme.corSecundaria,
-        tabBarItemStyle: { marginHorizontal: 4, marginVertical: 6, borderRadius: 10 },
+        headerShown: false,
+        tabBarStyle: { backgroundColor: theme.branco, borderTopColor: theme.cinza200 },
+        tabBarActiveTintColor: theme.corPrimaria,
+        tabBarInactiveTintColor: theme.cinza400,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{
-          title: 'Início',
-          tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
-        }}
+        options={{ title: 'Início', tabBarIcon: ({ color }) => <TabIcon name="home" color={color} /> }}
       />
       <Tabs.Screen
-        name="boletim"
-        options={{
-          title: 'Boletim',
-          tabBarIcon: ({ color }) => <TabIcon name="edit-3" color={color} />,
-        }}
+        name="carreiras"
+        options={{ title: 'Carreiras', tabBarIcon: ({ color }) => <TabIcon name="briefcase" color={color} /> }}
       />
       <Tabs.Screen
-        name="historico"
-        options={{
-          title: 'Histórico',
-          tabBarIcon: ({ color }) => <TabIcon name="book-open" color={color} />,
-        }}
+        name="financeiro"
+        options={{ title: 'Financeiro', tabBarIcon: ({ color }) => <TabIcon name="dollar-sign" color={color} /> }}
       />
       <Tabs.Screen
-        name="documentos"
-        options={{
-          title: 'Documentos',
-          tabBarIcon: ({ color }) => <TabIcon name="file-text" color={color} />,
-        }}
+        name="suporte"
+        options={{ title: 'Suporte', tabBarIcon: ({ color }) => <TabIcon name="help-circle" color={color} /> }}
       />
       <Tabs.Screen
-        name="avisos"
-        options={{
-          title: 'Avisos',
-          tabBarIcon: ({ color }) => <TabIcon name="bell" color={color} />,
-        }}
+        name="perfil"
+        options={{ title: 'Perfil', tabBarIcon: ({ color }) => <TabIcon name="user" color={color} /> }}
       />
+
+      <Tabs.Screen name="boletim" options={opcoesTelaAntiga('Boletim')} />
+      <Tabs.Screen name="historico" options={opcoesTelaAntiga('Histórico')} />
+      <Tabs.Screen name="documentos" options={opcoesTelaAntiga('Documentos')} />
+      <Tabs.Screen name="avisos" options={opcoesTelaAntiga('Avisos')} />
     </Tabs>
   );
 }
