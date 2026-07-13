@@ -43,8 +43,11 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.card}>
-        <Image source={require('../assets/icon.png')} style={styles.logo} />
-        <Text style={styles.titulo}>FIURJ</Text>
+        <Image
+          source={require('../assets/logo-colorida.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.subtitulo}>Portal do Aluno</Text>
 
         <TextInput
@@ -97,8 +100,10 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
   },
-  logo: { width: 64, height: 64, borderRadius: 12, marginBottom: 12 },
-  titulo: { fontSize: 22, fontWeight: '700', color: theme.cinza900 },
+  // Logo colorida da FIURJ (já inclui o wordmark "FIURJ" na própria imagem —
+  // por isso não tem mais um <Text> de título separado aqui embaixo).
+  // Proporção original 481x156 (~3:1) preservada via resizeMode="contain".
+  logo: { width: 220, height: 72, marginBottom: 12 },
   subtitulo: { fontSize: 14, color: theme.cinza500, marginBottom: 20 },
   input: {
     width: '100%',
