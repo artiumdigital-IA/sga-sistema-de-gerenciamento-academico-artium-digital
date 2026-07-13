@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { maskCpf } from '@/lib/mask';
 
 type Sexo = 'MASCULINO' | 'FEMININO' | 'NAO_DECLARADO';
 type CorRaca = 'BRANCA' | 'PRETA' | 'PARDA' | 'AMARELA' | 'INDIGENA' | 'NAO_DECLARADO';
@@ -321,7 +322,7 @@ export default function AlunosPage() {
                   <tr key={a.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                     <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 500 }}>{a.ra}</td>
                     <td style={{ padding: '10px 14px' }}>{a.nome}</td>
-                    <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }}>{a.cpf}</td>
+                    <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }} title="CPF completo visível na tela de edição">{maskCpf(a.cpf)}</td>
                     <td style={{ padding: '10px 14px', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cursoNome}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12 }}>{INGRESSO_LABEL[a.formaIngresso]}</td>
                     <td style={{ padding: '10px 14px' }}>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
+import { maskCpf } from '@/lib/mask';
 
 // ── tipos ──────────────────────────────────────────────────────────────
 type Titulacao = 'GRADUADO' | 'ESPECIALISTA' | 'MESTRE' | 'DOUTOR' | 'POS_DOUTOR';
@@ -252,7 +253,7 @@ export default function ProfessoresPage() {
                 return (
                   <tr key={p.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 500 }}>{p.nome}</td>
-                    <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }}>{p.cpf}</td>
+                    <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }} title="CPF completo visível na tela de edição">{maskCpf(p.cpf)}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12 }}>{p.email}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: ts.bg, color: ts.color }}>
