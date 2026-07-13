@@ -75,9 +75,16 @@ export function middleware(request: NextRequest) {
 
   // Matriz de permissões de tela — só a conta master, mesmo estando logado
   // e com perfil ADMIN. (Checagem de UX; o guard real é o backend.)
+  //
+  // Bug corrigido: esse redirect era silencioso — qualquer conta != master que
+  // clicasse em "Permissões" no menu simplesmente "voltava" pro Painel sem
+  // explicação nenhuma, parecendo um ícone quebrado/sem resposta ("ficou
+  // parado no Painel"). Agora leva um parâmetro que o Painel usa pra mostrar
+  // um aviso explicando o motivo.
   if (pathname.startsWith('/dashboard/admin/permissoes') && getTokenEmail(token) !== EMAIL_ADMIN_MASTER) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
+    url.searchParams.set('acessoNegado', 'permissoes');
     return NextResponse.redirect(url);
   }
 

@@ -767,6 +767,25 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({ cursos: 0, alunos: 0, professores: 0, loading: true });
   const [banner, setBanner] = useState<{ id: string; titulo: string; texto: string } | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  // Aviso de acesso negado — o middleware manda pra cá com ?acessoNegado=... quando
+  // bloqueia uma rota (hoje só /dashboard/admin/permissoes, restrita à conta master).
+  // Sem isso, o redirect é silencioso e parece um ícone de menu quebrado.
+  const [acessoNegadoMsg, setAcessoNegadoMsg] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const motivo = new URLSearchParams(window.location.search).get('acessoNegado');
+    if (motivo === 'permissoes') {
+      return 'A tela de Matriz de Permissões é restrita à conta administradora master (admin@fiurj.edu.br).';
+    }
+    return null;
+  });
+  useEffect(() => {
+    if (acessoNegadoMsg && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('acessoNegado');
+      window.history.replaceState({}, '', url.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Perfil ALUNO vê a Galeria de Publicidade + Progresso no Curso no lugar dos
   // 3 boxes de estatísticas (Cursos/Alunos/Professores) — ver `souAluno` abaixo.
   const [perfil, setPerfil] = useState<string | null>(null);
@@ -840,6 +859,20 @@ export default function DashboardPage() {
 
   return (
     <div>
+      {/* ── Acesso negado — o menu mandou pra uma rota bloqueada pelo middleware ── */}
+      {acessoNegadoMsg && (
+        <div style={{
+          background: '#fee2e2', borderBottom: '1px solid #fecaca',
+          padding: '7px 16px', fontSize: 11.5, color: '#991b1b',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <strong>Acesso não permitido:</strong> {acessoNegadoMsg}
+          <button onClick={() => setAcessoNegadoMsg(null)} style={{ marginLeft: 'auto', border: 'none', background: 'none', fontSize: 14, color: '#991b1b', cursor: 'pointer', lineHeight: 1 }}>×</button>
+        </div>
+      )}
       {/* ── Alert banner — dinâmico, vem do módulo Avisos (tag IMPORTANTE) ── */}
       {banner && !bannerDismissed && (
         <div style={{
