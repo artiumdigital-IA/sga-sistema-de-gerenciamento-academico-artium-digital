@@ -71,17 +71,31 @@ export async function apiMe(token: string): Promise<JwtUser | null> {
 
 /* ── Cookie ─────────────────────────────────────────────── */
 
+// Achado de segurança: o cookie de sessão não levava o atributo `Secure`, então
+// o navegador o envia igual em HTTP ou HTTPS. Hoje a plataforma roda em produção
+// só em HTTP puro (http://<IP-da-VPS>, sem domínio/TLS — ver CLAUDE.md, seção
+// "Arquitetura de produção") — então marcar `Secure` incondicionalmente
+// quebraria o login em produção agora (navegador descarta cookie `Secure`
+// recebido fora de HTTPS). Em vez disso, adiciona `Secure` automaticamente
+// quando a própria página já estiver servida em HTTPS — não muda nada no
+// ambiente atual, e passa a proteger o cookie sozinho assim que um domínio +
+// certificado TLS forem configurados no Coolify (isso sim precisa ser feito
+// na infra, não dá pra resolver só no código — ver observação no chat).
+function cookieSecureFlag(): string {
+  return typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+}
+
 export function saveToken(token: string): void {
   document.cookie = [
     `${TOKEN_COOKIE}=${encodeURIComponent(token)}`,
     `path=/`,
     `max-age=${TOKEN_MAX_AGE}`,
     `SameSite=Strict`,
-  ].join('; ');
+  ].join('; ') + cookieSecureFlag();
 }
 
 export function clearToken(): void {
-  document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Strict`;
+  document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Strict${cookieSecureFlag()}`;
 }
 
 export function getToken(): string | null {
