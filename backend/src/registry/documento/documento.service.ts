@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+
+/** Dados mínimos do usuário autenticado (req.user, montado pelo JwtStrategy
+ * a partir do payload do token: { id, email, perfil }) — o suficiente pra
+ * verificarAcessoAluno() abaixo. */
+type UsuarioAutenticado = { id: string; perfil: string };
 
 /** Gera um código de validação de carteirinha no formato NNNNNNNNNNNNN-NN
  * (13 dígitos aleatórios + 2 dígitos de checksum, soma dos 13 primeiros mod 100) —
@@ -17,6 +22,29 @@ function gerarCodigoValidacao(): string {
 @Injectable()
 export class DocumentoService {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Trava de autorização (IDOR): as rotas de /documentos com :alunoId abaixo
+   * são compartilhadas entre a tela "Documentos" da Secretaria (que precisa
+   * consultar QUALQUER aluno) e o app do aluno (mobile/), que chama essas
+   * mesmas rotas com o próprio JWT do aluno direto do celular. A guard
+   * @Tela('documentos') só confere se o PERFIL tem acesso à tela — não que
+   * o :alunoId da URL é o do usuário autenticado. Sem essa checagem aqui,
+   * qualquer aluno logado poderia trocar o :alunoId na URL (visível/editável
+   * em qualquer inspetor de rede) e ver boletim/histórico/carteirinha de
+   * outro aluno. Perfis não-ALUNO (Secretaria/Admin/Financeiro/Professor)
+   * não são afetados — mantêm o acesso a qualquer aluno, como já era.
+   */
+  private async verificarAcessoAluno(alunoId: string, usuarioAutenticado?: UsuarioAutenticado): Promise<void> {
+    if (!usuarioAutenticado || usuarioAutenticado.perfil !== 'ALUNO') return;
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: usuarioAutenticado.id },
+      select: { alunoId: true },
+    });
+    if (!usuario?.alunoId || usuario.alunoId !== alunoId) {
+      throw new ForbiddenException('Você só pode acessar os próprios documentos.');
+    }
+  }
 
   /** Garante que o aluno tenha um código de validação de carteirinha + data de
    * validade persistidos (gera na primeira emissão/impressão e reaproveita depois,
@@ -47,7 +75,8 @@ export class DocumentoService {
     throw new Error('Não foi possível gerar um código de validação único para a carteirinha.');
   }
 
-  async getDeclaracaoMatricula(alunoId: string) {
+  async getDeclaracaoMatricula(alunoId: string, usuarioAutenticado?: UsuarioAutenticado) {
+    await this.verificarAcessoAluno(alunoId, usuarioAutenticado);
     const aluno = await this.prisma.aluno.findUnique({
       where: { id: alunoId },
       include: {
@@ -107,7 +136,8 @@ export class DocumentoService {
    * Se `periodoLetivoId` não for informado, usa o período mais recente em que
    * o aluno tem alguma matrícula.
    */
-  async getBoletim(alunoId: string, periodoLetivoId?: string) {
+  async getBoletim(alunoId: string, periodoLetivoId?: string, usuarioAutenticado?: UsuarioAutenticado) {
+    await this.verificarAcessoAluno(alunoId, usuarioAutenticado);
     const aluno = await this.prisma.aluno.findUnique({
       where: { id: alunoId },
       include: { curso: true },
@@ -176,7 +206,8 @@ export class DocumentoService {
 
   /** "Emissão de Carteirinha" — dados básicos + foto (se houver, via Usuario.fotoUrl)
    * + código de validação/QR (gerado uma única vez e reaproveitado nas próximas emissões). */
-  async getCarteirinha(alunoId: string) {
+  async getCarteirinha(alunoId: string, usuarioAutenticado?: UsuarioAutenticado) {
+    await this.verificarAcessoAluno(alunoId, usuarioAutenticado);
     const aluno = await this.prisma.aluno.findUnique({
       where: { id: alunoId },
       include: {
@@ -243,7 +274,8 @@ export class DocumentoService {
    * `AlunoService.calcularCR`/`calcularIntegralizacao`) — dado sempre gerado na hora, nunca
    * armazenado, pra nunca destoar de uma nota corrigida depois.
    */
-  async getHistoricoOficial(alunoId: string) {
+  async getHistoricoOficial(alunoId: string, usuarioAutenticado?: UsuarioAutenticado) {
+    await this.verificarAcessoAluno(alunoId, usuarioAutenticado);
     const aluno = await this.prisma.aluno.findUnique({
       where: { id: alunoId },
       include: {
