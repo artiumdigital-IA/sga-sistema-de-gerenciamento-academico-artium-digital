@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { ResultadoDisciplinaService } from '../resultado-disciplina/resultado-disciplina.service';
 import { LancarFrequenciaDto } from './dto/lancar-frequencia.dto';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class FrequenciaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly resultadoDisciplina: ResultadoDisciplinaService,
   ) {}
 
   /**
@@ -64,6 +66,9 @@ export class FrequenciaService {
             dadosDepois: registroFrequencia,
           });
         }
+        // Frequência diária lançada pode mudar a situação da matrícula (ex.: derrubar abaixo
+        // de 75%) mesmo sem nenhuma nota nova — recalcula pra manter a listagem em dia.
+        await this.resultadoDisciplina.recalcularSeElegivel(matricula.id, usuarioId);
         resultado.push({ alunoId: registro.alunoId, status: 'ok' });
       } catch (e: any) {
         resultado.push({ alunoId: registro.alunoId, status: 'erro', mensagem: e?.message ?? 'Erro desconhecido.' });
