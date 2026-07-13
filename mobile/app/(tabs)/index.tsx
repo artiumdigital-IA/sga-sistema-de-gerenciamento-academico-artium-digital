@@ -5,10 +5,11 @@ import { useAuth } from '../../lib/auth-context';
 import { theme } from '../../lib/theme';
 import { Cartao, Carregando, MensagemErro, TelaComRefresh } from '../../lib/ui';
 
+// Campo "texto", não "mensagem" -- ver nota em app/(tabs)/avisos.tsx.
 type Aviso = {
   id: string;
   titulo: string;
-  mensagem: string;
+  texto: string;
   tag?: string | null;
   criadoEm: string;
 };
@@ -59,7 +60,7 @@ export default function InicioScreen() {
             <View key={a.id} style={styles.avisoItem}>
               <Text style={styles.avisoTitulo}>{a.titulo}</Text>
               <Text style={styles.avisoMensagem} numberOfLines={2}>
-                {a.mensagem}
+                {a.texto}
               </Text>
             </View>
           ))

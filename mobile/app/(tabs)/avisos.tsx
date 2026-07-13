@@ -4,10 +4,13 @@ import { apiFetch, ApiError } from '../../lib/api';
 import { theme } from '../../lib/theme';
 import { Cartao, MensagemErro, TelaComRefresh } from '../../lib/ui';
 
+// Campos batem com o model Aviso do backend (schema.prisma) -- o corpo do
+// aviso é "texto", não "mensagem" (nome antigo de uma versão anterior do
+// model, que ficou nesse esqueleto por engano e sempre voltaria undefined).
 type Aviso = {
   id: string;
   titulo: string;
-  mensagem: string;
+  texto: string;
   tag?: string | null;
   criadoEm: string;
 };
@@ -53,7 +56,7 @@ export default function AvisosScreen() {
               <Text style={styles.data}>{formatarData(a.criadoEm)}</Text>
             </View>
             {a.tag ? <Text style={styles.tag}>{a.tag}</Text> : null}
-            <Text style={styles.mensagem}>{a.mensagem}</Text>
+            <Text style={styles.mensagem}>{a.texto}</Text>
           </Cartao>
         ))
       ) : (
