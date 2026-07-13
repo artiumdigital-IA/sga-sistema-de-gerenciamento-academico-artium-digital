@@ -2,9 +2,29 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Perfil } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { TELAS_SISTEMA } from './telas-sistema';
+import { TELAS_SISTEMA, TelaSistema } from './telas-sistema';
 
 const TODOS_PERFIS: Perfil[] = ['ADMIN', 'SECRETARIA', 'FINANCEIRO', 'PROFESSOR', 'ALUNO'] as Perfil[];
+
+/**
+ * Default de uma tela quando não existe registro explícito em PermissaoTela
+ * pra aquele (perfil, chave) — ver comentário em `matriz()`.
+ *
+ * Bug corrigido: telas do grupo "Menu Discente" (autoatendimento do próprio
+ * aluno) usavam o mesmo default-liberado de todas as outras telas, então
+ * apareciam "habilitadas" pra TODOS os perfis (Admin/Professor/Financeiro/
+ * Secretaria incluídos) na Matriz, até alguém desmarcar cada uma manualmente —
+ * o que nunca tinha sido feito, já que essas telas foram adicionadas depois.
+ * O resto do código já deixa claro que Menu Discente é só do perfil ALUNO
+ * (ver frontend/components/dashboard/RightPanel.tsx), então o default correto
+ * pra esse grupo é: liberado só pra ALUNO, desligado pros demais. Um registro
+ * explícito na Matriz sempre tem prioridade sobre esse default (dá pra ligar/
+ * desligar manualmente caso algum perfil precise de exceção).
+ */
+function defaultHabilitada(tela: TelaSistema, perfil: Perfil): boolean {
+  if (tela.grupo === 'Menu Discente') return perfil === 'ALUNO';
+  return true;
+}
 
 @Injectable()
 export class PermissoesTelaService {
@@ -15,9 +35,9 @@ export class PermissoesTelaService {
 
   /**
    * Matriz completa: uma linha por tela, com o estado (habilitada/desabilitada)
-   * de cada perfil. Combinações sem registro no banco entram como
-   * habilitada=true (o default é liberado — só existe registro pro que já foi
-   * mexido alguma vez).
+   * de cada perfil. Combinações sem registro no banco entram no default de
+   * `defaultHabilitada()` (liberado pra quase tudo; Menu Discente é exceção,
+   * default só pra ALUNO) — um registro no banco sempre tem prioridade.
    */
   async matriz() {
     const registros = await this.prisma.permissaoTela.findMany();
@@ -28,7 +48,7 @@ export class PermissoesTelaService {
       label: tela.label,
       grupo: tela.grupo,
       perfis: Object.fromEntries(
-        TODOS_PERFIS.map(perfil => [perfil, mapa.get(`${perfil}:${tela.chave}`) ?? true]),
+        TODOS_PERFIS.map(perfil => [perfil, mapa.get(`${perfil}:${tela.chave}`) ?? defaultHabilitada(tela, perfil)]),
       ) as Record<Perfil, boolean>,
     }));
   }
@@ -52,7 +72,7 @@ export class PermissoesTelaService {
       acao: 'UPDATE',
       entidade: 'PermissaoTela',
       entidadeId: registro.id,
-      dadosAntes: { habilitada: antes?.habilitada ?? true },
+      dadosAntes: { habilitada: antes?.habilitada ?? defaultHabilitada(tela, dto.perfil) },
       dadosDepois: { perfil: dto.perfil, chaveTela: dto.chaveTela, habilitada: dto.habilitada, tela: tela.label },
     });
 
@@ -61,13 +81,16 @@ export class PermissoesTelaService {
 
   /** Usado por QUALQUER usuário autenticado (não só o admin master) — alimenta
    * o filtro de menu/rota no frontend pro próprio perfil. Retorna só as
-   * chaves habilitadas (ausência de registro = habilitada). */
+   * chaves habilitadas (ausência de registro = usa o default de
+   * `defaultHabilitada()`, ver comentário acima). */
   async minhasChavesHabilitadas(perfil: Perfil): Promise<string[]> {
     const registros = await this.prisma.permissaoTela.findMany({
-      where: { perfil, habilitada: false },
-      select: { chaveTela: true },
+      where: { perfil },
+      select: { chaveTela: true, habilitada: true },
     });
-    const desativadas = new Set(registros.map(r => r.chaveTela));
-    return TELAS_SISTEMA.map(t => t.chave).filter(chave => !desativadas.has(chave));
+    const mapa = new Map(registros.map(r => [r.chaveTela, r.habilitada]));
+    return TELAS_SISTEMA
+      .filter(t => mapa.get(t.chave) ?? defaultHabilitada(t, perfil))
+      .map(t => t.chave);
   }
 }
