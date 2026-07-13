@@ -52,6 +52,23 @@ services:
       - fiurj_net
     ports:
       - "3001:3001"
+    # Healthcheck do backend -- investigacao do "Gateway Timeout intermitente"
+    # (Documentos, Identidade Visual): o CMD do backend/Dockerfile roda
+    # "npx prisma migrate deploy && node dist/src/main", ou seja as migrations
+    # rodam ANTES do servidor comecar a escutar na porta 3001. Sem healthcheck
+    # aqui, o Docker sempre reportava o container como "saudavel" (nao tem o
+    # que reportar) e o Traefik mandava trafego assim que o container subia
+    # (redeploy, restart por crash/OOM), mesmo antes do processo Nest estar
+    # pronto pra responder -- essa janela e a causa mais provavel do erro. O
+    # endpoint usado (GET /api/v1/health, publico, sem consulta a banco/redis)
+    # esta em backend/src/health/. start_period da margem pra migrate deploy
+    # + boot terminarem antes de contar falhas.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     # Labels manuais do Traefik (Coolify) pra rotear /api/v1 E /uploads pro
     # backend SEM remover o prefixo do path. O campo Domains do Coolify
     # sempre gera um middleware stripprefix, mas o Nest ja expoe tudo sob
@@ -86,7 +103,8 @@ services:
       NODE_ENV: production
       PORT: 3000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - fiurj_net
     ports:
