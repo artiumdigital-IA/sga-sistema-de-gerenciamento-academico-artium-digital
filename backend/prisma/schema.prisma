@@ -1184,6 +1184,12 @@ model Emprestimo {
   dataDevolucao         DateTime?
   status                StatusEmprestimo    @default(EM_ANDAMENTO)
   observacoes           String?             @db.Text
+  // Dois flags independentes (não são mutuamente exclusivos): uso
+  // institucional exige observações preenchidas (justificativa/finalidade);
+  // uso por aluno força devolução no mesmo dia, até o fechamento da
+  // instituição (22:20) — ver EmprestimoService.fechamentoHoje().
+  usoInstitucional      Boolean             @default(false)
+  usoPorAluno           Boolean             @default(false)
   registradoPorId       String?
 
   criadoEm     DateTime @default(now())

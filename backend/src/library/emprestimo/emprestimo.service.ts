@@ -30,7 +30,29 @@ export class EmprestimoService {
     return { ...e, emAtraso: e.status === 'EM_ANDAMENTO' && e.dataPrevistaDevolucao < new Date() };
   }
 
+  /** "Uso por aluno" força devolução no mesmo dia, até o fechamento da
+   * instituição (22:20, horário de Brasília). Construído via Intl +
+   * offset explícito "-03:00" em vez de Date.setHours() -- não depende do
+   * fuso configurado no container (roda em UTC por padrão, sem TZ setada
+   * no Dockerfile/compose), evitando o mesmo tipo de bug de fuso já visto
+   * neste projeto (datas exibidas erradas por assumir o fuso local do
+   * processo). Brasil não tem mais horário de verão desde 2019, então o
+   * offset -03:00 é fixo o ano inteiro. */
+  private fechamentoHoje(): Date {
+    const hojeBR = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+    return new Date(`${hojeBR}T22:20:00-03:00`);
+  }
+
   async create(dto: CreateEmprestimoDto, operadorId?: string) {
+    if (dto.usoInstitucional && !dto.observacoes?.trim()) {
+      throw new BadRequestException('Observações são obrigatórias para empréstimo de uso institucional.');
+    }
+
     const usuario = await this.prisma.usuario.findUnique({ where: { id: dto.usuarioId } });
     if (!usuario) throw new BadRequestException('Usuário não encontrado.');
 
@@ -52,9 +74,11 @@ export class EmprestimoService {
     }
 
     const prazoDias = PRAZO_DIAS[dto.tipoItem];
-    const dataPrevistaDevolucao = dto.dataPrevistaDevolucao
-      ? new Date(dto.dataPrevistaDevolucao)
-      : new Date(Date.now() + prazoDias * 24 * 60 * 60 * 1000);
+    const dataPrevistaDevolucao = dto.usoPorAluno
+      ? this.fechamentoHoje()
+      : dto.dataPrevistaDevolucao
+        ? new Date(dto.dataPrevistaDevolucao)
+        : new Date(Date.now() + prazoDias * 24 * 60 * 60 * 1000);
 
     const emprestimo = await this.prisma.$transaction(async tx => {
       const criado = await tx.emprestimo.create({
@@ -65,6 +89,8 @@ export class EmprestimoService {
           usuarioId: dto.usuarioId,
           dataPrevistaDevolucao,
           observacoes: dto.observacoes,
+          usoInstitucional: dto.usoInstitucional ?? false,
+          usoPorAluno: dto.usoPorAluno ?? false,
           registradoPorId: operadorId,
         },
         include: INCLUDE_EMPRESTIMO,

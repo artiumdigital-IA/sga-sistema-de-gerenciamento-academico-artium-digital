@@ -17,6 +17,7 @@ interface EquipamentoDisp { id: string; patrimonio: string; modelo: string; stat
 interface Emprestimo {
   id: string; tipoItem: TipoItem; status: StatusEmprestimo; emAtraso: boolean;
   dataEmprestimo: string; dataPrevistaDevolucao: string; dataDevolucao: string | null; observacoes: string | null;
+  usoInstitucional: boolean; usoPorAluno: boolean;
   usuario: { id: string; nome: string | null; email: string; perfil: string };
   exemplarLivro: { id: string; codigoTombamento: string; livro: { id: string; titulo: string; autor: string } } | null;
   equipamento: { id: string; patrimonio: string; modelo: string; tipo: string } | null;
@@ -80,6 +81,8 @@ function RegistrarModal({ onClose, onSave }: { onClose: () => void; onSave: () =
   const [usuarioId, setUsuarioId] = useState('');
   const [dataPrevista, setDataPrevista] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [usoInstitucional, setUsoInstitucional] = useState(false);
+  const [usoPorAluno, setUsoPorAluno] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -98,14 +101,20 @@ function RegistrarModal({ onClose, onSave }: { onClose: () => void; onSave: () =
     : equipamentos.filter(e => e.status === 'DISPONIVEL').map(e => ({ id: e.id, label: `${e.patrimonio} — ${e.modelo}` }));
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setError(''); setSaving(true);
+    e.preventDefault(); setError('');
+    if (usoInstitucional && !observacoes.trim()) {
+      setError('Observações são obrigatórias para empréstimo de uso institucional.');
+      return;
+    }
+    setSaving(true);
     try {
       await apiFetch('/biblioteca/emprestimos', {
         method: 'POST',
         body: JSON.stringify({
           tipoItem, itemId, usuarioId,
-          dataPrevistaDevolucao: dataPrevista ? new Date(dataPrevista).toISOString() : undefined,
+          dataPrevistaDevolucao: !usoPorAluno && dataPrevista ? new Date(dataPrevista).toISOString() : undefined,
           observacoes: observacoes || undefined,
+          usoInstitucional, usoPorAluno,
         }),
       });
       onSave(); onClose();
@@ -138,11 +147,29 @@ function RegistrarModal({ onClose, onSave }: { onClose: () => void; onSave: () =
             </select>
           </F>
           <F label="Data prevista de devolução">
-            <input style={INPUT} type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} />
-            <p style={{ fontSize: 11.5, color: 'var(--gray-400)', margin: '4px 0 0' }}>Se em branco: 7 dias (livro) ou 15 dias (equipamento) a partir de hoje.</p>
+            <input style={INPUT} type="date" value={dataPrevista} disabled={usoPorAluno} onChange={e => setDataPrevista(e.target.value)} />
+            <p style={{ fontSize: 11.5, color: 'var(--gray-400)', margin: '4px 0 0' }}>
+              {usoPorAluno
+                ? 'Uso por aluno: devolução obrigatória no mesmo dia, até o fechamento da instituição (22:20).'
+                : 'Se em branco: 7 dias (livro) ou 15 dias (equipamento) a partir de hoje.'}
+            </p>
           </F>
-          <F label="Observações">
-            <textarea style={{ ...INPUT, minHeight: 50, resize: 'vertical', fontFamily: 'inherit' }} value={observacoes} onChange={e => setObservacoes(e.target.value)} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
+            <input type="checkbox" checked={usoInstitucional} onChange={e => setUsoInstitucional(e.target.checked)} />
+            Uso da instituição
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
+            <input type="checkbox" checked={usoPorAluno} onChange={e => setUsoPorAluno(e.target.checked)} />
+            Uso por aluno (devolução no mesmo dia, até 22:20)
+          </label>
+          <F label={usoInstitucional ? 'Observações *' : 'Observações'}>
+            <textarea
+              style={{ ...INPUT, minHeight: 50, resize: 'vertical', fontFamily: 'inherit' }}
+              value={observacoes}
+              required={usoInstitucional}
+              placeholder={usoInstitucional ? 'Obrigatório para uso institucional: finalidade do empréstimo' : undefined}
+              onChange={e => setObservacoes(e.target.value)}
+            />
           </F>
           {error && <p style={{ color: '#e02424', fontSize: 13, margin: 0 }}>{error}</p>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
@@ -293,7 +320,12 @@ export default function EmprestimosPage() {
                 const c = STATUS_COLOR[e.status];
                 return (
                   <tr key={e.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
-                    <td style={{ padding: '10px 14px', fontWeight: 500 }}>{descricaoItem(e)}</td>
+                    <td style={{ padding: '10px 14px', fontWeight: 500 }}>
+                      {descricaoItem(e)}
+                      {e.observacoes && (
+                        <span title={e.observacoes} style={{ marginLeft: 6, color: 'var(--gray-400)', cursor: 'help' }}>ℹ️</span>
+                      )}
+                    </td>
                     <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{nomeUsuario(e.usuario)}</td>
                     <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{fmt(e.dataEmprestimo)}</td>
                     <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{fmt(e.dataPrevistaDevolucao)}</td>
