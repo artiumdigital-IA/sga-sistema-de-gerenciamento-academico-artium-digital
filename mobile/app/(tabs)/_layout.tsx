@@ -9,13 +9,13 @@ import { theme } from '../../lib/theme';
  * Carreiras, Financeiro, Suporte, Perfil), fundo branco, ícone/label azul
  * quando ativo -- igual ao print de referência.
  *
- * As 4 telas antigas (Boletim, Histórico, Documentos, Avisos) continuam
- * existindo e com dado real, só que agora são alcançadas por cartões/links
- * dentro das novas telas (ver "Meu curso" em index.tsx) em vez de aba
- * própria -- por isso usam `href: null` (fica de fora da barra debaixo, mas
- * continua navegável via router.push) e ganham um cabeçalho próprio com
- * seta de voltar, já que a barra de abas não é uma pilha (Tabs), então sem
- * isso não teria como voltar visualmente pro Início.
+ * As telas "antigas" (Boletim, Histórico, Documentos, Avisos, Biblioteca)
+ * continuam existindo e com dado real, só que agora são alcançadas por
+ * cartões/links dentro das novas telas (ver "Meu curso" em index.tsx) em vez
+ * de aba própria -- por isso usam `href: null` (fica de fora da barra
+ * debaixo, mas continua navegável via router.push) e ganham um cabeçalho
+ * próprio com seta de voltar, já que a barra de abas não é uma pilha (Tabs),
+ * então sem isso não teria como voltar visualmente pro Início.
  */
 type IconName = keyof typeof Feather.glyphMap;
 
@@ -80,6 +80,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="historico" options={opcoesTelaAntiga('Histórico')} />
       <Tabs.Screen name="documentos" options={opcoesTelaAntiga('Documentos')} />
       <Tabs.Screen name="avisos" options={opcoesTelaAntiga('Avisos')} />
+      <Tabs.Screen name="biblioteca" options={opcoesTelaAntiga('Biblioteca')} />
     </Tabs>
   );
 }

@@ -131,6 +131,7 @@ export default function InicioScreen() {
           <CartaoIcone icone="calendar" titulo="Calendário acadêmico" aoPressionar={() => emBreve('Calendário acadêmico')} />
           <CartaoIcone icone="bar-chart-2" titulo="Notas e histórico" aoPressionar={() => router.push('/historico')} />
           <CartaoIcone icone="file-text" titulo="Documentos" aoPressionar={() => router.push('/documentos')} />
+          <CartaoIcone icone="book-open" titulo="Biblioteca" aoPressionar={() => router.push('/biblioteca')} />
           <CartaoIcone
             icone="star"
             titulo="Conquistas e recompensas"
