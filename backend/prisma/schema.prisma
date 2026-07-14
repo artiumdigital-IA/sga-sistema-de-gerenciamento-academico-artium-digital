@@ -376,6 +376,7 @@ model Usuario {
   avisos     Aviso[]
   mensagensEnviadas  Mensagem[] @relation("MensagensEnviadas")
   mensagensRecebidas Mensagem[] @relation("MensagensRecebidas")
+  emprestimos        Emprestimo[]
 
   @@map("usuarios")
 }
@@ -1078,4 +1079,115 @@ model ConfiguracaoVisual {
   atualizadoEm DateTime @updatedAt
 
   @@map("configuracao_visual")
+}
+
+// ── Biblioteca (feature nova, sem equivalente mapeado no Kirsch) — acervo de
+// livros (catálogo + exemplares físicos, já que um título pode ter várias
+// cópias com status independentes) e equipamentos (computadores/notebooks/
+// tablets), ambos emprestáveis pra alunos e professores via `Emprestimo`.
+enum StatusItemBiblioteca {
+  DISPONIVEL
+  EMPRESTADO
+  MANUTENCAO
+  EXTRAVIADO
+  BAIXADO
+}
+
+enum TipoEquipamento {
+  COMPUTADOR
+  NOTEBOOK
+  TABLET
+  OUTRO
+}
+
+enum TipoItemEmprestimo {
+  LIVRO
+  EQUIPAMENTO
+}
+
+enum StatusEmprestimo {
+  EM_ANDAMENTO
+  DEVOLVIDO
+  PERDIDO
+}
+
+model Livro {
+  id            String  @id @default(uuid())
+  titulo        String
+  autor         String
+  editora       String?
+  isbn          String?
+  categoria     String?
+  anoPublicacao Int?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  exemplares ExemplarLivro[]
+
+  @@map("livros")
+}
+
+// Separado de Livro de propósito: um título pode ter N cópias físicas, cada
+// uma com seu próprio status de disponibilidade/empréstimo.
+model ExemplarLivro {
+  id               String               @id @default(uuid())
+  livroId          String
+  livro            Livro                @relation(fields: [livroId], references: [id], onDelete: Cascade)
+  codigoTombamento String               @unique
+  localizacao      String?
+  status           StatusItemBiblioteca @default(DISPONIVEL)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  emprestimos Emprestimo[]
+
+  @@map("exemplares_livro")
+}
+
+model Equipamento {
+  id          String               @id @default(uuid())
+  patrimonio  String               @unique
+  tipo        TipoEquipamento
+  modelo      String
+  numeroSerie String?
+  status      StatusItemBiblioteca @default(DISPONIVEL)
+  observacoes String?              @db.Text
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  emprestimos Emprestimo[]
+
+  @@map("equipamentos_biblioteca")
+}
+
+// Modelo único pra empréstimo de livro OU equipamento (discriminado por
+// `tipoItem`, com exatamente um dos dois FKs opcionais preenchido) — evita
+// duplicar a tela/relatório de "meus empréstimos" e de atrasados em duas
+// tabelas paralelas. `usuario` é quem toma o item emprestado (aluno ou
+// professor, ambos são Usuario); `registradoPorId` é só um registro de quem
+// operou no balcão (mesmo padrão leve de Ocorrencia.usuarioId/
+// Protocolo.usuarioAberturaId — sem relação formal, só auditoria).
+model Emprestimo {
+  id                    String              @id @default(uuid())
+  tipoItem              TipoItemEmprestimo
+  exemplarLivroId       String?
+  exemplarLivro         ExemplarLivro?      @relation(fields: [exemplarLivroId], references: [id])
+  equipamentoId         String?
+  equipamento           Equipamento?        @relation(fields: [equipamentoId], references: [id])
+  usuarioId             String
+  usuario               Usuario             @relation(fields: [usuarioId], references: [id])
+  dataEmprestimo        DateTime            @default(now())
+  dataPrevistaDevolucao DateTime
+  dataDevolucao         DateTime?
+  status                StatusEmprestimo    @default(EM_ANDAMENTO)
+  observacoes           String?             @db.Text
+  registradoPorId       String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("emprestimos_biblioteca")
 }

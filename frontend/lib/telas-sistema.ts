@@ -85,6 +85,11 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'calculadora', label: 'Calculadora', grupo: 'Utilitários', prefixos: ['/dashboard/utilitarios/calculadora'] },
   { chave: 'ramais', label: 'Ramais', grupo: 'Utilitários', prefixos: ['/dashboard/utilitarios/ramais'] },
 
+  // ── Biblioteca (feature nova, sem equivalente no Kirsch) ────────────────
+  { chave: 'biblioteca-acervo', label: 'Acervo (Livros)', grupo: 'Biblioteca', prefixos: ['/dashboard/biblioteca/livros'] },
+  { chave: 'biblioteca-equipamentos', label: 'Equipamentos', grupo: 'Biblioteca', prefixos: ['/dashboard/biblioteca/equipamentos'] },
+  { chave: 'biblioteca-emprestimos', label: 'Empréstimos', grupo: 'Biblioteca', prefixos: ['/dashboard/biblioteca/emprestimos'] },
+
   // ── Menu Discente (autoatendimento do ALUNO — ver components/dashboard/RightPanel.tsx) ──
   // As 8 primeiras já têm dado real (aluno próprio, via /discente/*); as 8 seguintes
   // (marcadas "placeholder") ainda são só uma tela "Em construção" — o módulo de dados

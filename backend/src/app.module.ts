@@ -15,6 +15,7 @@ import { BrandingModule } from './branding/branding.module';
 import { PermissoesTelaModule } from './permissoes-tela/permissoes-tela.module';
 import { DiscenteModule } from './discente/discente.module';
 import { HealthModule } from './health/health.module';
+import { LibraryModule } from './library/library.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guard';
@@ -36,6 +37,7 @@ import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guar
     PermissoesTelaModule,
     DiscenteModule,
     HealthModule,
+    LibraryModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

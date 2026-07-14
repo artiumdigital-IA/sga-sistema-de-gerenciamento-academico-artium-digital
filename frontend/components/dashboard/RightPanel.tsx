@@ -160,6 +160,11 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Apuração ISS', href: null },
     { label: 'Geração do Arquivo XML / Consulta Chave NFS-e', href: null },
   ]},
+  { title: 'Biblioteca', items: [
+    { label: 'Acervo (Livros)', href: '/dashboard/biblioteca/livros' },
+    { label: 'Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
+    { label: 'Empréstimos', href: '/dashboard/biblioteca/emprestimos' },
+  ]},
   { title: 'Utilitários', items: [
     { label: 'Painel do Sistema', href: '/dashboard/admin/sistema' },
     { label: 'Identidade Visual', href: '/dashboard/admin/visual' },
