@@ -157,6 +157,14 @@ export default function EquipamentosPage() {
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
+                        <a
+                          href={`/dashboard/biblioteca/equipamentos/etiqueta/${eq.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12, textDecoration: 'none', display: 'inline-block' }}
+                        >
+                          Etiqueta
+                        </a>
                         <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(eq)}>Editar</button>
                         <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }} disabled={deleting === eq.id} onClick={() => remover(eq.id)}>
                           {deleting === eq.id ? '...' : 'Excluir'}

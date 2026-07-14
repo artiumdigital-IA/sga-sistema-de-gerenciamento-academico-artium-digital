@@ -33,6 +33,12 @@ export class LivroController {
     return this.service.findAll(busca);
   }
 
+  @Get('exemplares/:exemplarId')
+  @ApiOperation({ summary: 'Detalhar exemplar + dados do livro (usado pela etiqueta imprimível)' })
+  findExemplar(@Param('exemplarId') exemplarId: string) {
+    return this.service.findExemplar(exemplarId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Detalhar livro (com exemplares)' })
   findOne(@Param('id') id: string) {

@@ -70,10 +70,27 @@ export class LivroService {
     const existente = await this.prisma.exemplarLivro.findUnique({ where: { codigoTombamento: dto.codigoTombamento } });
     if (existente) throw new ConflictException('Já existe um exemplar com esse código de tombamento.');
 
-    const exemplar = await this.prisma.exemplarLivro.create({ data: { ...dto, livroId } });
+    // "ex.N" da etiqueta -- sequencial por livro (não é o tombamento, que é
+    // único globalmente), atribuído automaticamente pelo backend.
+    const totalExemplares = await this.prisma.exemplarLivro.count({ where: { livroId } });
+    const numeroExemplar = totalExemplares + 1;
+
+    const exemplar = await this.prisma.exemplarLivro.create({ data: { ...dto, livroId, numeroExemplar } });
     if (usuarioId) {
       await this.audit.log({ usuarioId, acao: 'CREATE', entidade: 'ExemplarLivro', entidadeId: exemplar.id, dadosDepois: exemplar });
     }
+    return exemplar;
+  }
+
+  /** Usado pela etiqueta imprimível (frontend precisa de CDD/Cutter do
+   * livro + código de tombamento/nº do exemplar numa única chamada, sem
+   * precisar carregar a lista inteira de exemplares do livro). */
+  async findExemplar(exemplarId: string) {
+    const exemplar = await this.prisma.exemplarLivro.findUnique({
+      where: { id: exemplarId },
+      include: { livro: { select: { id: true, titulo: true, autor: true, cdd: true, cutter: true, anoPublicacao: true } } },
+    });
+    if (!exemplar) throw new NotFoundException('Exemplar não encontrado.');
     return exemplar;
   }
 

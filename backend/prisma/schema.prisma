@@ -1119,6 +1119,14 @@ model Livro {
   isbn          String?
   categoria     String?
   anoPublicacao Int?
+  // Classificação bibliotecária (CDD = Classificação Decimal de Dewey, ex:
+  // "305.8"; cutter = notação de Cutter-Sanborn, ex: "G298i") -- juntos
+  // formam a "chamada" impressa na lombada/etiqueta do livro. Pertencem ao
+  // TÍTULO (não ao exemplar): todas as cópias da mesma obra compartilham a
+  // mesma classificação, só o número do exemplar e o tombamento mudam por
+  // cópia (ver ExemplarLivro.numeroExemplar/codigoTombamento).
+  cdd    String?
+  cutter String?
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -1137,6 +1145,10 @@ model ExemplarLivro {
   codigoTombamento String               @unique
   localizacao      String?
   status           StatusItemBiblioteca @default(DISPONIVEL)
+  // "ex.N" na etiqueta -- número sequencial da cópia dentro do MESMO livro
+  // (não é o tombamento, que é único globalmente). Atribuído automaticamente
+  // pelo backend ao cadastrar o exemplar (ver LivroService.addExemplar).
+  numeroExemplar   Int?
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt

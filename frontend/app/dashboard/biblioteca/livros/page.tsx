@@ -2,15 +2,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 
-interface Exemplar { id: string; codigoTombamento: string; localizacao: string | null; status: StatusItem; }
+interface Exemplar { id: string; codigoTombamento: string; localizacao: string | null; status: StatusItem; numeroExemplar: number | null; }
 type StatusItem = 'DISPONIVEL' | 'EMPRESTADO' | 'MANUTENCAO' | 'EXTRAVIADO' | 'BAIXADO';
 interface Livro {
   id: string; titulo: string; autor: string; editora: string | null; isbn: string | null;
-  categoria: string | null; anoPublicacao: number | null; exemplares?: Exemplar[];
+  categoria: string | null; anoPublicacao: number | null; cdd: string | null; cutter: string | null;
+  exemplares?: Exemplar[];
 }
 type FormData = Omit<Livro, 'id' | 'exemplares'>;
 
-const EMPTY: FormData = { titulo: '', autor: '', editora: '', isbn: '', categoria: '', anoPublicacao: null };
+const EMPTY: FormData = { titulo: '', autor: '', editora: '', isbn: '', categoria: '', anoPublicacao: null, cdd: '', cutter: '' };
 
 const STATUS_LABEL: Record<StatusItem, string> = {
   DISPONIVEL: 'Disponível', EMPRESTADO: 'Emprestado', MANUTENCAO: 'Manutenção', EXTRAVIADO: 'Extraviado', BAIXADO: 'Baixado',
@@ -55,6 +56,7 @@ function LivroModal({ livro, onClose, onSave }: { livro: Livro | null; onClose: 
         titulo: form.titulo, autor: form.autor,
         editora: form.editora || undefined, isbn: form.isbn || undefined, categoria: form.categoria || undefined,
         anoPublicacao: form.anoPublicacao || undefined,
+        cdd: form.cdd || undefined, cutter: form.cutter || undefined,
       };
       if (livro) await apiFetch(`/biblioteca/livros/${livro.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       else await apiFetch('/biblioteca/livros', { method: 'POST', body: JSON.stringify(body) });
@@ -75,6 +77,8 @@ function LivroModal({ livro, onClose, onSave }: { livro: Livro | null; onClose: 
             <F label="Ano"><input style={INPUT} type="number" value={form.anoPublicacao ?? ''} onChange={e => set('anoPublicacao', e.target.value ? Number(e.target.value) : null)} /></F>
             <F label="ISBN"><input style={INPUT} value={form.isbn ?? ''} onChange={e => set('isbn', e.target.value)} /></F>
             <F label="Categoria"><input style={INPUT} value={form.categoria ?? ''} onChange={e => set('categoria', e.target.value)} /></F>
+            <F label="CDD"><input style={INPUT} placeholder="Ex: 305.8" value={form.cdd ?? ''} onChange={e => set('cdd', e.target.value)} /></F>
+            <F label="Cutter"><input style={INPUT} placeholder="Ex: G298i" value={form.cutter ?? ''} onChange={e => set('cutter', e.target.value)} /></F>
           </div>
           {error && <p style={{ color: '#e02424', fontSize: 13, margin: 0 }}>{error}</p>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
@@ -138,22 +142,33 @@ function ExemplaresModal({ livro, onClose, onChanged }: { livro: Livro; onClose:
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
-              {['Código', 'Localização', 'Status', ''].map(h => (
+              {['Ex.', 'Código', 'Localização', 'Status', ''].map(h => (
                 <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 11.5 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {(!detalhe || detalhe.exemplares?.length === 0) && (
-              <tr><td colSpan={4} style={{ padding: 18, textAlign: 'center', color: 'var(--gray-400)' }}>{detalhe ? 'Nenhum exemplar cadastrado.' : 'Carregando...'}</td></tr>
+              <tr><td colSpan={5} style={{ padding: 18, textAlign: 'center', color: 'var(--gray-400)' }}>{detalhe ? 'Nenhum exemplar cadastrado.' : 'Carregando...'}</td></tr>
             )}
             {detalhe?.exemplares?.map(ex => (
               <tr key={ex.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                <td style={{ padding: '7px 10px', color: 'var(--gray-500)' }}>{ex.numeroExemplar ?? '—'}</td>
                 <td style={{ padding: '7px 10px', fontWeight: 500 }}>{ex.codigoTombamento}</td>
                 <td style={{ padding: '7px 10px', color: 'var(--gray-500)' }}>{ex.localizacao ?? '—'}</td>
                 <td style={{ padding: '7px 10px' }}><Badge status={ex.status} /></td>
                 <td style={{ padding: '7px 10px' }}>
-                  <button style={{ ...BTN('danger'), padding: '3px 8px', fontSize: 11.5 }} disabled={ex.status === 'EMPRESTADO'} onClick={() => remover(ex.id)}>Excluir</button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <a
+                      href={`/dashboard/biblioteca/livros/etiqueta/${ex.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ ...BTN('ghost'), padding: '3px 8px', fontSize: 11.5, textDecoration: 'none', display: 'inline-block' }}
+                    >
+                      Etiqueta
+                    </a>
+                    <button style={{ ...BTN('danger'), padding: '3px 8px', fontSize: 11.5 }} disabled={ex.status === 'EMPRESTADO'} onClick={() => remover(ex.id)}>Excluir</button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -228,20 +243,23 @@ export default function LivrosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
-                {['Título', 'Autor', 'Categoria', 'Ano', 'Exemplares (disp/total)', ''].map(h => (
+                {['Título', 'Autor', 'Categoria', 'Classificação', 'Ano', 'Exemplares (disp/total)', ''].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {livros.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum livro cadastrado ainda.</td></tr>
+                <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum livro cadastrado ainda.</td></tr>
               )}
               {livros.map((l, i) => (
                 <tr key={l.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 500 }}>{l.titulo}</td>
                   <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{l.autor}</td>
                   <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{l.categoria ?? '—'}</td>
+                  <td style={{ padding: '10px 14px', color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 12 }}>
+                    {l.cdd || l.cutter ? `${l.cdd ?? ''} ${l.cutter ?? ''}`.trim() : '—'}
+                  </td>
                   <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{l.anoPublicacao ?? '—'}</td>
                   <td style={{ padding: '10px 14px' }}>{contagem(l)}</td>
                   <td style={{ padding: '10px 14px' }}>
