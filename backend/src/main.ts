@@ -9,6 +9,21 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Sem isso, o processo Nest ignora SIGTERM (o sinal que o Docker manda ao
+  // parar/reiniciar um container -- todo redeploy no Coolify faz isso) e é
+  // encerrado à força depois do timeout padrão do Docker (10s), sem rodar
+  // PrismaService.onModuleDestroy() -- a conexão com o Postgres fica aberta
+  // do lado do banco até o TCP dela expirar sozinho. Cada redeploy sem esse
+  // hook "vaza" uma conexão do pool do Postgres; depois de dias com vários
+  // redeploys (este projeto teve dezenas, ver histórico de commits), o
+  // max_connections do Postgres pode ficar perto do limite, fazendo novas
+  // requisições esperarem (ou travarem) por uma conexão livre -- um dos
+  // candidatos mais fortes pro "Gateway Timeout intermitente" investigado
+  // aqui, porque explica por que o problema é intermitente E parece piorar
+  // com o tempo/mais redeploys, não algo que já estivesse quebrado desde o
+  // primeiro deploy.
+  app.enableShutdownHooks();
+
   // Garante que as pastas de uploads existam (fotos de perfil, documentos digitalizados, etc.)
   const uploadsDir = join(process.cwd(), 'uploads', 'avatars');
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });

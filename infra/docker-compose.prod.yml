@@ -9,6 +9,18 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: always
+    # Limites revistos (Jul/2026) depois de confirmar as specs reais da VPS
+    # via `free -h`/`nproc` no terminal do Coolify: 15GB RAM / 4 núcleos, bem
+    # mais folgada do que a estimativa inicial de "~2GB" usada na 1ª versão
+    # destes limites (baseada só no mínimo sugerido em docs/deploy-coolify.md).
+    # `dmesg` não mostrou nenhum OOM kill e os containers do FIURJ tinham 0
+    # restarts -- ou seja, falta de memória NÃO é a causa confirmada do
+    # Gateway Timeout (ver achado real abaixo, no comentário do backend).
+    # Os limites continuam aqui como rede de segurança contra um vazamento
+    # de memória futuro, só que agora dimensionados sem risco de virarem eles
+    # mesmos um gargalo.
+    mem_limit: 1g
+    cpus: 1.5
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -23,26 +35,43 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    restart: always
-    volumes:
-      - redis_data:/data
-    networks:
-      - fiurj_net
+  # Servico "redis" REMOVIDO (Jul/2026) -- investigacao do Gateway Timeout
+  # intermitente: confirmado por grep que NENHUMA linha do backend
+  # (nem "redis" nem "ioredis" aparecem em src/ ou package.json) usa esse
+  # servico. Ele rodava desde a Fase 0 (planejado pra cache/sessao/fila,
+  # nunca chegou a ser cabeado) e ficava consumindo RAM/CPU a troco de nada
+  # numa VPS pequena (~2GB, ver docs/deploy-coolify.md) dividida entre 4
+  # servicos + o proprio SO + Docker + (possivelmente) o proxy edu-nginx.
+  # Se algum dia for necessario (fila de jobs, cache, sessao), e so
+  # readicionar o bloco (estava identico ao "postgres" acima, so trocando a
+  # imagem e o volume).
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: always
+    mem_limit: 1536m
+    cpus: 1.5
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      # connection_limit explicito -- sem isso o Prisma calcula sozinho
+      # (num_cpus*2+1) a partir da visao de CPU do CONTAINER. Com os 4
+      # núcleos reais da VPS confirmados, 10 é o valor natural (4*2+1≈9,
+      # arredondado) pra 1 réplica do backend, com folga grande no
+      # max_connections padrão (100) do Postgres.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public&connection_limit=10
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
       NODE_ENV: production
       PORT: 3001
       FRONTEND_URL: ${FRONTEND_URL}
+      # Sem isso, o V8 dimensiona o heap padrão pela memória TOTAL que o
+      # container enxerga -- nessa VPS especificamente isso não chegou a ser
+      # um problema confirmado (15GB reais, `dmesg` sem OOM kill, containers
+      # do FIURJ com 0 restarts), mas mantido como rede de segurança barata
+      # contra vazamento de memória futuro. Cap abaixo do mem_limit acima
+      # (sobra ~500MB pra stack/buffers nativos/threadpool do libuv).
+      NODE_OPTIONS: --max-old-space-size=1024
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,11 +87,22 @@ services:
     # rodam ANTES do servidor comecar a escutar na porta 3001. Sem healthcheck
     # aqui, o Docker sempre reportava o container como "saudavel" (nao tem o
     # que reportar) e o Traefik mandava trafego assim que o container subia
-    # (redeploy, restart por crash/OOM), mesmo antes do processo Nest estar
-    # pronto pra responder -- essa janela e a causa mais provavel do erro. O
-    # endpoint usado (GET /api/v1/health, publico, sem consulta a banco/redis)
-    # esta em backend/src/health/. start_period da margem pra migrate deploy
-    # + boot terminarem antes de contar falhas.
+    # (redeploy), mesmo antes do processo Nest estar pronto pra responder --
+    # continua valendo como mitigacao pra essa janela especifica de redeploy,
+    # mas a CAUSA CONFIRMADA do Gateway Timeout intermitente (Jul/2026,
+    # `docker ps -a` + `dmesg` no terminal do Coolify) foi outra: o container
+    # "edu-keycloak" (de OUTRO sistema que compartilha essa VPS, "eduplatform"
+    # -- nao faz parte do FIURJ, que adiou Keycloak por decisao de projeto)
+    # estava em loop de crash havia 4 dias, quase 7 mil reinicios (~1 a cada
+    # 50s) -- cada tentativa de boot de uma app Java/Quarkus consome CPU
+    # pesado por alguns segundos, e numa VPS de so 4 nucleos isso gera picos
+    # de contencao de CPU que atingem TODOS os containers do host, FIURJ
+    # incluido, de forma intermitente. `free -h`/`dmesg` confirmaram que
+    # memoria/OOM NAO era o problema (15GB reais, sem OOM kill registrado, 0
+    # restarts nos containers do FIURJ). O endpoint usado (GET /api/v1/health,
+    # publico, sem consulta a banco/redis) esta em backend/src/health/.
+    # start_period da margem pra migrate deploy + boot terminarem antes de
+    # contar falhas.
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/api/v1/health || exit 1"]
       interval: 10s
@@ -99,9 +139,15 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     restart: always
+    mem_limit: 1g
+    cpus: 1.0
     environment:
       NODE_ENV: production
       PORT: 3000
+      # Mesmo raciocínio do NODE_OPTIONS do backend acima -- rede de
+      # segurança contra vazamento futuro, não a causa confirmada do
+      # Gateway Timeout (ver comentário no healthcheck do backend acima).
+      NODE_OPTIONS: --max-old-space-size=768
     depends_on:
       backend:
         condition: service_healthy
@@ -112,7 +158,6 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
   backend_uploads:
 
 networks:
