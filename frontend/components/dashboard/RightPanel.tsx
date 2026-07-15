@@ -40,13 +40,12 @@ const MENU_DISCENTE_GROUP: { title: string; items: RpanelItem[] } = {
   ],
 };
 
-// "Menu Docente" — autoatendimento do professor (Jul/2026). Ao contrário do Menu
-// Discente, NÃO substitui os outros grupos — um professor continua enxergando a
-// Barra Rápida normal (Secretaria, Biblioteca etc.), só ganha esse grupo extra no
-// topo com os atalhos do dia a dia dele. Pauta/Notas reaproveitam as telas já
-// existentes (o professor já tinha acesso de escrita a elas); Alunos/Captura de
-// Prova/Aviso para Turma são telas novas, escopadas às próprias turmas do professor
-// (ver backend/src/docente/).
+// "Menu Docente" — autoatendimento do professor (Jul/2026). Mesmo princípio do
+// Menu Discente: SUBSTITUI todos os outros grupos (um professor não navega pelos
+// menus de secretaria/financeiro/admin, só pelos atalhos do dia a dia dele).
+// Pauta/Notas reaproveitam as telas já existentes (o professor já tinha acesso de
+// escrita a elas); Alunos/Captura de Prova/Aviso para Turma são telas novas,
+// escopadas às próprias turmas do professor (ver backend/src/docente/).
 const MENU_DOCENTE_GROUP: { title: string; items: RpanelItem[] } = {
   title: 'Docente',
   items: [
@@ -205,18 +204,18 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
    * diferente da sidebar, aqui não há risco de vazar uma tela sensível
    * porque são só rótulos/atalhos, o bloqueio de fato é o guard de rota). */
   chavesHabilitadas: Set<string> | null;
-  /** Perfil do usuário logado — ALUNO vê SÓ o "Menu Discente" na Barra Rápida
-   * (nada dos menus de secretaria/financeiro/admin); os demais perfis veem os
-   * grupos de sempre, sem o Menu Discente. undefined/null = ainda carregando
-   * o JWT, trata como não-aluno até saber (evita mostrar o Menu Discente e
-   * sumir em seguida). */
+  /** Perfil do usuário logado — ALUNO vê SÓ o "Menu Discente" e PROFESSOR vê SÓ
+   * o "Menu Docente" na Barra Rápida (nada dos menus de secretaria/financeiro/
+   * admin); os demais perfis veem os grupos de sempre. undefined/null = ainda
+   * carregando o JWT, trata como perfil administrativo até saber (evita mostrar
+   * um menu de autoatendimento e sumir em seguida). */
   perfil?: string | null;
 }) {
   const pathname = usePathname();
   const gruposBase = perfil === 'ALUNO'
     ? [MENU_DISCENTE_GROUP]
     : perfil === 'PROFESSOR'
-      ? [MENU_DOCENTE_GROUP, ...RPANEL_GROUPS]
+      ? [MENU_DOCENTE_GROUP]
       : RPANEL_GROUPS;
   const initialOpen = gruposBase.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
