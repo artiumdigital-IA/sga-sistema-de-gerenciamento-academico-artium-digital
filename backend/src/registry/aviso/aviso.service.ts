@@ -19,6 +19,7 @@ export class AvisoService {
         tag: dto.tag ?? 'GERAL',
         autorNome: dto.autorNome ?? 'Admin',
         ...(dto.autorId ? { autorId: dto.autorId } : {}),
+        ...(dto.ofertaId ? { ofertaId: dto.ofertaId } : {}),
       },
     });
     if (usuarioId) {
@@ -27,10 +28,37 @@ export class AvisoService {
     return aviso;
   }
 
-  findAll() {
+  /**
+   * Sem `usuario`/perfil !== ALUNO: comportamento inalterado, mostra o mural
+   * inteiro (geral + de turma) — é assim que Admin/Secretaria/Professor
+   * sempre viram os avisos, sem regressão.
+   *
+   * Perfil ALUNO: filtra pra avisos gerais (ofertaId null) OU avisos de
+   * turma cuja oferta é uma das que o aluno está matriculado — um aluno
+   * nunca vê aviso de turma de outra disciplina/turma que não é dele.
+   */
+  async findAll(usuario?: { id: string; perfil: string }) {
+    const where: any = {};
+
+    if (usuario?.perfil === 'ALUNO') {
+      const u = await this.prisma.usuario.findUnique({ where: { id: usuario.id }, select: { alunoId: true } });
+      if (u?.alunoId) {
+        const matriculas = await this.prisma.matriculaDisciplina.findMany({
+          where: { alunoId: u.alunoId },
+          select: { ofertaId: true },
+        });
+        const ofertaIds = matriculas.map(m => m.ofertaId);
+        where.OR = [{ ofertaId: null }, { ofertaId: { in: ofertaIds } }];
+      } else {
+        where.ofertaId = null;
+      }
+    }
+
     return (this.prisma as any).aviso.findMany({
+      where,
       orderBy: { criadoEm: 'desc' },
       take: 50,
+      include: { oferta: { include: { disciplina: { select: { nome: true, codigo: true } } } } },
     });
   }
 

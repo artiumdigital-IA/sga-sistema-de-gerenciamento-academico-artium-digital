@@ -7,5 +7,8 @@ import { AuditModule } from '../../audit/audit.module';
   imports: [AuditModule],
   controllers: [AvisoController],
   providers: [AvisoService],
+  // Exportado pro DocenteModule reaproveitar (POST /docente/aviso-turma
+  // chama AvisoService.create() por baixo -- ver docente.service.ts).
+  exports: [AvisoService],
 })
 export class AvisoModule {}

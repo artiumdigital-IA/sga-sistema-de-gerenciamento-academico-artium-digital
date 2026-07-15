@@ -40,6 +40,24 @@ const MENU_DISCENTE_GROUP: { title: string; items: RpanelItem[] } = {
   ],
 };
 
+// "Menu Docente" — autoatendimento do professor (Jul/2026). Ao contrário do Menu
+// Discente, NÃO substitui os outros grupos — um professor continua enxergando a
+// Barra Rápida normal (Secretaria, Biblioteca etc.), só ganha esse grupo extra no
+// topo com os atalhos do dia a dia dele. Pauta/Notas reaproveitam as telas já
+// existentes (o professor já tinha acesso de escrita a elas); Alunos/Captura de
+// Prova/Aviso para Turma são telas novas, escopadas às próprias turmas do professor
+// (ver backend/src/docente/).
+const MENU_DOCENTE_GROUP: { title: string; items: RpanelItem[] } = {
+  title: 'Docente',
+  items: [
+    { label: 'Pauta', href: '/dashboard/academico/pauta' },
+    { label: 'Notas', href: '/dashboard/academico/notas' },
+    { label: 'Alunos', href: '/dashboard/docente/alunos' },
+    { label: 'Captura de Prova', href: '/dashboard/docente/captura-prova' },
+    { label: 'Aviso para Turma', href: '/dashboard/docente/aviso-turma' },
+  ],
+};
+
 // Mapeamento "Barra Rápida" (nomenclatura/estrutura de menu da Kirsch, levantada no spike de
 // migração) -> telas equivalentes já existentes na plataforma nova. href: null = ainda não
 // construído aqui (fica visível, porém desabilitado, pra deixar claro o que falta).
@@ -195,7 +213,11 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
   perfil?: string | null;
 }) {
   const pathname = usePathname();
-  const gruposBase = perfil === 'ALUNO' ? [MENU_DISCENTE_GROUP] : RPANEL_GROUPS;
+  const gruposBase = perfil === 'ALUNO'
+    ? [MENU_DISCENTE_GROUP]
+    : perfil === 'PROFESSOR'
+      ? [MENU_DOCENTE_GROUP, ...RPANEL_GROUPS]
+      : RPANEL_GROUPS;
   const initialOpen = gruposBase.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
   const [busca, setBusca] = useState('');

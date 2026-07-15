@@ -111,6 +111,14 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'discente-conteudos-extras', label: 'Conteúdos Extras (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/conteudos-extras'] },
   { chave: 'discente-carreiras', label: 'Carreiras (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/carreiras'] },
   { chave: 'discente-suporte', label: 'Suporte (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/suporte'] },
+
+  // ── Menu Docente (autoatendimento do PROFESSOR — ver components/dashboard/RightPanel.tsx) ──
+  // Pauta e Notas reaproveitam as telas 'pauta'/'notas' já existentes (grupo
+  // Acadêmico) — o professor já tinha acesso de escrita a elas, só ganharam
+  // um atalho a mais no painel. As 3 telas abaixo são novas de verdade.
+  { chave: 'docente-alunos', label: 'Alunos (das minhas turmas)', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/alunos'] },
+  { chave: 'docente-captura-prova', label: 'Captura de Prova', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/captura-prova'] },
+  { chave: 'docente-aviso-turma', label: 'Aviso para Turma', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/aviso-turma'] },
 ];
 
 /** Acha a tela dona de um href (ignorando querystring), comparando prefixo. */

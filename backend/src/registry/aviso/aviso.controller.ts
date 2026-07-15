@@ -14,9 +14,11 @@ export class AvisoController {
 
   // Deliberadamente SEM @Tela() -- alimenta o widget "Boletim Diário" do
   // Painel inicial pra qualquer perfil, além da tela dedicada de Avisos.
+  // req.user repassado pro service filtrar aviso de turma quando ALUNO
+  // (ver AvisoService.findAll) -- outros perfis continuam vendo tudo.
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Request() req: any) {
+    return this.service.findAll(req.user);
   }
 
   @Tela('avisos')

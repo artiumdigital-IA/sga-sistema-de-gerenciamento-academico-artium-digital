@@ -8,4 +8,7 @@ export class CreateAvisoDto {
   @IsOptional() @IsEnum(TagAviso) tag?: TagAviso;
   @IsOptional() @IsString() autorNome?: string;
   @IsOptional() @IsString() autorId?: string;
+  // Presente = "aviso de turma" (só alunos matriculados na oferta veem);
+  // ausente = aviso geral, comportamento inalterado. Ver AvisoService.findAll().
+  @IsOptional() @IsString() ofertaId?: string;
 }

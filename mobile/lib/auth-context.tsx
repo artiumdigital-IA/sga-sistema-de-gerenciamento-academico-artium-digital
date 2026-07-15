@@ -17,6 +17,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { apiFetch, ApiError } from './api';
 import { clearPersistedToken, loadPersistedToken, persistToken, Usuario } from './auth';
+import { tentarRegistrarPushToken } from './push';
 
 type LoginResult = { ok: true } | { ok: false; error: string };
 
@@ -37,6 +38,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const me = await apiFetch<Usuario>('/usuarios/me');
       setUsuario(me);
+      // Fire-and-forget — nunca bloqueia nem quebra o carregamento do
+      // usuário se falhar (ver comentário em lib/push.ts).
+      tentarRegistrarPushToken();
     } catch {
       // Token inválido/expirado — trata como deslogado.
       setUsuario(null);

@@ -16,6 +16,8 @@ import { PermissoesTelaModule } from './permissoes-tela/permissoes-tela.module';
 import { DiscenteModule } from './discente/discente.module';
 import { HealthModule } from './health/health.module';
 import { LibraryModule } from './library/library.module';
+import { PushModule } from './push/push.module';
+import { DocenteModule } from './docente/docente.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guard';
@@ -38,6 +40,8 @@ import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guar
     DiscenteModule,
     HealthModule,
     LibraryModule,
+    PushModule,
+    DocenteModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

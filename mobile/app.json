@@ -3,21 +3,23 @@
     "name": "FIURJ Aluno",
     "slug": "fiurj-app-aluno",
     "scheme": "fiurjaluno",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "br.edu.fiurj.aluno"
+      "bundleIdentifier": "br.edu.fiurj.aluno",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1C3A6B"
       },
-      "package": "br.edu.fiurj.aluno"
+      "package": "br.edu.fiurj.aluno",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png",

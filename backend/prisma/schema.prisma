@@ -157,6 +157,8 @@ model Oferta {
   periodoLetivo PeriodoLetivo        @relation(fields: [periodoLetivoId], references: [id])
   professor     Professor            @relation(fields: [professorId],     references: [id])
   matriculas    MatriculaDisciplina[]
+  avisos        Aviso[]
+  capturasProva CapturaProva[]
 
   @@map("ofertas")
 }
@@ -210,6 +212,7 @@ model Aluno {
   ocorrencias      Ocorrencia[]
   observacoesFinanceiras ObservacaoFinanceira[]
   bolsas           Bolsista[]
+  capturasProva    CapturaProva[]
 
   @@map("alunos")
 }
@@ -230,6 +233,7 @@ model Professor {
 
   usuario Usuario?
   ofertas Oferta[]
+  capturasProva CapturaProva[]
 
   @@map("professores")
 }
@@ -377,6 +381,7 @@ model Usuario {
   mensagensEnviadas  Mensagem[] @relation("MensagensEnviadas")
   mensagensRecebidas Mensagem[] @relation("MensagensRecebidas")
   emprestimos        Emprestimo[]
+  pushTokens         PushToken[]
 
   @@map("usuarios")
 }
@@ -744,6 +749,11 @@ enum StatusParcela {
 }
 
 // ── Avisos ──────────────────────────────────────────────────────
+// ofertaId nullable = "aviso de turma" (Jul/2026, Menu Docente): quando
+// preenchido, o aviso fica restrito aos alunos matriculados nessa oferta em
+// vez de aparecer no mural geral pra todo mundo — ver AvisoService.findAll()
+// e DocenteService.criarAvisoTurma(). Aviso geral (ofertaId null) continua
+// funcionando exatamente como antes, sem nenhuma mudança de comportamento.
 model Aviso {
   id         String   @id @default(uuid())
   titulo     String
@@ -751,7 +761,9 @@ model Aviso {
   tag        TagAviso @default(GERAL)
   autorNome  String
   autorId    String?
+  ofertaId   String?
   usuario    Usuario? @relation(fields: [autorId], references: [id])
+  oferta     Oferta?  @relation(fields: [ofertaId], references: [id], onDelete: SetNull)
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
@@ -762,6 +774,46 @@ enum TagAviso {
   GERAL
   IMPORTANTE
   APENAS_EQUIPE
+}
+
+// Captura de Prova (Jul/2026, Menu Docente): professor fotografa/envia a
+// prova física corrigida do aluno como registro digital — mesmo padrão de
+// upload do DocumentoAluno (Secretaria), só que iniciado pelo professor e
+// escopado a uma oferta/disciplina específica em vez de "documento geral".
+model CapturaProva {
+  id          String   @id @default(uuid())
+  alunoId     String
+  ofertaId    String
+  professorId String
+  nomeArquivo String
+  url         String
+  tamanho     Int
+  observacoes String?
+  criadoEm    DateTime @default(now())
+
+  aluno     Aluno     @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  oferta    Oferta    @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  professor Professor @relation(fields: [professorId], references: [id])
+
+  @@map("capturas_prova")
+}
+
+// Token de push notification (Expo) do dispositivo do usuário — usado hoje
+// só pelo app mobile do aluno, pra receber "Aviso para Turma" enviado pelo
+// professor. Um token é ligado ao dispositivo, não a uma sessão: se o mesmo
+// token aparecer de novo (reinstalação, outro usuário no mesmo aparelho), o
+// upsert por token substitui o dono anterior.
+model PushToken {
+  id         String   @id @default(uuid())
+  usuarioId  String
+  token      String   @unique
+  plataforma String?
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("push_tokens")
 }
 
 // ── Ficha de Saúde ──────────────────────────────────────────────

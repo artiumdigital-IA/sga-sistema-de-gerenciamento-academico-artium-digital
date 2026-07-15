@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
+import type { ColorValue } from 'react-native';
 import { theme } from '../../lib/theme';
 
 /**
@@ -19,7 +20,7 @@ import { theme } from '../../lib/theme';
  */
 type IconName = keyof typeof Feather.glyphMap;
 
-function TabIcon({ name, color }: { name: IconName; color: string }) {
+function TabIcon({ name, color }: { name: IconName; color: ColorValue }) {
   return <Feather name={name} size={22} color={color} />;
 }
 

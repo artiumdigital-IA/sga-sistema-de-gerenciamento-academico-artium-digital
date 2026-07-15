@@ -20,9 +20,13 @@ const TODOS_PERFIS: Perfil[] = ['ADMIN', 'SECRETARIA', 'FINANCEIRO', 'PROFESSOR'
  * pra esse grupo é: liberado só pra ALUNO, desligado pros demais. Um registro
  * explícito na Matriz sempre tem prioridade sobre esse default (dá pra ligar/
  * desligar manualmente caso algum perfil precise de exceção).
+ *
+ * Mesmo raciocínio pro grupo "Menu Docente" (Jul/2026, autoatendimento do
+ * professor — ver RightPanel.tsx): default liberado só pra PROFESSOR.
  */
 function defaultHabilitada(tela: TelaSistema, perfil: Perfil): boolean {
   if (tela.grupo === 'Menu Discente') return perfil === 'ALUNO';
+  if (tela.grupo === 'Menu Docente') return perfil === 'PROFESSOR';
   return true;
 }
 

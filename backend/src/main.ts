@@ -31,6 +31,8 @@ async function bootstrap() {
   if (!existsSync(documentosDir)) mkdirSync(documentosDir, { recursive: true });
   const brandingDir = join(process.cwd(), 'uploads', 'branding');
   if (!existsSync(brandingDir)) mkdirSync(brandingDir, { recursive: true });
+  const capturasProvaDir = join(process.cwd(), 'uploads', 'capturas-prova');
+  if (!existsSync(capturasProvaDir)) mkdirSync(capturasProvaDir, { recursive: true });
 
   // Serve arquivos estaticos (uploads) — fora do prefixo /api/v1
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
