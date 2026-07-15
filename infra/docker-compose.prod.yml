@@ -137,11 +137,19 @@ services:
     # funcionando durante a transicao; remover o fallback do IP e adicionar
     # redirect-to-https so depois de confirmar que nada mais depende dele
     # (app mobile em producao, etc.).
+    #
+    # IMPORTANTE (bug corrigido Jul/2026): o roteador HTTPS NAO pode incluir
+    # o IP puro na regra de Host() -- Let's Encrypt/ACME rejeita pedido de
+    # certificado pra endereco IP ("Default profile does not permit IP
+    # address identifiers"), e isso fazia o Traefik falhar a emissao do
+    # certificado sem parar (logs cheios de "Unable to obtain ACME
+    # certificate"), o que por sua vez deixava o roteador inteiro sem TLS
+    # valido. O roteador HTTP (sem TLS) continua aceitando IP normalmente.
     labels:
       - traefik.enable=true
       - "traefik.http.routers.fiurj-backend-api.rule=(Host(`187.77.56.182`) || Host(`sga.fiurj.edu.br`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
       - traefik.http.routers.fiurj-backend-api.entrypoints=http
-      - "traefik.http.routers.fiurj-backend-api-https.rule=(Host(`187.77.56.182`) || Host(`sga.fiurj.edu.br`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
+      - "traefik.http.routers.fiurj-backend-api-https.rule=Host(`sga.fiurj.edu.br`) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
       - traefik.http.routers.fiurj-backend-api-https.entrypoints=https
       - traefik.http.routers.fiurj-backend-api-https.tls=true
       - traefik.http.routers.fiurj-backend-api-https.tls.certresolver=letsencrypt
@@ -171,6 +179,20 @@ services:
       - fiurj_net
     ports:
       - "3000:3000"
+    # traefik.docker.network -- mesmo problema e mesma solucao ja documentados
+    # no servico "backend" acima: o Coolify conecta este container em DUAS
+    # redes (a rede interna do Coolify + a fiurj_net deste compose), e sem
+    # essa label o Traefik nao sabe por qual rede alcancar o container --
+    # confirmado via `docker inspect <container> --format
+    # '{{json .NetworkSettings.Networks}}'` mostrando as duas redes, e a
+    # ausencia dessa label no `docker inspect --format '{{json .Config.Labels}}'`
+    # (as demais labels do Traefik pro frontend sao 100% auto-geradas pelo
+    # Coolify a partir do dominio configurado -- essa e a unica adicionada
+    # manualmente aqui). Sem isso, requisicoes pro dominio davam Gateway
+    # Timeout (Jul/2026) mesmo com o container saudavel e respondendo
+    # normalmente por dentro (`wget http://127.0.0.1:3000` funcionava).
+    labels:
+      - traefik.docker.network=v10jck0yzwz1d35xxcj6akxt
 
 volumes:
   postgres_data:
