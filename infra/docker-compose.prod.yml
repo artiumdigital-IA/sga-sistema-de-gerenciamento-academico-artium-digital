@@ -125,10 +125,26 @@ services:
     # container -- sem isso o Traefik fica em duvida entre a rede interna
     # do Coolify e a rede fiurj_net do compose (o container esta nas duas)
     # e a requisicao trava sem resposta em vez de falhar rapido.
+    #
+    # Roteador HTTPS adicionado (Jul/2026) pra suportar o dominio
+    # sga.fiurj.edu.br (ver CLAUDE.md, secao HTTPS/subdominio) -- entrypoint
+    # "https" + certresolver "letsencrypt" copiados exatamente dos labels que
+    # o proprio Coolify gerou pro frontend (confirmado via
+    # `docker inspect <container-frontend> --format '{{json .Config.Labels}}'`
+    # no terminal do Coolify), pra nao adivinhar nome de resolver/entrypoint
+    # errado e derrubar o Traefik. O roteador antigo (so IP, so http) foi
+    # mantido em paralelo -- ambos os hosts (IP puro e dominio novo) seguem
+    # funcionando durante a transicao; remover o fallback do IP e adicionar
+    # redirect-to-https so depois de confirmar que nada mais depende dele
+    # (app mobile em producao, etc.).
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.fiurj-backend-api.rule=Host(`187.77.56.182`) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
+      - "traefik.http.routers.fiurj-backend-api.rule=(Host(`187.77.56.182`) || Host(`sga.fiurj.edu.br`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
       - traefik.http.routers.fiurj-backend-api.entrypoints=http
+      - "traefik.http.routers.fiurj-backend-api-https.rule=(Host(`187.77.56.182`) || Host(`sga.fiurj.edu.br`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
+      - traefik.http.routers.fiurj-backend-api-https.entrypoints=https
+      - traefik.http.routers.fiurj-backend-api-https.tls=true
+      - traefik.http.routers.fiurj-backend-api-https.tls.certresolver=letsencrypt
       - traefik.http.services.fiurj-backend-api.loadbalancer.server.port=3001
       - traefik.docker.network=v10jck0yzwz1d35xxcj6akxt
 
