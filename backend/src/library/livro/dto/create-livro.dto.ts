@@ -10,4 +10,5 @@ export class CreateLivroDto {
   @ApiPropertyOptional({ example: 2024 }) @IsOptional() @IsInt() @Min(0) anoPublicacao?: number;
   @ApiPropertyOptional({ example: '305.8', description: 'Classificação Decimal de Dewey (CDD)' }) @IsOptional() @IsString() cdd?: string;
   @ApiPropertyOptional({ example: 'G298i', description: 'Notação de Cutter' }) @IsOptional() @IsString() cutter?: string;
+  @ApiPropertyOptional({ example: '24.ed' }) @IsOptional() @IsString() edicao?: string;
 }

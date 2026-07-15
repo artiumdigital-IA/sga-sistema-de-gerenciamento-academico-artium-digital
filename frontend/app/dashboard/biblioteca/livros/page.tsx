@@ -6,12 +6,12 @@ interface Exemplar { id: string; codigoTombamento: string; localizacao: string |
 type StatusItem = 'DISPONIVEL' | 'EMPRESTADO' | 'MANUTENCAO' | 'EXTRAVIADO' | 'BAIXADO';
 interface Livro {
   id: string; titulo: string; autor: string; editora: string | null; isbn: string | null;
-  categoria: string | null; anoPublicacao: number | null; cdd: string | null; cutter: string | null;
+  categoria: string | null; anoPublicacao: number | null; cdd: string | null; cutter: string | null; edicao: string | null;
   exemplares?: Exemplar[];
 }
 type FormData = Omit<Livro, 'id' | 'exemplares'>;
 
-const EMPTY: FormData = { titulo: '', autor: '', editora: '', isbn: '', categoria: '', anoPublicacao: null, cdd: '', cutter: '' };
+const EMPTY: FormData = { titulo: '', autor: '', editora: '', isbn: '', categoria: '', anoPublicacao: null, cdd: '', cutter: '', edicao: '' };
 
 const STATUS_LABEL: Record<StatusItem, string> = {
   DISPONIVEL: 'Disponível', EMPRESTADO: 'Emprestado', MANUTENCAO: 'Manutenção', EXTRAVIADO: 'Extraviado', BAIXADO: 'Baixado',
@@ -56,7 +56,7 @@ function LivroModal({ livro, onClose, onSave }: { livro: Livro | null; onClose: 
         titulo: form.titulo, autor: form.autor,
         editora: form.editora || undefined, isbn: form.isbn || undefined, categoria: form.categoria || undefined,
         anoPublicacao: form.anoPublicacao || undefined,
-        cdd: form.cdd || undefined, cutter: form.cutter || undefined,
+        cdd: form.cdd || undefined, cutter: form.cutter || undefined, edicao: form.edicao || undefined,
       };
       if (livro) await apiFetch(`/biblioteca/livros/${livro.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       else await apiFetch('/biblioteca/livros', { method: 'POST', body: JSON.stringify(body) });
@@ -79,6 +79,7 @@ function LivroModal({ livro, onClose, onSave }: { livro: Livro | null; onClose: 
             <F label="Categoria"><input style={INPUT} value={form.categoria ?? ''} onChange={e => set('categoria', e.target.value)} /></F>
             <F label="CDD"><input style={INPUT} placeholder="Ex: 305.8" value={form.cdd ?? ''} onChange={e => set('cdd', e.target.value)} /></F>
             <F label="Cutter"><input style={INPUT} placeholder="Ex: G298i" value={form.cutter ?? ''} onChange={e => set('cutter', e.target.value)} /></F>
+            <F label="Edição"><input style={INPUT} placeholder="Ex: 24.ed" value={form.edicao ?? ''} onChange={e => set('edicao', e.target.value)} /></F>
           </div>
           {error && <p style={{ color: '#e02424', fontSize: 13, margin: 0 }}>{error}</p>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>

@@ -1127,6 +1127,11 @@ model Livro {
   // cópia (ver ExemplarLivro.numeroExemplar/codigoTombamento).
   cdd    String?
   cutter String?
+  // Edição (ex: "24.ed", "8.ed.atu"), texto livre -- fonte real (docx da
+  // biblioteca de Direito) tem formatos inconsistentes o bastante (com/sem
+  // ponto, "atu"/"rev" grudado) pra não valer a pena tentar estruturar num
+  // formato mais rígido.
+  edicao String?
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
