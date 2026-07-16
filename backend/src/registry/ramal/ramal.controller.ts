@@ -22,7 +22,7 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class RamalController {
   constructor(private readonly service: RamalService) {}
 
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('ramais')
   @Post()
   @ApiOperation({ summary: 'Cadastrar ramal (ADMIN)' })
@@ -42,7 +42,7 @@ export class RamalController {
     return this.service.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('ramais')
   @Patch(':id')
   @ApiOperation({ summary: 'Editar ramal (ADMIN)' })
@@ -50,7 +50,7 @@ export class RamalController {
     return this.service.update(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('ramais')
   @Delete(':id')
   @ApiOperation({ summary: 'Remover ramal (ADMIN)' })

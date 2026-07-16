@@ -794,6 +794,23 @@ async function main() {
     console.log('↷ Massa de teste legada (avisos/financeiro/ingresso/secretaria/etc.) já existe, seed não duplicou.');
   }
 
+  // ── Perfil Master (Jul/2026) — ferramentas de sistema (Painel do Sistema,
+  // Identidade Visual, Ramais, Log de Auditoria), acima do ADMIN comum. ────
+  const senhaMasterHash = await bcrypt.hash('master123', 12);
+  const master = await prisma.usuario.upsert({
+    where: { email: 'master@fiurj.edu.br' },
+    update: {},
+    create: {
+      email: 'master@fiurj.edu.br',
+      senhaHash: senhaMasterHash,
+      perfil: 'MASTER',
+      mfaAtivo: false,
+      status: 'ATIVO',
+      nome: 'Master',
+    },
+  });
+  console.log(`✅ Usuário master: ${master.email}  (senha: master123)`);
+
   // ── Suporte / Chamados de Manutenção (Jul/2026) ─────────────────────────
   const senhaManutHash = await bcrypt.hash('manut123', 12);
   const manutencao = await prisma.usuario.upsert({

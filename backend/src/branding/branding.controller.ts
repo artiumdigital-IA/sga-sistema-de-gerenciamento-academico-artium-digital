@@ -60,7 +60,7 @@ export class BrandingController {
   // (/dashboard/admin/visual) da matriz de Permissoes de Tela.
 
   @ApiBearerAuth()
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('visual')
   @Put()
   @ApiOperation({ summary: 'Atualizar nome/cores da instituição (ADMIN)' })
@@ -69,7 +69,7 @@ export class BrandingController {
   }
 
   @ApiBearerAuth()
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('visual')
   @Post('logo')
   @ApiConsumes('multipart/form-data')
@@ -97,7 +97,7 @@ export class BrandingController {
   }
 
   @ApiBearerAuth()
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('visual')
   @Post('simbolo')
   @ApiConsumes('multipart/form-data')
@@ -130,7 +130,7 @@ export class BrandingController {
   // restrita ao ADMIN, atrás da mesma tela "Identidade Visual".
 
   @ApiBearerAuth()
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('visual')
   @Post('galeria')
   @ApiConsumes('multipart/form-data')
@@ -158,7 +158,7 @@ export class BrandingController {
   }
 
   @ApiBearerAuth()
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('visual')
   @Patch('galeria/:id')
   @ApiOperation({ summary: 'Ativar/desativar, reordenar ou definir o link de clique de uma imagem da galeria (ADMIN)' })
@@ -171,7 +171,7 @@ export class BrandingController {
   }
 
   @ApiBearerAuth()
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('visual')
   @Delete('galeria/:id')
   @ApiOperation({ summary: 'Remover imagem da galeria de publicidade (ADMIN)' })

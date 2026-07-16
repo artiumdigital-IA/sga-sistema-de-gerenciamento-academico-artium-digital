@@ -7,7 +7,7 @@ import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Sistema')
 @ApiBearerAuth()
-@Roles(Perfil.ADMIN)
+@Roles(Perfil.ADMIN, Perfil.MASTER)
 @Controller('sistema')
 @Tela('sistema')
 export class SystemController {

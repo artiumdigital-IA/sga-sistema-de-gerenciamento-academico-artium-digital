@@ -74,6 +74,21 @@ const MENU_MANUTENCAO_GROUP: { title: string; items: RpanelItem[] } = {
   ],
 };
 
+// "Ferramentas Master" — autoatendimento do perfil MASTER (Jul/2026), acima
+// do ADMIN comum. Mesmo princípio de Menu Discente/Docente/Manutenção:
+// SUBSTITUI todos os outros grupos. Os 4 itens já existem/são usados por
+// ADMIN em Administração/Utilitários (RPANEL_GROUPS) — aqui é só uma vitrine
+// exclusiva com só eles, não uma tela nova.
+const MENU_MASTER_GROUP: { title: string; items: RpanelItem[] } = {
+  title: 'Ferramentas Master',
+  items: [
+    { label: 'Painel do Sistema', href: '/dashboard/admin/sistema' },
+    { label: 'Identidade Visual', href: '/dashboard/admin/visual' },
+    { label: 'Ramais', href: '/dashboard/utilitarios/ramais' },
+    { label: 'Consulta a registro de acesso ao sistema', href: '/dashboard/admin/log' },
+  ],
+};
+
 // Mapeamento "Barra Rápida" (nomenclatura/estrutura de menu da Kirsch, levantada no spike de
 // migração) -> telas equivalentes já existentes na plataforma nova. href: null = ainda não
 // construído aqui (fica visível, porém desabilitado, pra deixar claro o que falta).
@@ -226,11 +241,12 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
    * diferente da sidebar, aqui não há risco de vazar uma tela sensível
    * porque são só rótulos/atalhos, o bloqueio de fato é o guard de rota). */
   chavesHabilitadas: Set<string> | null;
-  /** Perfil do usuário logado — ALUNO vê SÓ o "Menu Discente" e PROFESSOR vê SÓ
-   * o "Menu Docente" na Barra Rápida (nada dos menus de secretaria/financeiro/
-   * admin); os demais perfis veem os grupos de sempre. undefined/null = ainda
-   * carregando o JWT, trata como perfil administrativo até saber (evita mostrar
-   * um menu de autoatendimento e sumir em seguida). */
+  /** Perfil do usuário logado — ALUNO, PROFESSOR, MANUTENCAO e MASTER veem
+   * SÓ o respectivo menu exclusivo (Menu Discente/Docente/Manutenção/
+   * Ferramentas Master) na Barra Rápida, nada dos menus de secretaria/
+   * financeiro/admin; os demais perfis veem os grupos de sempre. undefined/
+   * null = ainda carregando o JWT, trata como perfil administrativo até
+   * saber (evita mostrar um menu de autoatendimento e sumir em seguida). */
   perfil?: string | null;
 }) {
   const pathname = usePathname();
@@ -240,7 +256,9 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
       ? [MENU_DOCENTE_GROUP]
       : perfil === 'MANUTENCAO'
         ? [MENU_MANUTENCAO_GROUP]
-        : RPANEL_GROUPS;
+        : perfil === 'MASTER'
+          ? [MENU_MASTER_GROUP]
+          : RPANEL_GROUPS;
   const initialOpen = gruposBase.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
   const [busca, setBusca] = useState('');

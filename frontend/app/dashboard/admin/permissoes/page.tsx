@@ -7,14 +7,14 @@ import { TELAS_SISTEMA } from '@/lib/telas-sistema';
 
 const EMAIL_ADMIN_MASTER = 'admin@fiurj.edu.br';
 
-type Perfil = 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO' | 'MANUTENCAO';
-const PERFIS: Perfil[] = ['ADMIN', 'SECRETARIA', 'FINANCEIRO', 'PROFESSOR', 'ALUNO', 'MANUTENCAO'];
+type Perfil = 'MASTER' | 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO' | 'MANUTENCAO';
+const PERFIS: Perfil[] = ['MASTER', 'ADMIN', 'SECRETARIA', 'FINANCEIRO', 'PROFESSOR', 'ALUNO', 'MANUTENCAO'];
 const PERFIL_LABEL: Record<Perfil, string> = {
-  ADMIN: 'Admin', SECRETARIA: 'Secretaria', FINANCEIRO: 'Financeiro',
+  MASTER: 'Master', ADMIN: 'Admin', SECRETARIA: 'Secretaria', FINANCEIRO: 'Financeiro',
   PROFESSOR: 'Professor', ALUNO: 'Aluno', MANUTENCAO: 'Manutenção',
 };
 const PERFIL_COLOR: Record<Perfil, string> = {
-  ADMIN: '#dc2626', SECRETARIA: '#2563eb', FINANCEIRO: '#16a34a',
+  MASTER: '#000000', ADMIN: '#dc2626', SECRETARIA: '#2563eb', FINANCEIRO: '#16a34a',
   PROFESSOR: '#7c3aed', ALUNO: '#d97706', MANUTENCAO: '#0d9488',
 };
 

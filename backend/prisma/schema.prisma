@@ -569,6 +569,7 @@ enum SituacaoResultado {
 }
 
 enum Perfil {
+  MASTER
   ADMIN
   SECRETARIA
   FINANCEIRO

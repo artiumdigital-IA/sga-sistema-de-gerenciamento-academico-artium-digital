@@ -7,14 +7,14 @@ import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 
 @ApiTags('Auditoria')
 @ApiBearerAuth()
-@Roles(Perfil.ADMIN)
+@Roles(Perfil.ADMIN, Perfil.MASTER)
 @Controller('auditoria')
 @Tela('log')
 export class AuditController {
   constructor(private readonly service: AuditService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Consultar arquivo de log (auditoria) — ADMIN' })
+  @ApiOperation({ summary: 'Consultar arquivo de log (auditoria) — ADMIN/MASTER' })
   @ApiQuery({ name: 'entidade', required: false })
   @ApiQuery({ name: 'acao', required: false })
   @ApiQuery({ name: 'usuarioId', required: false })
