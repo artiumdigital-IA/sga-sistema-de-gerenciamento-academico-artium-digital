@@ -24,8 +24,10 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# OpenSSL necessário para o Prisma schema engine
-RUN apk add --no-cache openssl
+# OpenSSL necessário para o Prisma schema engine; postgresql-client traz o
+# binário `pg_dump`, usado pelo módulo Relatórios Master (perfil MASTER) pra
+# gerar backup SQL completo/só-schema direto do banco de produção.
+RUN apk add --no-cache openssl postgresql-client
 
 # Instala TODAS as dependências, incluindo devDependencies (ts-node,
 # typescript, prisma) -- necessárias em runtime pro "npx prisma db seed"

@@ -80,6 +80,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'log', label: 'Log de Auditoria', grupo: 'Administração', prefixos: ['/dashboard/admin/log'] },
   { chave: 'sistema', label: 'Painel do Sistema', grupo: 'Administração', prefixos: ['/dashboard/admin/sistema'] },
   { chave: 'visual', label: 'Identidade Visual', grupo: 'Administração', prefixos: ['/dashboard/admin/visual'] },
+  { chave: 'relatorios-master', label: 'Relatórios Master', grupo: 'Administração', prefixos: ['/dashboard/admin/relatorios-master'] },
 
   // ── Utilitários ──────────────────────────────────────────────────────
   { chave: 'calculadora', label: 'Calculadora', grupo: 'Utilitários', prefixos: ['/dashboard/utilitarios/calculadora'] },

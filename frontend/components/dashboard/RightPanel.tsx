@@ -76,10 +76,12 @@ const MENU_MANUTENCAO_GROUP: { title: string; items: RpanelItem[] } = {
 
 // "Ferramentas Master" — autoatendimento do perfil MASTER (Jul/2026), acima
 // do ADMIN comum. Mesmo princípio de Menu Discente/Docente/Manutenção:
-// SUBSTITUI todos os outros grupos. 4 dos 5 itens já existem/são usados por
+// SUBSTITUI todos os outros grupos. 4 dos 6 itens já existem/são usados por
 // ADMIN em Administração/Utilitários (RPANEL_GROUPS) — aqui é só uma vitrine
-// exclusiva com só eles, não uma tela nova. "Permissões de Tela" é a exceção:
-// além de MASTER, só a conta admin@fiurj.edu.br acessa (ver AdminMasterGuard).
+// exclusiva com só eles, não uma tela nova. Duas exceções, MASTER-only de
+// verdade: "Permissões de Tela" (além de MASTER, só admin@fiurj.edu.br
+// acessa — ver AdminMasterGuard) e "Relatórios Master" (dump completo do
+// banco — nem ADMIN tem acesso, ver relatorios-master.controller.ts).
 const MENU_MASTER_GROUP: { title: string; items: RpanelItem[] } = {
   title: 'Ferramentas Master',
   items: [
@@ -88,6 +90,7 @@ const MENU_MASTER_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Ramais', href: '/dashboard/utilitarios/ramais' },
     { label: 'Consulta a registro de acesso ao sistema', href: '/dashboard/admin/log' },
     { label: 'Permissões de Tela', href: '/dashboard/admin/permissoes' },
+    { label: 'Relatórios Master', href: '/dashboard/admin/relatorios-master' },
   ],
 };
 

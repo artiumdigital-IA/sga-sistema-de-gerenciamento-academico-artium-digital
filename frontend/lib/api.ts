@@ -38,6 +38,36 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   return res.json() as Promise<T>;
 }
 
+/** Baixa um arquivo gerado pelo backend (ex: dumps do Relatórios Master) —
+ * autenticado via Bearer token (por isso não dá pra só usar um <a href>
+ * direto, o navegador não manda o header em navegação simples). Lê o nome
+ * do arquivo do header Content-Disposition se o backend mandar, senão usa
+ * o `filenameFallback`. */
+export async function apiDownload(path: string, filenameFallback: string): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const msg = (body as { message?: string | string[] }).message;
+    throw new Error(Array.isArray(msg) ? msg.join('; ') : (msg ?? `Erro ${res.status}`));
+  }
+
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? filenameFallback;
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /** Upload multipart autenticado (ex: foto de perfil). Não define Content-Type
  * manualmente — o browser define o boundary correto automaticamente. */
 export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {

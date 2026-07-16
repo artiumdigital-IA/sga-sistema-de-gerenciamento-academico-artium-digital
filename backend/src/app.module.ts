@@ -18,6 +18,7 @@ import { HealthModule } from './health/health.module';
 import { LibraryModule } from './library/library.module';
 import { PushModule } from './push/push.module';
 import { DocenteModule } from './docente/docente.module';
+import { RelatoriosMasterModule } from './relatorios-master/relatorios-master.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guard';
@@ -42,6 +43,7 @@ import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guar
     LibraryModule,
     PushModule,
     DocenteModule,
+    RelatoriosMasterModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
