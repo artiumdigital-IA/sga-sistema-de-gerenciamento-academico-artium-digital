@@ -28,6 +28,7 @@ export interface BrandingConfig {
   nomeInstituicao: string;
   nomeCompleto: string;
   logoUrl: string | null;
+  logoBrancaUrl: string | null;
   simboloUrl: string | null;
   corPrimaria: string;
   corSecundaria: string;
@@ -42,6 +43,7 @@ export const BRANDING_PADRAO: BrandingConfig = {
   nomeInstituicao: 'FIURJ',
   nomeCompleto: 'FIURJ — Faculdade Instituto Universitário do Rio de Janeiro',
   logoUrl: null,
+  logoBrancaUrl: null,
   simboloUrl: null,
   corPrimaria: '#1C3A6B',
   corSecundaria: '#C8102E',

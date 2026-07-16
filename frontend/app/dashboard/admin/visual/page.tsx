@@ -28,11 +28,13 @@ export default function VisualPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingLogoBranca, setUploadingLogoBranca] = useState(false);
   const [uploadingSimbolo, setUploadingSimbolo] = useState(false);
   const [uploadingGaleria, setUploadingGaleria] = useState(false);
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoBrancaInputRef = useRef<HTMLInputElement>(null);
   const simboloInputRef = useRef<HTMLInputElement>(null);
   const galeriaInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,8 +72,9 @@ export default function VisualPage() {
     }
   }
 
-  async function enviarArquivo(campo: 'logo' | 'simbolo', file: File) {
-    const setUploading = campo === 'logo' ? setUploadingLogo : setUploadingSimbolo;
+  async function enviarArquivo(campo: 'logo' | 'logo-branca' | 'simbolo', file: File) {
+    const setUploading = campo === 'logo' ? setUploadingLogo : campo === 'logo-branca' ? setUploadingLogoBranca : setUploadingSimbolo;
+    const rotulo = campo === 'logo' ? 'Logo atualizada.' : campo === 'logo-branca' ? 'Logo branca atualizada.' : 'Símbolo atualizado.';
     setUploading(true); setMsg(null);
     try {
       const fd = new FormData();
@@ -79,7 +82,7 @@ export default function VisualPage() {
       const atualizado = await apiUpload<BrandingConfig>(`/branding/${campo}`, fd);
       setConfig(atualizado);
       notificarBrandingAtualizada();
-      setMsg({ tipo: 'ok', texto: campo === 'logo' ? 'Logo atualizada.' : 'Símbolo atualizado.' });
+      setMsg({ tipo: 'ok', texto: rotulo });
     } catch (err: unknown) {
       setMsg({ tipo: 'erro', texto: err instanceof Error ? err.message : 'Erro ao enviar arquivo.' });
     } finally {
@@ -160,9 +163,9 @@ export default function VisualPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
         <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16 }}>
-          <div style={LABEL}>Logo (login, menu, documentos)</div>
+          <div style={LABEL}>Logo (menu, documentos)</div>
           <div style={{
             height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'var(--gray-50)', border: '1px dashed var(--gray-300)', borderRadius: 6, marginBottom: 10,
@@ -177,6 +180,25 @@ export default function VisualPage() {
           />
           <button style={BTN('ghost')} disabled={uploadingLogo} onClick={() => logoInputRef.current?.click()}>
             {uploadingLogo ? 'Enviando...' : 'Trocar logo'}
+          </button>
+        </div>
+
+        <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, padding: 16 }}>
+          <div style={LABEL}>Logo branca (fundos escuros, ex.: login)</div>
+          <div style={{
+            height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--blue-dark, #1C3A6B)', border: '1px dashed var(--gray-300)', borderRadius: 6, marginBottom: 10,
+          }}>
+            {config.logoBrancaUrl
+              ? <img src={apiFileUrl(config.logoBrancaUrl) ?? ''} alt="Logo branca" style={{ maxHeight: 70, maxWidth: '90%', objectFit: 'contain' }} />
+              : <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Nenhuma logo branca enviada</span>}
+          </div>
+          <input
+            ref={logoBrancaInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) enviarArquivo('logo-branca', f); e.target.value = ''; }}
+          />
+          <button style={BTN('ghost')} disabled={uploadingLogoBranca} onClick={() => logoBrancaInputRef.current?.click()}>
+            {uploadingLogoBranca ? 'Enviando...' : 'Trocar logo branca'}
           </button>
         </div>
 

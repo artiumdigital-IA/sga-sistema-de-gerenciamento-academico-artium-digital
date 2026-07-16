@@ -4,10 +4,11 @@
  * Regras:
  *  • /dashboard/* sem cookie fiurj_token  → redireciona para /login
  *  • /login com cookie fiurj_token válido → redireciona para /dashboard
- *  • /dashboard/admin/permissoes com e-mail != admin@fiurj.edu.br → /dashboard
- *    (tela de matriz de permissões — restrita a UMA conta específica, não ao
- *    perfil ADMIN em geral; mesma regra replicada no backend via
- *    AdminMasterGuard, que é a checagem que realmente vale)
+ *  • /dashboard/admin/permissoes com e-mail != admin@fiurj.edu.br E perfil != MASTER
+ *    → /dashboard (tela de matriz de permissões — restrita a essa conta
+ *    específica + qualquer usuário MASTER, não ao perfil ADMIN em geral;
+ *    mesma regra replicada no backend via AdminMasterGuard, que é a
+ *    checagem que realmente vale)
  *  • Todas as outras rotas passam livre
  *
  * ⚠️  O middleware NÃO verifica a assinatura do JWT (Edge não tem
@@ -54,6 +55,17 @@ function getTokenEmail(token: string | undefined): string | null {
   }
 }
 
+function getTokenPerfil(token: string | undefined): string | null {
+  if (!token) return null;
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64)) as { perfil?: string };
+    return payload.perfil ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(TOKEN_COOKIE)?.value;
@@ -81,7 +93,11 @@ export function middleware(request: NextRequest) {
   // explicação nenhuma, parecendo um ícone quebrado/sem resposta ("ficou
   // parado no Painel"). Agora leva um parâmetro que o Painel usa pra mostrar
   // um aviso explicando o motivo.
-  if (pathname.startsWith('/dashboard/admin/permissoes') && getTokenEmail(token) !== EMAIL_ADMIN_MASTER) {
+  if (
+    pathname.startsWith('/dashboard/admin/permissoes') &&
+    getTokenEmail(token) !== EMAIL_ADMIN_MASTER &&
+    getTokenPerfil(token) !== 'MASTER'
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     url.searchParams.set('acessoNegado', 'permissoes');

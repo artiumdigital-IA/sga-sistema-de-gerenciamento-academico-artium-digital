@@ -11,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
   const branding = useBranding();
   const logoUrl = apiFileUrl(branding.logoUrl);
+  const logoBrancaUrl = apiFileUrl(branding.logoBrancaUrl);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [totpToken, setTotpToken] = useState('');
@@ -50,7 +51,7 @@ export default function LoginPage() {
       }}>
         <div style={{ position: 'absolute', left: 48, bottom: 48, maxWidth: 480, color: '#fff', zIndex: 1 }}>
           <div style={{ marginBottom: 24 }}>
-            <Image src={logoUrl || '/assets/logoBranca.png.png'} alt={branding.nomeInstituicao}
+            <Image src={logoBrancaUrl || '/assets/logoBranca.png.png'} alt={branding.nomeInstituicao}
               width={120} height={40} style={{ objectFit: 'contain' }} unoptimized />
           </div>
           <h2 style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.3, marginBottom: 10 }}>
@@ -82,7 +83,7 @@ export default function LoginPage() {
             </div>
           </div>
           <Image src={logoUrl || '/assets/logoColorida.png.webp'} alt={branding.nomeInstituicao}
-            width={80} height={42} style={{ objectFit: 'contain' }} unoptimized />
+            width={100} height={53} style={{ objectFit: 'contain' }} unoptimized />
         </div>
 
         <div style={{ fontSize: 14, color: 'var(--gray-700)', marginBottom: 28 }}>

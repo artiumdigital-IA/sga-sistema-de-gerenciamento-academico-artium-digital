@@ -99,6 +99,34 @@ export class BrandingController {
   @ApiBearerAuth()
   @Roles(Perfil.ADMIN, Perfil.MASTER)
   @Tela('visual')
+  @Post('logo-branca')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Enviar variante branca da logo — usada em fundos escuros, ex.: painel de login (ADMIN)' })
+  @UseInterceptors(
+    FileInterceptor('arquivo', {
+      storage: multer.diskStorage({
+        destination: BRANDING_UPLOAD_DIR,
+        filename: (_req: any, file: ArquivoUpload, cb: (error: Error | null, filename: string) => void) => {
+          cb(null, `logo-branca-${Date.now()}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
+      fileFilter: (_req: any, file: ArquivoUpload, cb: (error: Error | null, acceptFile: boolean) => void) => {
+        if (!TIPOS_IMAGEM_PERMITIDOS.test(file.mimetype)) {
+          return cb(new BadRequestException('Envie uma imagem JPG, PNG, WEBP ou SVG.'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadLogoBranca(@UploadedFile() file: ArquivoUpload, @Request() req: any) {
+    if (!file) throw new BadRequestException('Nenhum arquivo enviado.');
+    return this.service.atualizarLogoBranca(`/uploads/branding/${file.filename}`, req.user?.id);
+  }
+
+  @ApiBearerAuth()
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
+  @Tela('visual')
   @Post('simbolo')
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Enviar símbolo/ícone da instituição — usado como favicon (ADMIN)' })

@@ -72,6 +72,28 @@ export class BrandingService {
     return config;
   }
 
+  /** Variante branca da logo — usada em painéis de fundo escuro (ex.: painel
+   * esquerdo da tela de login) onde a logo colorida não tem contraste
+   * suficiente. */
+  async atualizarLogoBranca(logoBrancaUrl: string, usuarioId?: string) {
+    const antes = await this.getConfig();
+    const config = await this.prisma.configuracaoVisual.update({
+      where: { id: CONFIG_ID },
+      data: { logoBrancaUrl },
+    });
+    if (usuarioId) {
+      await this.audit.log({
+        usuarioId,
+        acao: 'UPDATE',
+        entidade: 'ConfiguracaoVisual',
+        entidadeId: CONFIG_ID,
+        dadosAntes: { logoBrancaUrl: antes.logoBrancaUrl },
+        dadosDepois: { logoBrancaUrl },
+      });
+    }
+    return config;
+  }
+
   async atualizarSimbolo(simboloUrl: string, usuarioId?: string) {
     const antes = await this.getConfig();
     const config = await this.prisma.configuracaoVisual.update({

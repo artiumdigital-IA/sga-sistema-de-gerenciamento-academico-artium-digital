@@ -36,8 +36,9 @@ const SIDEBAR_ITEMS = [
 ];
 
 const PERFIL_LABEL: Record<string, string> = {
-  ADMIN: 'Administrador', SECRETARIA: 'Secretaria',
+  MASTER: 'Master', ADMIN: 'Administrador', SECRETARIA: 'Secretaria',
   FINANCEIRO: 'Financeiro', PROFESSOR: 'Professor', ALUNO: 'Aluno',
+  MANUTENCAO: 'Manutenção',
 };
 
 function SvgIcon({ d, size = 18 }: { d: string; size?: number }) {
@@ -184,7 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  const souAdminMaster = user?.email === EMAIL_ADMIN_MASTER;
+  const souAdminMaster = user?.email === EMAIL_ADMIN_MASTER || user?.perfil === 'MASTER';
 
   const topH = 44;
   const sideW = sidebarOpen ? 210 : 52;

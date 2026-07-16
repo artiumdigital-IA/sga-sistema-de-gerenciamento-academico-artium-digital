@@ -1177,6 +1177,7 @@ model ConfiguracaoVisual {
   nomeInstituicao String  @default("FIURJ")
   nomeCompleto    String  @default("FIURJ — Faculdade Instituto Universitário do Rio de Janeiro")
   logoUrl         String?
+  logoBrancaUrl   String?
   simboloUrl      String?
   corPrimaria     String  @default("#1C3A6B")
   corSecundaria   String  @default("#C8102E")

@@ -774,7 +774,7 @@ export default function DashboardPage() {
     if (typeof window === 'undefined') return null;
     const motivo = new URLSearchParams(window.location.search).get('acessoNegado');
     if (motivo === 'permissoes') {
-      return 'A tela de Matriz de Permissões é restrita à conta administradora master (admin@fiurj.edu.br).';
+      return 'A tela de Matriz de Permissões é restrita à conta administradora master (admin@fiurj.edu.br) e a usuários com perfil Master.';
     }
     return null;
   });
