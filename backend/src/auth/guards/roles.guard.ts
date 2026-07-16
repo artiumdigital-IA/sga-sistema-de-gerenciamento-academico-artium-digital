@@ -24,6 +24,13 @@ export class RolesGuard implements CanActivate {
     const { user } = context.switchToHttp().getRequest();
     if (!user) return false;
 
+    // MASTER acessa toda página/endpoint do sistema sem restrição de perfil,
+    // mesmo sem estar listado no @Roles() de cada rota individualmente —
+    // decisão explícita do projeto (Jul/2026): MASTER é a camada acima do
+    // ADMIN comum, não mais um perfil igual aos outros que precisa ser
+    // adicionado rota a rota.
+    if (user.perfil === 'MASTER') return true;
+
     const hasRole = requiredRoles.includes(user.perfil as Perfil);
     if (!hasRole) {
       throw new ForbiddenException(

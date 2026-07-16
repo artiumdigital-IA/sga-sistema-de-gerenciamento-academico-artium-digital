@@ -74,14 +74,16 @@ const MENU_MANUTENCAO_GROUP: { title: string; items: RpanelItem[] } = {
   ],
 };
 
-// "Ferramentas Master" — autoatendimento do perfil MASTER (Jul/2026), acima
-// do ADMIN comum. Mesmo princípio de Menu Discente/Docente/Manutenção:
-// SUBSTITUI todos os outros grupos. 4 dos 6 itens já existem/são usados por
-// ADMIN em Administração/Utilitários (RPANEL_GROUPS) — aqui é só uma vitrine
-// exclusiva com só eles, não uma tela nova. Duas exceções, MASTER-only de
-// verdade: "Permissões de Tela" (além de MASTER, só admin@fiurj.edu.br
-// acessa — ver AdminMasterGuard) e "Relatórios Master" (dump completo do
-// banco — nem ADMIN tem acesso, ver relatorios-master.controller.ts).
+// "Ferramentas Master" — atalhos extras do perfil MASTER (Jul/2026), acima
+// do ADMIN comum. Diferente de Menu Discente/Docente/Manutenção, NÃO
+// substitui os outros grupos — MASTER acessa TUDO sem restrição (ver
+// RolesGuard/PermissoesTelaService: MASTER passa por qualquer @Roles() e
+// enxerga toda tela da matriz, mesmo sem estar listado rota a rota), então
+// vê o painel inteiro de ADMIN (RPANEL_GROUPS) MAIS este grupo em cima. 4
+// dos 6 itens aqui já existem/são usados por ADMIN em Administração/
+// Utilitários — aqui é só uma vitrine com só eles, não uma tela nova.
+// "Permissões de Tela" e "Relatórios Master" são os únicos itens que só
+// MASTER (e, no caso de Permissões, também admin@fiurj.edu.br) alcançam.
 const MENU_MASTER_GROUP: { title: string; items: RpanelItem[] } = {
   title: 'Ferramentas Master',
   items: [
@@ -246,11 +248,12 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
    * diferente da sidebar, aqui não há risco de vazar uma tela sensível
    * porque são só rótulos/atalhos, o bloqueio de fato é o guard de rota). */
   chavesHabilitadas: Set<string> | null;
-  /** Perfil do usuário logado — ALUNO, PROFESSOR, MANUTENCAO e MASTER veem
-   * SÓ o respectivo menu exclusivo (Menu Discente/Docente/Manutenção/
-   * Ferramentas Master) na Barra Rápida, nada dos menus de secretaria/
-   * financeiro/admin; os demais perfis veem os grupos de sempre. undefined/
-   * null = ainda carregando o JWT, trata como perfil administrativo até
+  /** Perfil do usuário logado — ALUNO, PROFESSOR e MANUTENCAO veem SÓ o
+   * respectivo menu exclusivo (Menu Discente/Docente/Manutenção) na Barra
+   * Rápida, nada dos menus de secretaria/financeiro/admin. MASTER é a
+   * exceção: vê os grupos de sempre (igual ADMIN) MAIS o grupo exclusivo
+   * "Ferramentas Master" em cima — MASTER não tem restrição nenhuma.
+   * undefined/null = ainda carregando o JWT, trata como perfil administrativo até
    * saber (evita mostrar um menu de autoatendimento e sumir em seguida). */
   perfil?: string | null;
 }) {
@@ -262,7 +265,11 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
       : perfil === 'MANUTENCAO'
         ? [MENU_MANUTENCAO_GROUP]
         : perfil === 'MASTER'
-          ? [MENU_MASTER_GROUP]
+          // MASTER acessa TUDO sem restrição (Jul/2026) — painel inteiro de
+          // ADMIN (RPANEL_GROUPS) mais as ferramentas exclusivas dele em
+          // cima, ao contrário de ALUNO/PROFESSOR/MANUTENCAO que só veem o
+          // próprio menu.
+          ? [...RPANEL_GROUPS, MENU_MASTER_GROUP]
           : RPANEL_GROUPS;
   const initialOpen = gruposBase.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);

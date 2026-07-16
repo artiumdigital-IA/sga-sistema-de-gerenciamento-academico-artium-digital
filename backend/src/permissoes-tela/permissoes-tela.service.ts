@@ -88,6 +88,10 @@ export class PermissoesTelaService {
    * chaves habilitadas (ausência de registro = usa o default de
    * `defaultHabilitada()`, ver comentário acima). */
   async minhasChavesHabilitadas(perfil: Perfil): Promise<string[]> {
+    // MASTER enxerga toda tela do sistema, sem exceção — nem passa pela
+    // matriz (nenhum admin consegue restringir MASTER por aqui, de propósito).
+    if (perfil === 'MASTER') return TELAS_SISTEMA.map(t => t.chave);
+
     const registros = await this.prisma.permissaoTela.findMany({
       where: { perfil },
       select: { chaveTela: true, habilitada: true },
