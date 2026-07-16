@@ -209,7 +209,7 @@ export default function UsuariosPage() {
 
   const token = getToken();
   const meUser = token ? parseJwt(token) : null;
-  const isAdmin = meUser?.perfil === 'ADMIN';
+  const isAdmin = meUser?.perfil === 'ADMIN' || meUser?.perfil === 'MASTER';
 
   const carregar = useCallback(async () => {
     setLoading(true); setErro('');

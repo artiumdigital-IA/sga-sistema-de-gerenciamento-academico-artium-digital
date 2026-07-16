@@ -78,7 +78,8 @@ export default function RamaisPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const token = getToken();
-  const isAdmin = token ? parseJwt(token)?.perfil === 'ADMIN' : false;
+  const perfilLogado = token ? parseJwt(token)?.perfil : null;
+  const isAdmin = perfilLogado === 'ADMIN' || perfilLogado === 'MASTER';
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -104,7 +105,7 @@ export default function RamaisPage() {
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Ramais</h1>
           <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--gray-500)' }}>
             Catálogo de ramais telefônicos da instituição — exibido no modal "Ramais" acessível a todos.
-            {!isAdmin && ' Somente Admin pode cadastrar, editar ou remover.'}
+            {!isAdmin && ' Somente Admin ou Master pode cadastrar, editar ou remover.'}
           </p>
         </div>
         {isAdmin && <button style={BTN('primary')} onClick={() => setModal('new')}>+ Novo Ramal</button>}
