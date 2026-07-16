@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/api';
 import { parseJwt, getToken } from '@/lib/auth';
 
 // ─── tipos ───────────────────────────────────────────────────────────────────
-type Perfil = 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO';
+type Perfil = 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO' | 'MANUTENCAO';
 type Status = 'ATIVO' | 'INATIVO' | 'BLOQUEADO';
 
 interface Usuario {
@@ -31,11 +31,11 @@ interface CreateForm {
 
 const PERFIL_LABEL: Record<Perfil, string> = {
   ADMIN: 'Admin', SECRETARIA: 'Secretaria', FINANCEIRO: 'Financeiro',
-  PROFESSOR: 'Professor', ALUNO: 'Aluno',
+  PROFESSOR: 'Professor', ALUNO: 'Aluno', MANUTENCAO: 'Manutenção',
 };
 const PERFIL_COLOR: Record<Perfil, string> = {
   ADMIN: '#dc2626', SECRETARIA: '#2563eb', FINANCEIRO: '#16a34a',
-  PROFESSOR: '#7c3aed', ALUNO: '#d97706',
+  PROFESSOR: '#7c3aed', ALUNO: '#d97706', MANUTENCAO: '#0d9488',
 };
 const STATUS_COLOR: Record<Status, string> = {
   ATIVO: '#16a34a', INATIVO: 'var(--gray-500)', BLOQUEADO: '#dc2626',

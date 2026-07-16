@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "FIURJ Docente",
+    "slug": "fiurj-app-docente",
+    "scheme": "fiurjdocente",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.edu.fiurj.docente",
+      "buildNumber": "1"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1C3A6B"
+      },
+      "package": "br.edu.fiurj.docente",
+      "versionCode": 1
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#1C3A6B"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O app precisa de acesso às fotos para anexar a prova corrigida do aluno.",
+          "cameraPermission": "O app precisa da câmera para fotografar a prova física corrigida do aluno."
+        }
+      ]
+    ]
+  }
+}

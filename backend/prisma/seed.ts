@@ -794,6 +794,60 @@ async function main() {
     console.log('↷ Massa de teste legada (avisos/financeiro/ingresso/secretaria/etc.) já existe, seed não duplicou.');
   }
 
+  // ── Suporte / Chamados de Manutenção (Jul/2026) ─────────────────────────
+  const senhaManutHash = await bcrypt.hash('manut123', 12);
+  const manutencao = await prisma.usuario.upsert({
+    where: { email: 'manutencao@fiurj.edu.br' },
+    update: {},
+    create: {
+      email: 'manutencao@fiurj.edu.br',
+      senhaHash: senhaManutHash,
+      perfil: 'MANUTENCAO',
+      mfaAtivo: false,
+      status: 'ATIVO',
+      nome: 'Equipe de Manutenção',
+    },
+  });
+  console.log(`✅ Usuário manutenção: ${manutencao.email}  (senha: manut123)`);
+
+  const tipoChamadoCount = await prisma.tipoChamadoManutencao.count();
+  if (tipoChamadoCount === 0) {
+    const tiposChamado = await Promise.all(
+      ['Elétrica', 'Hidráulica', 'TI / Informática', 'Mobiliário', 'Ar-condicionado', 'Limpeza'].map(nome =>
+        prisma.tipoChamadoManutencao.create({ data: { nome } }),
+      ),
+    );
+    const tipoPorNome = Object.fromEntries(tiposChamado.map(t => [t.nome, t]));
+    const solicitante = alunos['2024001']
+      ? await prisma.usuario.findFirst({ where: { alunoId: alunos['2024001'].id } })
+      : null;
+    const solicitanteId = solicitante?.id ?? manutencao.id;
+
+    await prisma.chamadoManutencao.create({
+      data: {
+        numero: 'CM20260001', tipoId: tipoPorNome['Ar-condicionado'].id, local: 'Sala 101',
+        prioridade: 'ALTA', titulo: 'Ar-condicionado não liga', descricao: 'Testado o controle, sem resposta do aparelho.',
+        status: 'ABERTO', solicitanteId,
+      },
+    });
+    await prisma.chamadoManutencao.create({
+      data: {
+        numero: 'CM20260002', tipoId: tipoPorNome['TI / Informática'].id, local: 'Laboratório de Informática',
+        prioridade: 'MEDIA', titulo: 'Computador não liga', status: 'EM_ANDAMENTO', solicitanteId, responsavelId: manutencao.id,
+      },
+    });
+    await prisma.chamadoManutencao.create({
+      data: {
+        numero: 'CM20260003', tipoId: tipoPorNome['Hidráulica'].id, local: 'Banheiro Térreo',
+        prioridade: 'URGENTE', titulo: 'Vazamento na torneira', status: 'CONCLUIDO', solicitanteId,
+        responsavelId: manutencao.id, dataConclusao: new Date(),
+      },
+    });
+    console.log('✅ 6 tipos de chamado + 3 chamados de manutenção de teste');
+  } else {
+    console.log('↷ Tipos/chamados de manutenção já existem, seed não duplicou.');
+  }
+
   console.log('\n⚠️  ATENÇÃO: Altere as senhas em produção!');
   console.log('🏁 Seed concluído.');
 }

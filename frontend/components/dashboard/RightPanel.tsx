@@ -35,7 +35,7 @@ const MENU_DISCENTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Conteúdos Extras', href: '/dashboard/discente/conteudos-extras' },
     { label: 'Financeiro', href: '/dashboard/discente/financeiro' },
     { label: 'Carreiras', href: '/dashboard/discente/carreiras' },
-    { label: 'Suporte', href: '/dashboard/discente/suporte' },
+    { label: 'Suporte', href: '/dashboard/suporte/meus-chamados' },
     { label: 'Biblioteca — Acervo', href: '/dashboard/biblioteca/livros' },
     { label: 'Biblioteca — Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
     { label: 'Perfil', href: '/dashboard/discente/perfil' },
@@ -58,6 +58,19 @@ const MENU_DOCENTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Aviso para Turma', href: '/dashboard/docente/aviso-turma' },
     { label: 'Biblioteca — Acervo', href: '/dashboard/biblioteca/livros' },
     { label: 'Biblioteca — Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
+    { label: 'Abrir Chamado de Manutenção', href: '/dashboard/suporte/meus-chamados' },
+  ],
+};
+
+// "Menu Manutenção" — autoatendimento da equipe de manutenção (Jul/2026,
+// perfil MANUTENCAO). Mesmo princípio de Menu Discente/Docente: SUBSTITUI
+// todos os outros grupos.
+const MENU_MANUTENCAO_GROUP: { title: string; items: RpanelItem[] } = {
+  title: 'Manutenção',
+  items: [
+    { label: 'Chamados', href: '/dashboard/suporte/chamados' },
+    { label: 'Abrir Chamado', href: '/dashboard/suporte/meus-chamados' },
+    { label: 'Tipos de Chamado', href: '/dashboard/suporte/tipos-chamado' },
   ],
 };
 
@@ -198,6 +211,11 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Consulta a registro de acesso ao sistema', href: '/dashboard/admin/log' },
     { label: 'Exporta Moodle', href: null },
   ]},
+  { title: 'Suporte', items: [
+    { label: 'Chamados de Manutenção', href: '/dashboard/suporte/chamados' },
+    { label: 'Tipos de Chamado', href: '/dashboard/suporte/tipos-chamado' },
+    { label: 'Abrir Chamado', href: '/dashboard/suporte/meus-chamados' },
+  ]},
 ];
 
 export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, perfil }: {
@@ -220,7 +238,9 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
     ? [MENU_DISCENTE_GROUP]
     : perfil === 'PROFESSOR'
       ? [MENU_DOCENTE_GROUP]
-      : RPANEL_GROUPS;
+      : perfil === 'MANUTENCAO'
+        ? [MENU_MANUTENCAO_GROUP]
+        : RPANEL_GROUPS;
   const initialOpen = gruposBase.find(g => g.items.some(i => i.href && pathname.startsWith(i.href)))?.title ?? null;
   const [openTitle, setOpenTitle] = useState<string | null>(initialOpen);
   const [busca, setBusca] = useState('');

@@ -11,6 +11,8 @@ import { MensagemModule } from './mensagem/mensagem.module';
 import { ObservacaoFinanceiraModule } from './observacao-financeira/observacao-financeira.module';
 import { RamalModule } from './ramal/ramal.module';
 import { MotivoTransferenciaModule } from './motivo-transferencia/motivo-transferencia.module';
+import { TipoChamadoManutencaoModule } from './tipo-chamado-manutencao/tipo-chamado-manutencao.module';
+import { ChamadoManutencaoModule } from './chamado-manutencao/chamado-manutencao.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { MotivoTransferenciaModule } from './motivo-transferencia/motivo-transfe
     ObservacaoFinanceiraModule,
     RamalModule,
     MotivoTransferenciaModule,
+    TipoChamadoManutencaoModule,
+    ChamadoManutencaoModule,
   ],
 })
 export class RegistryModule {}

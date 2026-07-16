@@ -90,6 +90,14 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'biblioteca-equipamentos', label: 'Equipamentos', grupo: 'Biblioteca', prefixos: ['/dashboard/biblioteca/equipamentos'] },
   { chave: 'biblioteca-emprestimos', label: 'Empréstimos', grupo: 'Biblioteca', prefixos: ['/dashboard/biblioteca/emprestimos'] },
 
+  // ── Suporte / Chamados de Manutenção (Jul/2026) ─────────────────────────
+  // Só as telas de GERENCIAR ficam aqui — abrir chamado e "meus chamados"
+  // (`/dashboard/suporte/meus-chamados`) são autoatendimento, sem @Tela() no
+  // controller (mesmo raciocínio de Mensagens/Ramais: widget sempre
+  // disponível, não controlado pela matriz), então não têm chave própria.
+  { chave: 'chamados-manutencao', label: 'Chamados de Manutenção (Gerenciar)', grupo: 'Suporte', prefixos: ['/dashboard/suporte/chamados'] },
+  { chave: 'tipos-chamado-manutencao', label: 'Tipos de Chamado', grupo: 'Suporte', prefixos: ['/dashboard/suporte/tipos-chamado'] },
+
   // ── Menu Discente (autoatendimento do ALUNO — ver components/dashboard/RightPanel.tsx) ──
   // As 8 primeiras já têm dado real (aluno próprio, via /discente/*); as 8 seguintes
   // (marcadas "placeholder") ainda são só uma tela "Em construção" — o módulo de dados
@@ -110,7 +118,6 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'discente-certificacoes', label: 'Certificações (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/certificacoes'] },
   { chave: 'discente-conteudos-extras', label: 'Conteúdos Extras (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/conteudos-extras'] },
   { chave: 'discente-carreiras', label: 'Carreiras (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/carreiras'] },
-  { chave: 'discente-suporte', label: 'Suporte (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/suporte'] },
 
   // ── Menu Docente (autoatendimento do PROFESSOR — ver components/dashboard/RightPanel.tsx) ──
   // Pauta e Notas reaproveitam as telas 'pauta'/'notas' já existentes (grupo

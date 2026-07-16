@@ -382,6 +382,8 @@ model Usuario {
   mensagensRecebidas Mensagem[] @relation("MensagensRecebidas")
   emprestimos        Emprestimo[]
   pushTokens         PushToken[]
+  chamadosAbertos    ChamadoManutencao[] @relation("ChamadoManutencaoSolicitante")
+  chamadosAtendidos  ChamadoManutencao[] @relation("ChamadoManutencaoResponsavel")
 
   @@map("usuarios")
 }
@@ -572,6 +574,7 @@ enum Perfil {
   FINANCEIRO
   PROFESSOR
   ALUNO
+  MANUTENCAO
 }
 
 enum UsuarioStatus {
@@ -984,6 +987,62 @@ model Protocolo {
 }
 
 enum StatusProtocolo {
+  ABERTO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+// ── Suporte / Chamados de Manutenção (Jul/2026) ──────────────────
+// Aberto por QUALQUER perfil autenticado (inclusive ALUNO); gerenciado por
+// ADMIN/SECRETARIA/MANUTENCAO. Mesmo padrão de numeração sequencial por ano
+// do Protocolo (CM20260001...), status simples sem máquina de estados rígida
+// (só a coluna `status`, sem tabela de timeline/comentários — decisão
+// deliberada, ver CLAUDE.md).
+model TipoChamadoManutencao {
+  id    String  @id @default(uuid())
+  nome  String
+  ativo Boolean @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  chamados ChamadoManutencao[]
+
+  @@map("tipos_chamado_manutencao")
+}
+
+model ChamadoManutencao {
+  id            String                  @id @default(uuid())
+  numero        String                  @unique
+  tipoId        String
+  tipo          TipoChamadoManutencao   @relation(fields: [tipoId], references: [id])
+  local         String
+  prioridade    PrioridadeChamado       @default(MEDIA)
+  titulo        String
+  descricao     String?                 @db.Text
+  status        StatusChamadoManutencao @default(ABERTO)
+  solicitanteId String
+  solicitante   Usuario                 @relation("ChamadoManutencaoSolicitante", fields: [solicitanteId], references: [id])
+  responsavelId String?
+  responsavel   Usuario?                @relation("ChamadoManutencaoResponsavel", fields: [responsavelId], references: [id])
+  dataAbertura  DateTime                @default(now())
+  dataConclusao DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("chamados_manutencao")
+}
+
+enum PrioridadeChamado {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum StatusChamadoManutencao {
   ABERTO
   EM_ANDAMENTO
   CONCLUIDO
