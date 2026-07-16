@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
+import { getToken, parseJwt } from '@/lib/auth';
 
 type TipoEquipamento = 'COMPUTADOR' | 'NOTEBOOK' | 'TABLET' | 'OUTRO';
 type StatusItem = 'DISPONIVEL' | 'EMPRESTADO' | 'MANUTENCAO' | 'EXTRAVIADO' | 'BAIXADO';
@@ -89,6 +90,9 @@ export default function EquipamentosPage() {
   const [busca, setBusca] = useState('');
   const [modal, setModal] = useState<'new' | Equipamento | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const token = getToken();
+  const perfil = token ? parseJwt(token)?.perfil : null;
+  const podeEditar = perfil === 'ADMIN' || perfil === 'SECRETARIA';
 
   const load = useCallback(async (termo?: string) => {
     setLoading(true); setError('');
@@ -123,7 +127,7 @@ export default function EquipamentosPage() {
             onKeyDown={e => { if (e.key === 'Enter') load(busca); }}
           />
           <button style={BTN('ghost')} onClick={() => load(busca)}>Buscar</button>
-          <button style={BTN('primary')} onClick={() => setModal('new')}>+ Novo Equipamento</button>
+          {podeEditar && <button style={BTN('primary')} onClick={() => setModal('new')}>+ Novo Equipamento</button>}
         </div>
       </div>
 
@@ -165,10 +169,12 @@ export default function EquipamentosPage() {
                         >
                           Etiqueta
                         </a>
-                        <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(eq)}>Editar</button>
-                        <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }} disabled={deleting === eq.id} onClick={() => remover(eq.id)}>
-                          {deleting === eq.id ? '...' : 'Excluir'}
-                        </button>
+                        {podeEditar && <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(eq)}>Editar</button>}
+                        {podeEditar && (
+                          <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }} disabled={deleting === eq.id} onClick={() => remover(eq.id)}>
+                            {deleting === eq.id ? '...' : 'Excluir'}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
+import { getToken, parseJwt } from '@/lib/auth';
 
 interface Exemplar { id: string; codigoTombamento: string; localizacao: string | null; status: StatusItem; numeroExemplar: number | null; }
 type StatusItem = 'DISPONIVEL' | 'EMPRESTADO' | 'MANUTENCAO' | 'EXTRAVIADO' | 'BAIXADO';
@@ -192,6 +193,9 @@ export default function LivrosPage() {
   const [modal, setModal] = useState<'new' | Livro | null>(null);
   const [exemplaresDe, setExemplaresDe] = useState<Livro | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const token = getToken();
+  const perfil = token ? parseJwt(token)?.perfil : null;
+  const podeEditar = perfil === 'ADMIN' || perfil === 'SECRETARIA';
 
   const load = useCallback(async (termo?: string) => {
     setLoading(true); setError('');
@@ -232,7 +236,7 @@ export default function LivrosPage() {
             onKeyDown={e => { if (e.key === 'Enter') load(busca); }}
           />
           <button style={BTN('ghost')} onClick={() => load(busca)}>Buscar</button>
-          <button style={BTN('primary')} onClick={() => setModal('new')}>+ Novo Livro</button>
+          {podeEditar && <button style={BTN('primary')} onClick={() => setModal('new')}>+ Novo Livro</button>}
         </div>
       </div>
 
@@ -265,11 +269,13 @@ export default function LivrosPage() {
                   <td style={{ padding: '10px 14px' }}>{contagem(l)}</td>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setExemplaresDe(l)}>Exemplares</button>
-                      <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(l)}>Editar</button>
-                      <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }} disabled={deleting === l.id} onClick={() => remover(l.id)}>
-                        {deleting === l.id ? '...' : 'Excluir'}
-                      </button>
+                      {podeEditar && <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setExemplaresDe(l)}>Exemplares</button>}
+                      {podeEditar && <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(l)}>Editar</button>}
+                      {podeEditar && (
+                        <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }} disabled={deleting === l.id} onClick={() => remover(l.id)}>
+                          {deleting === l.id ? '...' : 'Excluir'}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

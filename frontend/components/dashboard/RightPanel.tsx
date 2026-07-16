@@ -36,6 +36,8 @@ const MENU_DISCENTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Financeiro', href: '/dashboard/discente/financeiro' },
     { label: 'Carreiras', href: '/dashboard/discente/carreiras' },
     { label: 'Suporte', href: '/dashboard/discente/suporte' },
+    { label: 'Biblioteca — Acervo', href: '/dashboard/biblioteca/livros' },
+    { label: 'Biblioteca — Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
     { label: 'Perfil', href: '/dashboard/discente/perfil' },
   ],
 };
@@ -54,6 +56,8 @@ const MENU_DOCENTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Alunos', href: '/dashboard/docente/alunos' },
     { label: 'Captura de Prova', href: '/dashboard/docente/captura-prova' },
     { label: 'Aviso para Turma', href: '/dashboard/docente/aviso-turma' },
+    { label: 'Biblioteca — Acervo', href: '/dashboard/biblioteca/livros' },
+    { label: 'Biblioteca — Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
   ],
 };
 
