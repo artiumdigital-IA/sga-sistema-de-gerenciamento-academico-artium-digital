@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { apiFileUrl } from '../../lib/api';
+import { apiFileUrl, webUrl } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
 import { Carteira, formatarData, formatarGrau, formatarMesAno, getCarteira } from '../../lib/discente';
 import { emBreve } from '../../lib/em-breve';
+import { qrCodeUrl } from '../../lib/qrcode';
 import { theme } from '../../lib/theme';
 import { Carregando, MensagemErro } from '../../lib/ui';
 
@@ -13,10 +14,12 @@ import { Carregando, MensagemErro } from '../../lib/ui';
  * Perfil — cartão de identificação (carteirinha) que expande/recolhe, igual
  * ao app de referência: recolhida mostra foto + nome + curso; expandida
  * mostra CPF, nascimento, curso, tipo de curso (Curso.grau), modelo de
- * ensino e campus. Modelo de ensino e campus não existem no schema hoje
- * (Curso.modalidade não é devolvido por /discente/carteira, e não existe
- * relação Aluno/Curso -> Unidade) -- mostramos "Em breve" nesses dois em
- * vez de esconder o campo, pra manter o layout igual à referência.
+ * ensino, campus e um QR code de validação (mesmo link/serviço da versão
+ * web, ver frontend/components/QrCode.tsx e discente/carteira/page.tsx).
+ * Modelo de ensino e campus não existem no schema hoje (Curso.modalidade
+ * não é devolvido por /discente/carteira, e não existe relação Aluno/Curso
+ * -> Unidade) -- mostramos "Em breve" nesses dois em vez de esconder o
+ * campo, pra manter o layout igual à referência.
  */
 export default function PerfilScreen() {
   const router = useRouter();
@@ -42,6 +45,9 @@ export default function PerfilScreen() {
 
   const fotoUrl = apiFileUrl(carteira?.aluno.fotoUrl ?? null);
   const ativo = carteira?.aluno.situacaoVinculo === 'ATIVO';
+  const linkValidacao = carteira
+    ? webUrl(`/validar-carteirinha?codigo=${encodeURIComponent(carteira.codigoValidacao)}`)
+    : '';
 
   return (
     <ScrollView style={styles.tela} contentContainerStyle={styles.conteudo}>
@@ -96,6 +102,11 @@ export default function PerfilScreen() {
               <View style={styles.carteirinhaColuna}>
                 <Text style={styles.carteirinhaRotulo}>Campus</Text>
                 <Text style={styles.carteirinhaValorEsmaecido}>Em breve</Text>
+              </View>
+              <View style={[styles.carteirinhaColuna, styles.carteirinhaColunaQrCode]}>
+                <View style={styles.qrCodeMoldura}>
+                  <Image source={{ uri: qrCodeUrl(linkValidacao, 96) }} style={styles.qrCodeImagem} />
+                </View>
               </View>
             </View>
           ) : null}
@@ -172,6 +183,9 @@ const styles = StyleSheet.create({
   carteirinhaGrade: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 16 },
   carteirinhaColuna: { width: '48%', marginBottom: 12 },
   carteirinhaColunaLarga: { width: '100%' },
+  carteirinhaColunaQrCode: { alignItems: 'flex-end', justifyContent: 'center' },
+  qrCodeMoldura: { backgroundColor: theme.branco, borderRadius: 8, padding: 6 },
+  qrCodeImagem: { width: 60, height: 60 },
   carteirinhaRotulo: { fontSize: 11, color: 'rgba(255,255,255,0.65)' },
   carteirinhaValor: { fontSize: 13, color: theme.branco, fontWeight: '600', marginTop: 2 },
   carteirinhaValorEsmaecido: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '600', marginTop: 2, fontStyle: 'italic' },
