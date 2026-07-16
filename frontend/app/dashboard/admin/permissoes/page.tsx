@@ -32,7 +32,7 @@ const GRUPOS_ORDENADOS = Array.from(new Set(TELAS_SISTEMA.map(t => t.grupo)));
 export default function PermissoesTelaPage() {
   const token = getToken();
   const meUser = token ? parseJwt(token) : null;
-  const souAdminMaster = meUser?.email === EMAIL_ADMIN_MASTER;
+  const souAdminMaster = meUser?.email === EMAIL_ADMIN_MASTER || meUser?.perfil === 'MASTER';
 
   const [linhas, setLinhas] = useState<LinhaMatriz[] | null>(null);
   const [erro, setErro] = useState('');

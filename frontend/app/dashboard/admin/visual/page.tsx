@@ -15,7 +15,8 @@ const BTN = (v: 'primary' | 'ghost') => ({
 
 export default function VisualPage() {
   const token = getToken();
-  const isAdmin = token ? parseJwt(token)?.perfil === 'ADMIN' : false;
+  const perfilLogado = token ? parseJwt(token)?.perfil : null;
+  const isAdmin = perfilLogado === 'ADMIN' || perfilLogado === 'MASTER';
 
   const [config, setConfig] = useState<BrandingConfig>(BRANDING_PADRAO);
   const [form, setForm] = useState({

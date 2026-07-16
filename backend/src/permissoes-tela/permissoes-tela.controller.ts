@@ -24,7 +24,7 @@ export class PermissoesTelaController {
 
   // ── Gestão da matriz (só admin@fiurj.edu.br) ────────────────────────────
 
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @UseGuards(AdminMasterGuard)
   @Get()
   @ApiOperation({ summary: 'Matriz completa tela × perfil (admin master)' })
@@ -32,7 +32,7 @@ export class PermissoesTelaController {
     return this.service.matriz();
   }
 
-  @Roles(Perfil.ADMIN)
+  @Roles(Perfil.ADMIN, Perfil.MASTER)
   @UseGuards(AdminMasterGuard)
   @Patch()
   @ApiOperation({ summary: 'Habilitar/desabilitar uma tela pra um perfil (admin master)' })
