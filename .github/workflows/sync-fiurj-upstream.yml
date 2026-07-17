@@ -18,6 +18,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
+          persist-credentials: false   # evita que o token do job sobreponha a auth do remote upstream
 
       - name: Configurar git
         run: |
@@ -46,4 +47,6 @@ jobs:
 
       - name: Subir para o repositório da Artium
         if: steps.check.outputs.ahead != '0'
-        run: git push origin main
+        run: |
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push origin main
