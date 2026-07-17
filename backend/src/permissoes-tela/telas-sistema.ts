@@ -64,6 +64,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'tipos-protocolo', label: 'Tipos de Protocolo', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/tipos-protocolo'] },
   { chave: 'motivos-ocorrencia', label: 'Motivos de Ocorrência', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/motivos-ocorrencia'] },
   { chave: 'motivos-transferencia', label: 'Motivos de Transferência', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/motivos-transferencia'] },
+  { chave: 'provas-geradas', label: 'Provas Geradas', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/provas-geradas', '/dashboard/provas-geradas'] },
 
   // ── Financeiro ───────────────────────────────────────────────────────
   { chave: 'contratos', label: 'Contratos / Mensalidades', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/contratos'] },
@@ -127,4 +128,5 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'docente-alunos', label: 'Alunos (das minhas turmas)', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/alunos'] },
   { chave: 'docente-captura-prova', label: 'Captura de Prova', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/captura-prova'] },
   { chave: 'docente-aviso-turma', label: 'Aviso para Turma', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/aviso-turma'] },
+  { chave: 'docente-gerador-prova', label: 'Gerador de Prova', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/gerador-prova'] },
 ];

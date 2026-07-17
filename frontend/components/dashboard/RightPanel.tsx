@@ -55,6 +55,7 @@ const MENU_DOCENTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Notas', href: '/dashboard/academico/notas' },
     { label: 'Alunos', href: '/dashboard/docente/alunos' },
     { label: 'Captura de Prova', href: '/dashboard/docente/captura-prova' },
+    { label: 'Gerador de Prova', href: '/dashboard/docente/gerador-prova' },
     { label: 'Aviso para Turma', href: '/dashboard/docente/aviso-turma' },
     { label: 'Biblioteca — Acervo', href: '/dashboard/biblioteca/livros' },
     { label: 'Biblioteca — Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
@@ -150,6 +151,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Carômetro', href: null },
     { label: 'Etiqueta', href: null },
     { label: 'Mala Direta / Declarações', href: '/dashboard/secretaria/documentos' },
+    { label: 'Provas Geradas', href: '/dashboard/secretaria/provas-geradas' },
   ]},
   { title: 'Protocolo', items: [
     { label: 'Lançamento/Consulta', href: '/dashboard/secretaria/protocolos' },

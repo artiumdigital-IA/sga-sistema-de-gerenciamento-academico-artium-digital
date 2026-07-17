@@ -13,6 +13,7 @@ import { RamalModule } from './ramal/ramal.module';
 import { MotivoTransferenciaModule } from './motivo-transferencia/motivo-transferencia.module';
 import { TipoChamadoManutencaoModule } from './tipo-chamado-manutencao/tipo-chamado-manutencao.module';
 import { ChamadoManutencaoModule } from './chamado-manutencao/chamado-manutencao.module';
+import { ProvaGeradaModule } from './prova-gerada/prova-gerada.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ChamadoManutencaoModule } from './chamado-manutencao/chamado-manutencao
     MotivoTransferenciaModule,
     TipoChamadoManutencaoModule,
     ChamadoManutencaoModule,
+    ProvaGeradaModule,
   ],
 })
 export class RegistryModule {}

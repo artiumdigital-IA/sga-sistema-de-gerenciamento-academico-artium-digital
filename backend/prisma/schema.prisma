@@ -234,6 +234,7 @@ model Professor {
   usuario Usuario?
   ofertas Oferta[]
   capturasProva CapturaProva[]
+  provasGeradas ProvaGerada[]
 
   @@map("professores")
 }
@@ -800,6 +801,31 @@ model CapturaProva {
   professor Professor @relation(fields: [professorId], references: [id])
 
   @@map("capturas_prova")
+}
+
+// Gerador de Prova (Jul/2026) — professor monta cabeçalho + questões (múltipla
+// escolha ou dissertativa) e o sistema gera um documento imprimível. Sem tabela
+// própria de questão: `questoes` guarda um array JSON (mesmo raciocínio já usado
+// em `ConfiguracaoVisual.galeriaPublicidade` — poucas dezenas de itens no
+// máximo, sempre lidas/escritas como o array inteiro, nunca uma questão
+// individual isolada, não justifica uma tabela relacional própria). Visível
+// tanto pro professor que gerou (imprimir de novo) quanto pra Secretaria
+// (listagem "Provas Geradas", só leitura/impressão).
+model ProvaGerada {
+  id          String   @id @default(uuid())
+  professorId String
+  tipoProva   String // AV1..AV5, RECUPERACAO, SEGUNDA_CHAMADA — texto livre de cabeçalho, não enum
+  curso       String
+  disciplina  String
+  turma       String
+  data        DateTime @db.Date
+  observacoes String   @db.Text
+  questoes    Json // QuestaoProva[] — ver DTO em prova-gerada/dto
+  criadoEm    DateTime @default(now())
+
+  professor Professor @relation(fields: [professorId], references: [id])
+
+  @@map("provas_geradas")
 }
 
 // Token de push notification (Expo) do dispositivo do usuário — usado hoje
