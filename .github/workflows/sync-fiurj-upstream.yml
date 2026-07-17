@@ -41,8 +41,9 @@ jobs:
 
       - name: Mesclar mudanças da FIURJ
         if: steps.check.outputs.ahead != '0'
-        run: git merge upstream/main --no-edit -m "sync: traz commits novos do fiurj-plataforma"
+        run: |
+          git merge upstream/main --no-edit -m "sync: traz commits novos do fiurj-plataforma"
 
       - name: Subir para o repositório da Artium
         if: steps.check.outputs.ahead != '0'
-        run: git push origin main
+        run: git push 
