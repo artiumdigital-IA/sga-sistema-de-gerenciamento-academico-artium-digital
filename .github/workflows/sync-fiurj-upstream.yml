@@ -46,4 +46,4 @@ jobs:
 
       - name: Subir para o repositório da Artium
         if: steps.check.outputs.ahead != '0'
-        run: git push 
+        run: git push origin main
