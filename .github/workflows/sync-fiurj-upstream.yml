@@ -1,0 +1,48 @@
+name: Sync FIURJ upstream
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # a cada 30 minutos
+  workflow_dispatch: {}       # também permite disparar manualmente pela aba Actions
+
+concurrency:
+  group: sync-fiurj-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout deste repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Configurar git
+        run: |
+          git config user.name "sync-fiurj-bot"
+          git config user.email "sync-fiurj-bot@users.noreply.github.com"
+
+      - name: Adicionar remote upstream (FIURJ)
+        run: |
+          git remote remove upstream 2>/dev/null || true
+          git remote add upstream "https://${{ secrets.FIURJ_UPSTREAM_TOKEN }}@github.com/fiurjids-byte/fiurj-plataforma.git"
+
+      - name: Buscar mudanças novas da FIURJ
+        run: git fetch upstream main
+
+      - name: Verificar se há algo novo
+        id: check
+        run: |
+          AHEAD=$(git rev-list --count HEAD..upstream/main)
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+          echo "Commits novos na FIURJ ainda não trazidos: $AHEAD"
+
+      - name: Mesclar mudanças da FIURJ
+        if: steps.check.outputs.ahead != '0'
+        run: git merge upstream/main --no-edit -m "sync: traz commits novos do fiurj-plataforma"
+
+      - name: Subir para o repositório da Artium
+        if: steps.check.outputs.ahead != '0'
+        run: git push origin main
