@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 interface Motivo { id: string; nome: string; ativo: boolean; }
 interface Aluno { id: string; nome: string; ra: string; }
@@ -102,7 +103,7 @@ export default function OcorrenciasAlunoPage() {
             {ocorrencias.length === 0 && <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhuma ocorrência registrada.</td></tr>}
             {ocorrencias.map(o => (
               <tr key={o.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                <td style={{ padding: '10px 14px' }}>{new Date(o.data).toLocaleDateString('pt-BR')}</td>
+                <td style={{ padding: '10px 14px' }}>{formatarData(o.data)}</td>
                 <td style={{ padding: '10px 14px' }}>{o.motivo.nome}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{o.descricao ?? '—'}</td>
                 <td style={{ padding: '10px 14px' }}>

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 interface Aluno { id: string; nome: string; ra: string; }
 interface Bolsa {
@@ -130,8 +131,8 @@ export default function BolsistasPage() {
               <tr key={b.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 500 }}>{b.tipoBolsa}</td>
                 <td style={{ padding: '10px 14px' }}>{Number(b.percentual)}%</td>
-                <td style={{ padding: '10px 14px' }}>{new Date(b.dataInicio).toLocaleDateString('pt-BR')}</td>
-                <td style={{ padding: '10px 14px' }}>{b.dataFim ? new Date(b.dataFim).toLocaleDateString('pt-BR') : '—'}</td>
+                <td style={{ padding: '10px 14px' }}>{formatarData(b.dataInicio)}</td>
+                <td style={{ padding: '10px 14px' }}>{b.dataFim ? formatarData(b.dataFim) : '—'}</td>
                 <td style={{ padding: '10px 14px' }}>
                   <button onClick={() => alternarAtivo(b)} style={{
                     padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer',

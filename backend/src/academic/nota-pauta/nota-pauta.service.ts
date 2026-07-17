@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { TurmaAcessoService, UsuarioLogado } from '../shared/turma-acesso.service';
 import { UpsertNotaPautaDto } from './dto/upsert-nota-pauta.dto';
 
 /**
@@ -47,13 +48,15 @@ export class NotaPautaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly turmaAcesso: TurmaAcessoService,
   ) {}
 
   /**
    * Grade da pauta: todos os alunos matriculados na oferta + a linha de notas
    * do semestre (ou nulls, se ainda não lançada nenhuma nota).
    */
-  async pauta(ofertaId: string) {
+  async pauta(ofertaId: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarOferta(ofertaId, usuario);
     const oferta = await this.prisma.oferta.findUnique({
       where: { id: ofertaId },
       include: { disciplina: true, periodoLetivo: true, professor: true },
@@ -101,7 +104,9 @@ export class NotaPautaService {
     };
   }
 
-  async salvar(matriculaDisciplinaId: string, dto: UpsertNotaPautaDto, usuarioId?: string) {
+  async salvar(matriculaDisciplinaId: string, dto: UpsertNotaPautaDto, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorMatricula(matriculaDisciplinaId, usuario);
+    const usuarioId = usuario.id;
     const matricula = await this.prisma.matriculaDisciplina.findUnique({ where: { id: matriculaDisciplinaId } });
     if (!matricula) throw new NotFoundException('Matrícula não encontrada.');
 

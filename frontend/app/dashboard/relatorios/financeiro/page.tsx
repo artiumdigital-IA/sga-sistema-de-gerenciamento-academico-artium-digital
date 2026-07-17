@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 interface LinhaInadimplencia {
   parcelaId: string; numero: number; valor: string; dataVencimento: string; diasAtraso: number;
@@ -79,7 +80,7 @@ export default function RelatoriosFinanceirosPage() {
                     <td style={{ padding: '8px 14px' }}>{l.periodo.ano}/{l.periodo.semestre}</td>
                     <td style={{ padding: '8px 14px' }}>{l.numero}</td>
                     <td style={{ padding: '8px 14px' }}>{money(Number(l.valor))}</td>
-                    <td style={{ padding: '8px 14px' }}>{new Date(l.dataVencimento).toLocaleDateString('pt-BR')}</td>
+                    <td style={{ padding: '8px 14px' }}>{formatarData(l.dataVencimento)}</td>
                     <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>{l.diasAtraso}</td>
                   </tr>
                 ))}

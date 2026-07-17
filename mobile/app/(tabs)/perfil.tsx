@@ -4,8 +4,9 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { apiFileUrl, webUrl } from '../../lib/api';
 import { useAuth } from '../../lib/auth-context';
-import { Carteira, formatarData, formatarGrau, formatarMesAno, getCarteira } from '../../lib/discente';
+import { Carteira, formatarGrau, getCarteira } from '../../lib/discente';
 import { emBreve } from '../../lib/em-breve';
+import { formatarData, formatarDataMesAno } from '../../lib/format';
 import { qrCodeUrl } from '../../lib/qrcode';
 import { theme } from '../../lib/theme';
 import { Carregando, MensagemErro } from '../../lib/ui';
@@ -114,7 +115,7 @@ export default function PerfilScreen() {
           <View style={styles.carteirinhaRodape}>
             <View style={styles.carteirinhaColuna}>
               <Text style={styles.carteirinhaRotulo}>Validade</Text>
-              <Text style={styles.carteirinhaValor}>{formatarMesAno(carteira.validaAte)}</Text>
+              <Text style={styles.carteirinhaValor}>{formatarDataMesAno(carteira.validaAte)}</Text>
             </View>
             <View style={styles.carteirinhaColuna}>
               <Text style={styles.carteirinhaRotulo}>Matrícula</Text>

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiFetch, apiFileUrl } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 import { useBranding } from '@/lib/branding';
 import QrCode from '@/components/QrCode';
 
@@ -72,7 +73,7 @@ export default function CarteiraEstudantePage() {
               <div style={{ fontWeight: 700, fontSize: 14 }}>{dados.aluno.nome}</div>
               <div><strong>RA:</strong> {dados.aluno.ra}</div>
               <div><strong>Curso:</strong> {dados.curso.nome} ({GRAU_LABEL[dados.curso.grau] ?? dados.curso.grau})</div>
-              <div><strong>Validade:</strong> {new Date(dados.validaAte).toLocaleDateString('pt-BR')}</div>
+              <div><strong>Validade:</strong> {formatarData(dados.validaAte)}</div>
             </div>
           </div>
 

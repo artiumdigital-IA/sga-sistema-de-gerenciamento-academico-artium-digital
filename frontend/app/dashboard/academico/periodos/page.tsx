@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 type Semestre = 'S1' | 'S2';
 type PeriodoStatus = 'PLANEJADO' | 'EM_ANDAMENTO' | 'ENCERRADO';
@@ -149,7 +150,7 @@ export default function PeriodosPage() {
     }
   }
 
-  const fmt = (d: string) => d ? new Date(d).toLocaleDateString('pt-BR') : '-';
+  const fmt = (d: string) => d ? formatarData(d) : '-';
 
   return (
     <div style={{ padding: '24px 28px' }}>

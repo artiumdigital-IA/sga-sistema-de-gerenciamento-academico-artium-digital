@@ -51,21 +51,79 @@ export class RelatoriosMasterService {
     return { ...linha, senhaHash: '[REDACTED]', mfaSegredo: linha.mfaSegredo ? '[REDACTED]' : null };
   }
 
-  /** Dump SQL via `pg_dump` real — schema + dados (ou só schema), direto do
-   * Postgres, streamado pra `res` sem buffer em memória. */
+  /**
+   * Dump SQL via `pg_dump` real — schema + dados (ou só schema), direto do
+   * Postgres, streamado pra `res` sem buffer em memória.
+   *
+   * Bug corrigido (achado no teste E2E, Jul/2026): antes, o controller já
+   * setava `Content-Disposition`/status 200 ANTES de chamar esse método —
+   * se `pg_dump` não existisse no container (ENOENT) ou saísse sem
+   * escrever nada, o cliente recebia um download "de sucesso" com 0 bytes,
+   * sem nenhum erro visível. Agora os headers só são setados aqui, no
+   * primeiro chunk real de stdout — se `pg_dump` falhar (ENOENT, código de
+   * saída != 0, ou saída vazia) ANTES de qualquer byte ser escrito, quem
+   * chama recebe uma exceção de verdade (o controller converte pra 500 com
+   * mensagem), em vez de um arquivo vazio silencioso.
+   */
   async streamPgDump(apenasSchema: boolean, res: Response): Promise<void> {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) throw new InternalServerErrorException('DATABASE_URL não configurada.');
 
     const args = apenasSchema ? ['--schema-only', databaseUrl] : [databaseUrl];
+    const nomeArquivo = apenasSchema ? 'schema' : 'banco-completo';
+
     await new Promise<void>((resolve, reject) => {
       const processo = spawn('pg_dump', args);
-      processo.stdout.pipe(res);
-      processo.stderr.on('data', (d) => console.error(`pg_dump: ${d}`));
-      processo.on('error', reject);
+      let recebeuDados = false;
+      let stderrBuffer = '';
+      let finalizado = false;
+
+      const falhar = (mensagem: string) => {
+        if (finalizado) return;
+        finalizado = true;
+        if (!res.headersSent) {
+          reject(new InternalServerErrorException(mensagem));
+        } else {
+          // Já começamos a escrever no stream — não dá mais pra trocar o
+          // status HTTP. Derruba a conexão pra o cliente não interpretar
+          // um arquivo truncado como um dump válido.
+          res.destroy(new Error(mensagem));
+          reject(new InternalServerErrorException(mensagem));
+        }
+      };
+
+      processo.stdout.on('data', (chunk: Buffer) => {
+        if (!recebeuDados) {
+          recebeuDados = true;
+          res.setHeader('Content-Type', 'application/sql');
+          res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}.sql"`);
+        }
+        res.write(chunk);
+      });
+
+      processo.stderr.on('data', (d: Buffer) => {
+        const texto = d.toString();
+        stderrBuffer += texto;
+        console.error(`pg_dump: ${texto}`);
+      });
+
+      processo.on('error', (err) => {
+        falhar(`Não foi possível executar pg_dump: ${err.message}`);
+      });
+
       processo.on('close', (codigo) => {
-        if (codigo !== 0) reject(new Error(`pg_dump saiu com código ${codigo}`));
-        else resolve();
+        if (finalizado) return;
+        if (codigo !== 0) {
+          falhar(`pg_dump saiu com código ${codigo}.${stderrBuffer ? ' ' + stderrBuffer.trim() : ''}`);
+          return;
+        }
+        if (!recebeuDados) {
+          falhar('pg_dump não retornou nenhum dado (dump vazio) — verifique se o binário está instalado no container.');
+          return;
+        }
+        finalizado = true;
+        res.end();
+        resolve();
       });
     });
   }
@@ -119,9 +177,18 @@ export class RelatoriosMasterService {
    * branding) — arquivos físicos enviados, que não moram no Postgres. */
   async streamUploadsZip(res: Response): Promise<void> {
     const archive = new (archiver as any).ZipArchive({ zlib: { level: 9 } });
-    archive.pipe(res);
-    const uploadsDir = join(process.cwd(), 'uploads');
-    if (existsSync(uploadsDir)) archive.directory(uploadsDir, false);
-    await archive.finalize();
+    await new Promise<void>((resolve, reject) => {
+      archive.on('error', (err: Error) => {
+        if (!res.headersSent) reject(new InternalServerErrorException(`Falha ao gerar ZIP: ${err.message}`));
+        else { res.destroy(err); reject(err); }
+      });
+      archive.on('end', () => resolve());
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename="uploads.zip"');
+      archive.pipe(res);
+      const uploadsDir = join(process.cwd(), 'uploads');
+      if (existsSync(uploadsDir)) archive.directory(uploadsDir, false);
+      archive.finalize();
+    });
   }
 }

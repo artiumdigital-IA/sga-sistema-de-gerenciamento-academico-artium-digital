@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 // ── tipos ──────────────────────────────────────────────────────────────
 type StatusMatricula = 'MATRICULADO' | 'PENDENTE_EXAME' | 'APROVADO' | 'REPROVADO' | 'DEPENDENCIA' | 'TRANCADO';
@@ -301,7 +302,7 @@ export default function MatriculasPage() {
                       {m.isDependencia && <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: '#fef3c7', color: '#92400e' }}>DP</span>}
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--gray-500)' }}>
-                      {m.dataMatricula ? new Date(m.dataMatricula).toLocaleDateString('pt-BR') : '-'}
+                      {m.dataMatricula ? formatarData(m.dataMatricula) : '-'}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }}

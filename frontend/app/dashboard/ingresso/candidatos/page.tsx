@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 interface Candidato {
   id: string; nome: string; cpf: string; email: string;
@@ -133,7 +134,7 @@ export default function CandidatosPage() {
                 <td style={{ padding: '10px 12px', fontSize: 13 }}>{c.cpf}</td>
                 <td style={{ padding: '10px 12px', fontSize: 13 }}>{c.email}</td>
                 <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--gray-500)' }}>{c.telefone || '—'}</td>
-                <td style={{ padding: '10px 12px', fontSize: 12 }}>{new Date(c.dataNascimento).toLocaleDateString('pt-BR')}</td>
+                <td style={{ padding: '10px 12px', fontSize: 12 }}>{formatarData(c.dataNascimento)}</td>
                 <td style={{ padding: '10px 12px' }}>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => setModal(c)} style={{ padding: '4px 10px', fontSize: 12, borderRadius: 4, border: '1px solid var(--gray-300)', background: 'var(--white)', color: 'var(--gray-700)', cursor: 'pointer' }}>Editar</button>

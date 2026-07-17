@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { MatriculaStatus } from '@prisma/client';
+import { TurmaAcessoService, UsuarioLogado } from '../shared/turma-acesso.service';
 import { CreateMatriculaDisciplinaDto } from './dto/create-matricula-disciplina.dto';
 import { UpdateMatriculaDisciplinaDto } from './dto/update-matricula-disciplina.dto';
 import { TransferirTurmaDto } from './dto/transferir-turma.dto';
@@ -16,6 +17,7 @@ export class MatriculaDisciplinaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly turmaAcesso: TurmaAcessoService,
   ) {}
 
   async create(dto: CreateMatriculaDisciplinaDto, usuarioId?: string) {
@@ -97,7 +99,11 @@ export class MatriculaDisciplinaService {
     return { ...matricula, avisos };
   }
 
-  findAll(alunoId?: string, ofertaId?: string) {
+  async findAll(alunoId: string | undefined, ofertaId: string | undefined, usuario: UsuarioLogado) {
+    // Pra PROFESSOR, exige ofertaId e confere que a turma é dele — senão
+    // veria matrícula de qualquer turma do sistema. ADMIN/SECRETARIA/MASTER
+    // continuam podendo listar por alunoId (ou sem filtro nenhum) normalmente.
+    await this.turmaAcesso.validarOferta(ofertaId, usuario);
     return this.prisma.matriculaDisciplina.findMany({
       where: {
         ...(alunoId ? { alunoId } : {}),
@@ -116,7 +122,8 @@ export class MatriculaDisciplinaService {
    * Mapão — relatório de notas/frequência de todos os alunos matriculados em uma oferta.
    * Equivalente ao "Relatório Notas/Disciplinas (Mapão)" do Kirsch.
    */
-  async mapao(ofertaId: string) {
+  async mapao(ofertaId: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarOferta(ofertaId, usuario);
     const oferta = await this.prisma.oferta.findUnique({
       where: { id: ofertaId },
       include: { disciplina: true, periodoLetivo: true, professor: true },
@@ -159,7 +166,8 @@ export class MatriculaDisciplinaService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorMatricula(id, usuario);
     const m = await this.prisma.matriculaDisciplina.findUnique({
       where: { id },
       include: {
@@ -173,8 +181,8 @@ export class MatriculaDisciplinaService {
     return m;
   }
 
-  async update(id: string, dto: UpdateMatriculaDisciplinaDto, usuarioId?: string) {
-    const antes = await this.findOne(id);
+  async update(id: string, dto: UpdateMatriculaDisciplinaDto, usuario: UsuarioLogado) {
+    const antes = await this.findOne(id, usuario);
     const matricula = await this.prisma.matriculaDisciplina.update({
       where: { id },
       data: dto,
@@ -184,7 +192,7 @@ export class MatriculaDisciplinaService {
       },
     });
     await this.audit.log({
-      usuarioId,
+      usuarioId: usuario.id,
       acao: 'UPDATE',
       entidade: 'MatriculaDisciplina',
       entidadeId: id,
@@ -254,11 +262,11 @@ export class MatriculaDisciplinaService {
     return atualizada;
   }
 
-  async remove(id: string, usuarioId?: string) {
-    const antes = await this.findOne(id);
+  async remove(id: string, usuario: UsuarioLogado) {
+    const antes = await this.findOne(id, usuario);
     await this.prisma.matriculaDisciplina.delete({ where: { id } });
     await this.audit.log({
-      usuarioId,
+      usuarioId: usuario.id,
       acao: 'DELETE',
       entidade: 'MatriculaDisciplina',
       entidadeId: id,

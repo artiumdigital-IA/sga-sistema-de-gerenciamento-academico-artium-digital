@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { apiFetch, apiFileUrl } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 import { useBranding } from '@/lib/branding';
 
 type DisciplinaHist = {
@@ -52,7 +53,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function fmtData(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR');
+  return formatarData(iso);
 }
 
 export default function HistoricoOficialPage() {

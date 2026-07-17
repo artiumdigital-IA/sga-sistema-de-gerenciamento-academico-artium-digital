@@ -12,7 +12,9 @@ gera o app tanto pra Android quanto pra iOS.
   - **Início** — avisos recentes (`GET /avisos`).
   - **Boletim** — notas/frequência por período (`GET /documentos/boletim/:alunoId`).
   - **Histórico** — CR, integralização, disciplinas por período (`GET /documentos/historico-oficial/:alunoId`).
-  - **Documentos** — Carteirinha + Declaração de Matrícula (dados, ainda sem layout de PDF — ver ADR abaixo).
+  - **Documentos** — Carteirinha + Declaração de Matrícula (resumo em cards) + os 4 documentos
+    oficiais (Declaração, Boletim, Carteirinha, Histórico) com layout de impressão de verdade,
+    abertos numa WebView autenticada (ver ADR abaixo, resolvido).
   - **Avisos** — mural completo (`GET /avisos`).
 
 Este é um **esqueleto**, não um produto pronto — o objetivo é ter uma base correta pra você rodar,
@@ -39,18 +41,23 @@ Abra no celular com o app **Expo Go** (escaneia o QR code) ou num emulador Andro
 
 ## Decisões em aberto (ADR resumido)
 
-**PDF/impressão dos documentos.** Os endpoints de `/documentos` retornam JSON — quem monta o
-layout bonito e manda imprimir hoje é o frontend web, via CSS de impressão do navegador. O app não
-tem "imprimir do browser". A tela **Documentos** deste esqueleto mostra os dados crus, sem tentar
-replicar o layout oficial. Duas opções pra evoluir isso:
+**PDF/impressão dos documentos — RESOLVIDO (Jul/2026), opção 1 escolhida.** Os endpoints de
+`/documentos` retornam JSON — quem monta o layout bonito é o frontend web, via CSS de impressão do
+navegador. Implementado: `app/documento-webview.tsx` abre uma `react-native-webview` apontando pra
+`EXPO_PUBLIC_WEB_URL + path` (ex.: `/dashboard/secretaria/documentos/boletim/:alunoId`), autenticada
+injetando o cookie `fiurj_token` (lido do SecureStore via `getCurrentToken()`) em dois pontos:
+`source.headers.Cookie` (cobre o middleware do Next.js, que roda server-side na 1ª requisição) e
+`injectedJavaScriptBeforeContentLoaded` (seta `document.cookie` pro `getToken()` client-side da
+página React conseguir montar o header `Authorization` das próprias chamadas de API que ela faz).
+Chamado a partir de **Documentos** (Declaração/Boletim/Carteirinha/Histórico Oficial). Limitação
+conhecida: a impressão de verdade (`window.print()`) funciona nativamente no iOS (WKWebView) mas
+não tem suporte nativo no Android dentro da WebView embutida — nesse caso o usuário ainda consegue
+ver/rolar o documento com o layout oficial, só não aciona o diálogo de impressão do SO por dentro
+do app (rodar "Gerar PDF nativo no app" via `expo-print`, opção 2 abaixo, resolveria isso se virar
+prioridade).
 
-1. **WebView autenticada** apontando pra tela de impressão do frontend web — menor esforço, reusa
-   o layout que já existe, mas precisa resolver como autenticar a WebView (o token do app fica no
-   SecureStore; o frontend web usa cookie/localStorage — são sessões separadas hoje).
 2. **Gerar PDF nativo no app** (ex.: `expo-print`) a partir do JSON — mais trabalho, mas
-   experiência mais "nativa".
-
-Nenhuma das duas está implementada ainda.
+   experiência mais "nativa" e resolveria a impressão no Android. Não implementado.
 
 **Ícone/splash.** `assets/*.png` são placeholders sólidos na cor primária da FIURJ (`#1C3A6B`) —
 troque pelos arquivos de verdade quando tiver a arte final.

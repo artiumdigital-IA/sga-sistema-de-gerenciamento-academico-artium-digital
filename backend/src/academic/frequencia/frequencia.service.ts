@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { ResultadoDisciplinaService } from '../resultado-disciplina/resultado-disciplina.service';
+import { TurmaAcessoService, UsuarioLogado } from '../shared/turma-acesso.service';
 import { LancarFrequenciaDto } from './dto/lancar-frequencia.dto';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class FrequenciaService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly resultadoDisciplina: ResultadoDisciplinaService,
+    private readonly turmaAcesso: TurmaAcessoService,
   ) {}
 
   /**
@@ -18,7 +20,9 @@ export class FrequenciaService {
    * Upsert por (matriculaDisciplinaId, data): relançar o mesmo dia sobrescreve
    * (é assim que "Manutenção de Frequência" — editar um lançamento já feito — funciona).
    */
-  async lancar(dto: LancarFrequenciaDto, usuarioId?: string) {
+  async lancar(dto: LancarFrequenciaDto, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarOferta(dto.ofertaId, usuario);
+    const usuarioId = usuario.id;
     const data = new Date(dto.data);
     const resultado: { alunoId: string; status: 'ok' | 'erro'; mensagem?: string }[] = [];
 
@@ -87,7 +91,8 @@ export class FrequenciaService {
    * Consulta os lançamentos de uma oferta numa data específica — usado pra
    * pré-preencher a tela quando o usuário reabre um dia já lançado ("Manutenção").
    */
-  async listarPorOfertaEData(ofertaId: string, data: string) {
+  async listarPorOfertaEData(ofertaId: string, data: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarOferta(ofertaId, usuario);
     const dataDate = new Date(data);
     const registros = await this.prisma.registroFrequencia.findMany({
       where: { data: dataDate, matriculaDisciplina: { ofertaId } },
@@ -108,7 +113,8 @@ export class FrequenciaService {
    * Usado pela "Listagem de Alunos em Atraso" (flag emAtraso quando freq < 75%)
    * e pra pré-preencher o Consolidar de resultado final.
    */
-  async resumoPorOferta(ofertaId: string) {
+  async resumoPorOferta(ofertaId: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarOferta(ofertaId, usuario);
     const matriculas = await this.prisma.matriculaDisciplina.findMany({
       where: { ofertaId },
       include: {
@@ -133,7 +139,8 @@ export class FrequenciaService {
     });
   }
 
-  async resumoPorMatricula(matriculaDisciplinaId: string) {
+  async resumoPorMatricula(matriculaDisciplinaId: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorMatricula(matriculaDisciplinaId, usuario);
     const matricula = await this.prisma.matriculaDisciplina.findUnique({
       where: { id: matriculaDisciplinaId },
       include: { registrosFrequencia: true },

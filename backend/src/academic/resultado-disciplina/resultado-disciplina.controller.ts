@@ -7,6 +7,8 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { Perfil } from '@prisma/client';
 import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
+type Req = { user: { id: string; perfil: string } };
+
 @ApiTags('Resultado de Disciplinas')
 @ApiBearerAuth()
 @Controller('matriculas')
@@ -20,14 +22,15 @@ export class ResultadoDisciplinaController {
   consolidar(
     @Param('id') id: string,
     @Body() dto: ConsolidarResultadoDto,
-    @Request() req: { user?: { id?: string } },
+    @Request() req: Req,
   ) {
-    return this.service.consolidar(id, dto, req.user?.id);
+    return this.service.consolidar(id, dto, req.user);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.PROFESSOR)
   @Get(':id/resultado')
   @ApiOperation({ summary: 'Buscar resultado consolidado de uma matrícula' })
-  findOne(@Param('id') id: string) {
-    return this.service.findByMatricula(id);
+  findOne(@Param('id') id: string, @Request() req: Req) {
+    return this.service.findByMatricula(id, req.user);
   }
 }

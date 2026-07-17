@@ -15,9 +15,11 @@ import { MateriaEquiparadaModule } from './materia-equiparada/materia-equiparada
 import { FrequenciaModule } from './frequencia/frequencia.module';
 import { NotaPautaModule } from './nota-pauta/nota-pauta.module';
 import { EventoCalendarioModule } from './evento-calendario/evento-calendario.module';
+import { TurmaAcessoModule } from './shared/turma-acesso.module';
 
 @Module({
   imports: [
+    TurmaAcessoModule,
     CursoModule,
     MatrizCurricularModule,
     DisciplinaModule,

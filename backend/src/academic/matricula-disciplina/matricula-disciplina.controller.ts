@@ -27,35 +27,39 @@ export class MatriculaDisciplinaController {
     return this.service.create(dto, req.user?.id);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.PROFESSOR)
   @Get()
   @ApiOperation({ summary: 'Listar matrículas (filtrar por alunoId ou ofertaId)' })
   @ApiQuery({ name: 'alunoId', required: false })
   @ApiQuery({ name: 'ofertaId', required: false })
   findAll(
-    @Query('alunoId') alunoId?: string,
-    @Query('ofertaId') ofertaId?: string,
+    @Query('alunoId') alunoId: string | undefined,
+    @Query('ofertaId') ofertaId: string | undefined,
+    @Request() req: any,
   ) {
-    return this.service.findAll(alunoId, ofertaId);
+    return this.service.findAll(alunoId, ofertaId, req.user);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.PROFESSOR)
   @Tela('mapao')
   @Get('mapao/:ofertaId')
   @ApiOperation({ summary: 'Mapão — notas e frequência de todos os alunos de uma oferta' })
-  mapao(@Param('ofertaId') ofertaId: string) {
-    return this.service.mapao(ofertaId);
+  mapao(@Param('ofertaId') ofertaId: string, @Request() req: any) {
+    return this.service.mapao(ofertaId, req.user);
   }
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.PROFESSOR)
   @Get(':id')
   @ApiOperation({ summary: 'Buscar matrícula por ID (inclui avaliações e resultado)' })
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.service.findOne(id, req.user);
   }
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar status da matrícula' })
   update(@Param('id') id: string, @Body() dto: UpdateMatriculaDisciplinaDto, @Request() req: any) {
-    return this.service.update(id, dto, req.user?.id);
+    return this.service.update(id, dto, req.user);
   }
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
@@ -71,6 +75,6 @@ export class MatriculaDisciplinaController {
   @HttpCode(204)
   @ApiOperation({ summary: 'Cancelar matrícula' })
   remove(@Param('id') id: string, @Request() req: any) {
-    return this.service.remove(id, req.user?.id);
+    return this.service.remove(id, req.user);
   }
 }

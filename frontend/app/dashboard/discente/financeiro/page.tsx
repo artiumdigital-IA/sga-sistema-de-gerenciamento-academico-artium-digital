@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 interface Parcela {
   id: string;
@@ -69,8 +70,8 @@ export default function FinanceiroDiscentePage() {
                   <tr key={p.id}>
                     <td style={td}>{p.numero}</td>
                     <td style={td}>{formatarMoeda(p.valor)}</td>
-                    <td style={td}>{new Date(p.dataVencimento).toLocaleDateString('pt-BR')}</td>
-                    <td style={td}>{p.dataPagamento ? new Date(p.dataPagamento).toLocaleDateString('pt-BR') : '—'}</td>
+                    <td style={td}>{formatarData(p.dataVencimento)}</td>
+                    <td style={td}>{p.dataPagamento ? formatarData(p.dataPagamento) : '—'}</td>
                     <td style={td}>
                       <span style={{ color: STATUS_PARCELA_COLOR[p.status] ?? 'var(--gray-500)', fontWeight: 600 }}>{p.status}</span>
                     </td>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { apiFetch, apiFileUrl } from '@/lib/api';
+import { formatarData, formatarDataMesAno } from '@/lib/format';
 import { useBranding } from '@/lib/branding';
 import QrCode from '@/components/QrCode';
 
@@ -40,8 +41,8 @@ export default function CarteirinhaPage() {
   if (!data) return null;
 
   const fotoSrc = apiFileUrl(data.aluno.fotoUrl);
-  const validaAteCurta = new Date(data.validaAte).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-  const validaAteCompleta = new Date(data.validaAte).toLocaleDateString('pt-BR');
+  const validaAteCurta = formatarDataMesAno(data.validaAte);
+  const validaAteCompleta = formatarData(data.validaAte);
   const urlValidacao = origin ? `${origin}/validar-carteirinha?codigo=${data.codigoValidacao}` : '';
   const corPrimaria = branding.corPrimaria || '#1e3a5f';
   const corSecundaria = branding.corSecundaria || '#0f2340';

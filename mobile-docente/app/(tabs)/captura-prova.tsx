@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
 import { ApiError, apiFileUrl } from '../../lib/api';
 import {
@@ -20,13 +21,9 @@ import { Carregando, MensagemErro, SeletorOferta } from '../../lib/ui';
 type ArquivoSelecionado = { uri: string; name: string; type: string };
 
 /**
- * Captura de Prova — foto (câmera ou galeria) ou o que o usuário escolher
- * da galeria (pode ser um PDF exportado como imagem também) da prova física
- * corrigida de um aluno. Backend aceita pdf/jpg/jpeg/png/webp até 10MB (ver
- * backend/src/docente/docente.controller.ts) — aqui só oferecemos
- * câmera/galeria de imagem, que cobre o caso de uso principal (foto da
- * prova em papel); anexar um PDF de verdade ficaria pra uma rodada futura
- * com expo-document-picker.
+ * Captura de Prova — foto (câmera ou galeria) ou anexar um PDF já digitalizado
+ * da prova física corrigida de um aluno. Backend aceita pdf/jpg/jpeg/png/webp
+ * até 10MB (ver backend/src/docente/docente.controller.ts).
  */
 export default function CapturaProvaScreen() {
   const [ofertas, setOfertas] = useState<Oferta[]>([]);
@@ -114,6 +111,17 @@ export default function CapturaProvaScreen() {
     });
   }
 
+  async function anexarPdf() {
+    const resultado = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    if (resultado.canceled || resultado.assets.length === 0) return;
+    const asset = resultado.assets[0];
+    setArquivo({
+      uri: asset.uri,
+      name: asset.name ?? `prova-${Date.now()}.pdf`,
+      type: asset.mimeType ?? 'application/pdf',
+    });
+  }
+
   async function enviar() {
     if (!ofertaId || !alunoId || !arquivo) {
       setErro('Selecione a turma, o aluno e a foto da prova.');
@@ -182,7 +190,12 @@ export default function CapturaProvaScreen() {
           <>
             <Text style={styles.secaoTitulo}>Nova captura</Text>
             <View style={styles.novaCaptura}>
-              {arquivo ? (
+              {arquivo && arquivo.type === 'application/pdf' ? (
+                <View style={styles.previewVazio}>
+                  <Feather name="file-text" size={28} color={theme.corPrimaria} />
+                  <Text style={styles.previewPdfNome} numberOfLines={1}>{arquivo.name}</Text>
+                </View>
+              ) : arquivo ? (
                 <Image source={{ uri: arquivo.uri }} style={styles.preview} resizeMode="cover" />
               ) : (
                 <View style={styles.previewVazio}>
@@ -197,6 +210,10 @@ export default function CapturaProvaScreen() {
                 <TouchableOpacity style={styles.botaoFoto} onPress={escolherDaGaleria}>
                   <Feather name="image" size={16} color={theme.corPrimaria} />
                   <Text style={styles.botaoFotoTexto}>Galeria</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.botaoFoto} onPress={anexarPdf}>
+                  <Feather name="file-text" size={16} color={theme.corPrimaria} />
+                  <Text style={styles.botaoFotoTexto}>Anexar PDF</Text>
                 </TouchableOpacity>
               </View>
               <TextInput
@@ -222,7 +239,13 @@ export default function CapturaProvaScreen() {
             ) : capturas && capturas.length > 0 ? (
               capturas.map((c) => (
                 <View key={c.id} style={styles.capturaCard}>
-                  <Image source={{ uri: apiFileUrl(c.url) ?? undefined }} style={styles.capturaThumb} resizeMode="cover" />
+                  {c.nomeArquivo.toLowerCase().endsWith('.pdf') ? (
+                    <View style={[styles.capturaThumb, styles.capturaThumbPdf]}>
+                      <Feather name="file-text" size={20} color={theme.corPrimaria} />
+                    </View>
+                  ) : (
+                    <Image source={{ uri: apiFileUrl(c.url) ?? undefined }} style={styles.capturaThumb} resizeMode="cover" />
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.capturaData}>{formatarDataHora(c.criadoEm)}</Text>
                     {c.observacoes ? <Text style={styles.capturaObs}>{c.observacoes}</Text> : null}
@@ -253,10 +276,12 @@ const styles = StyleSheet.create({
   alunoChipTextoAtivo: { color: theme.branco },
   novaCaptura: { backgroundColor: theme.branco, borderRadius: 12, borderWidth: 1, borderColor: theme.cinza200, padding: 14, gap: 10 },
   preview: { width: '100%', height: 180, borderRadius: 8, backgroundColor: theme.cinza100 },
-  previewVazio: { width: '100%', height: 180, borderRadius: 8, backgroundColor: theme.cinza100, alignItems: 'center', justifyContent: 'center' },
-  botoesFoto: { flexDirection: 'row', gap: 8 },
+  previewVazio: { width: '100%', height: 180, borderRadius: 8, backgroundColor: theme.cinza100, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16 },
+  previewPdfNome: { fontSize: 12, color: theme.cinza700, fontWeight: '600' },
+  botoesFoto: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   botaoFoto: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '30%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -292,6 +317,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   capturaThumb: { width: 48, height: 48, borderRadius: 6, backgroundColor: theme.cinza100 },
+  capturaThumbPdf: { alignItems: 'center', justifyContent: 'center' },
   capturaData: { fontSize: 12, fontWeight: '600', color: theme.cinza900 },
   capturaObs: { fontSize: 11, color: theme.cinza500, marginTop: 2 },
   vazio: { fontSize: 13, color: theme.cinza500 },

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 interface Disciplina { id: string; nome: string; codigo: string; }
 interface Equiparacao {
@@ -149,7 +150,7 @@ export default function EquiparacoesPage() {
                 <td style={{ padding: '10px 14px' }}>{eq.instituicaoOrigem}</td>
                 <td style={{ padding: '10px 14px' }}>{eq.disciplinaOrigem}</td>
                 <td style={{ padding: '10px 14px' }}>{eq.cargaHorariaOrigem ?? '—'}</td>
-                <td style={{ padding: '10px 14px' }}>{new Date(eq.dataAprovacao).toLocaleDateString('pt-BR')}</td>
+                <td style={{ padding: '10px 14px' }}>{formatarData(eq.dataAprovacao)}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{eq.observacoes ?? '—'}</td>
                 <td style={{ padding: '10px 14px' }}>
                   <button style={{ ...BTN_G, color: '#dc2626', borderColor: '#fecaca' }} onClick={() => remover(eq.id)}>Remover</button>

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 interface Bolsa {
   id: string; tipoBolsa: string; percentual: number;
@@ -76,8 +77,8 @@ export default function ListagemBolsistasPage() {
                   <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{b.aluno.curso.nome}</td>
                   <td style={{ padding: '10px 14px' }}>{b.tipoBolsa}</td>
                   <td style={{ padding: '10px 14px', fontWeight: 600 }}>{Number(b.percentual)}%</td>
-                  <td style={{ padding: '10px 14px' }}>{new Date(b.dataInicio).toLocaleDateString('pt-BR')}</td>
-                  <td style={{ padding: '10px 14px' }}>{b.dataFim ? new Date(b.dataFim).toLocaleDateString('pt-BR') : '—'}</td>
+                  <td style={{ padding: '10px 14px' }}>{formatarData(b.dataInicio)}</td>
+                  <td style={{ padding: '10px 14px' }}>{b.dataFim ? formatarData(b.dataFim) : '—'}</td>
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: b.ativo ? '#d1fae5' : 'var(--gray-100)', color: b.ativo ? '#065f46' : 'var(--gray-500)' }}>
                       {b.ativo ? 'Ativa' : 'Inativa'}

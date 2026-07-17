@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { TurmaAcessoService, UsuarioLogado } from '../shared/turma-acesso.service';
 import { ConsolidarResultadoDto } from './dto/consolidar-resultado.dto';
 import { SituacaoResultado, MatriculaStatus, AvaliacaoTipo } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -23,6 +24,7 @@ export class ResultadoDisciplinaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly turmaAcesso: TurmaAcessoService,
   ) {}
 
   /**
@@ -97,8 +99,10 @@ export class ResultadoDisciplinaService {
   async consolidar(
     matriculaDisciplinaId: string,
     dto: ConsolidarResultadoDto,
-    usuarioId?: string,
+    usuario: UsuarioLogado,
   ) {
+    await this.turmaAcesso.validarPorMatricula(matriculaDisciplinaId, usuario);
+    const usuarioId = usuario.id;
     const matricula = await this.prisma.matriculaDisciplina.findUnique({
       where: { id: matriculaDisciplinaId },
       include: { avaliacoes: true },
@@ -188,7 +192,7 @@ export class ResultadoDisciplinaService {
    *
    * Fonte da frequência usada no recálculo automático, em ordem de prioridade:
    * 1. Frequência diária já lançada (soma de `RegistroFrequencia`) — quando existe, é a fonte
-   *    mais confjC�vel e atualizada.
+   *    mais confjC�vel e atualizada.
    * 2. Frequência/faltas do último `ResultadoDisciplina` já consolidado manualmente — permite
    *    que ajustar uma nota depois de já ter consolidado uma vez atualize o resultado sem
    *    precisar reconsolidar.
@@ -280,7 +284,8 @@ export class ResultadoDisciplinaService {
     return resultado;
   }
 
-  findByMatricula(matriculaDisciplinaId: string) {
+  async findByMatricula(matriculaDisciplinaId: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorMatricula(matriculaDisciplinaId, usuario);
     return this.prisma.resultadoDisciplina.findUnique({
       where: { matriculaDisciplinaId },
       include: {

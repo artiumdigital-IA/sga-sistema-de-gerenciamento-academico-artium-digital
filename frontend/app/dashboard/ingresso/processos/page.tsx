@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 type StatusProcesso = 'ABERTO' | 'ENCERRADO' | 'CANCELADO';
 type TipoProcesso = 'VESTIBULAR' | 'ENEM' | 'SEGUNDA_GRADUACAO' | 'TRANSFERENCIA_EXTERNA' | 'TRANSFERENCIA_INTERNA';
@@ -174,8 +175,8 @@ export default function ProcessosPage() {
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>{p.vagas}</td>
                   <td style={{ padding: '10px 12px', fontSize: 13 }}>{p._count?.inscricoes ?? 0}</td>
                   <td style={{ padding: '10px 12px', fontSize: 11, color: 'var(--gray-500)' }}>
-                    {new Date(p.dataAbertura).toLocaleDateString('pt-BR')} →<br />
-                    {new Date(p.dataEncerramento).toLocaleDateString('pt-BR')}
+                    {formatarData(p.dataAbertura)} →<br />
+                    {formatarData(p.dataEncerramento)}
                   </td>
                   <td style={{ padding: '10px 12px' }}>
                     <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, ...ss }}>{p.status}</span>

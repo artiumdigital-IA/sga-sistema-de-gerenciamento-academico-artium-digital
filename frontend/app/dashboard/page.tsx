@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { getToken, parseJwt } from '@/lib/auth';
 import { apiFetch, apiUpload, apiFileUrl } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 import { useBranding } from '@/lib/branding';
 import { GaleriaPublicidade } from '@/components/dashboard/GaleriaPublicidade';
 import { ProgressoCurso } from '@/components/dashboard/ProgressoCurso';
@@ -365,7 +366,7 @@ function CalendarioAcademico() {
   }, []);
 
   const fmt = (iso: string) => {
-    try { return new Date(iso).toLocaleDateString('pt-BR'); } catch { return iso; }
+    try { return formatarData(iso); } catch { return iso; }
   };
 
   if (loading) return <div style={{ padding: '16px 14px', fontSize: 12, color: 'var(--gray-400)' }}>Carregando...</div>;

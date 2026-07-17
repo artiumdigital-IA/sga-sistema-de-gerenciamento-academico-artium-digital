@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { ResultadoDisciplinaService } from '../resultado-disciplina/resultado-disciplina.service';
+import { TurmaAcessoService, UsuarioLogado } from '../shared/turma-acesso.service';
 import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
 import { UpdateAvaliacaoDto } from './dto/update-avaliacao.dto';
 import { ImportarAvaliacoesDto } from './dto/importar-avaliacoes.dto';
@@ -12,9 +13,12 @@ export class AvaliacaoService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly resultadoDisciplina: ResultadoDisciplinaService,
+    private readonly turmaAcesso: TurmaAcessoService,
   ) {}
 
-  async create(dto: CreateAvaliacaoDto, usuarioId?: string) {
+  async create(dto: CreateAvaliacaoDto, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorMatricula(dto.matriculaDisciplinaId, usuario);
+    const usuarioId = usuario.id;
     const avaliacao = await this.prisma.avaliacao.create({
       data: { ...dto, nota: dto.nota, peso: dto.peso },
       include: { matriculaDisciplina: { include: { aluno: { select: { ra: true, nome: true } }, oferta: { include: { disciplina: true } } } } },
@@ -27,7 +31,8 @@ export class AvaliacaoService {
     return avaliacao;
   }
 
-  findAll(matriculaDisciplinaId?: string) {
+  async findAll(matriculaDisciplinaId: string | undefined, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorMatricula(matriculaDisciplinaId, usuario);
     return this.prisma.avaliacao.findMany({
       where: matriculaDisciplinaId ? { matriculaDisciplinaId } : undefined,
       include: {
@@ -42,7 +47,8 @@ export class AvaliacaoService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorAvaliacao(id, usuario);
     const a = await this.prisma.avaliacao.findUnique({
       where: { id },
       include: { matriculaDisciplina: { include: { aluno: true, oferta: { include: { disciplina: true } } } } },
@@ -51,16 +57,20 @@ export class AvaliacaoService {
     return a;
   }
 
-  async update(id: string, dto: UpdateAvaliacaoDto, usuarioId?: string) {
-    const antes = await this.findOne(id);
+  async update(id: string, dto: UpdateAvaliacaoDto, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorAvaliacao(id, usuario);
+    const usuarioId = usuario.id;
+    const antes = await this.findOne(id, usuario);
     const avaliacao = await this.prisma.avaliacao.update({ where: { id }, data: dto });
     await this.audit.log({ usuarioId, acao: 'UPDATE', entidade: 'Avaliacao', entidadeId: id, dadosAntes: antes, dadosDepois: avaliacao });
     await this.resultadoDisciplina.recalcularSeElegivel(antes.matriculaDisciplinaId, usuarioId);
     return avaliacao;
   }
 
-  async remove(id: string, usuarioId?: string) {
-    const antes = await this.findOne(id);
+  async remove(id: string, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarPorAvaliacao(id, usuario);
+    const usuarioId = usuario.id;
+    const antes = await this.findOne(id, usuario);
     await this.prisma.avaliacao.delete({ where: { id } });
     await this.audit.log({ usuarioId, acao: 'DELETE', entidade: 'Avaliacao', entidadeId: id, dadosAntes: antes });
     await this.resultadoDisciplina.recalcularSeElegivel(antes.matriculaDisciplinaId, usuarioId);
@@ -71,7 +81,9 @@ export class AvaliacaoService {
    * e cria uma Avaliacao por linha, casando o aluno pelo RA. Não falha tudo se uma linha
    * der erro — reporta sucesso/erro por linha (equivalente ao "Importação Planilha Excel" do Kirsch).
    */
-  async importarPlanilha(dto: ImportarAvaliacoesDto, usuarioId?: string) {
+  async importarPlanilha(dto: ImportarAvaliacoesDto, usuario: UsuarioLogado) {
+    await this.turmaAcesso.validarOferta(dto.ofertaId, usuario);
+    const usuarioId = usuario.id;
     const resultado: { ra: string; status: 'ok' | 'erro'; mensagem?: string }[] = [];
     const matriculasTocadas = new Set<string>();
 

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 type SituacaoVinculo = 'CURSANDO' | 'TRANCADO' | 'FORMADO' | 'EVADIDO' | 'TRANSFERIDO_OUT' | 'FALECIDO';
 
@@ -142,7 +143,7 @@ export default function SituacaoPage() {
             )}
             {historico.map(h => (
               <tr key={h.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                <td style={{ padding: '10px 14px' }}>{new Date(h.data).toLocaleDateString('pt-BR')}</td>
+                <td style={{ padding: '10px 14px' }}>{formatarData(h.data)}</td>
                 <td style={{ padding: '10px 14px' }}><Badge s={h.situacaoAnterior} /></td>
                 <td style={{ padding: '10px 14px' }}><Badge s={h.situacaoNova} /></td>
                 <td style={{ padding: '10px 14px', color: 'var(--gray-500)' }}>{h.motivo ?? '—'}</td>

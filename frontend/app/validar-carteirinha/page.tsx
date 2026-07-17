@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiFetch, apiFileUrl } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 import { useBranding } from '@/lib/branding';
 
 type ResultadoValidacao = {
@@ -48,7 +49,7 @@ function ValidarCarteirinhaConteudo() {
   }, []);
 
   const fotoSrc = apiFileUrl(resultado?.fotoUrl ?? null);
-  const validadeFmt = resultado?.validade ? new Date(resultado.validade).toLocaleDateString('pt-BR') : '';
+  const validadeFmt = resultado?.validade ? formatarData(resultado.validade) : '';
   const corPrimaria = branding.corPrimaria || '#1C3A6B';
   const logoUrl = apiFileUrl(branding.logoUrl);
 

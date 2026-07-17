@@ -26,9 +26,16 @@ export class RelatoriosMasterController {
   async dumpSql(@Query('apenasSchema') apenasSchema: string | undefined, @Res() res: Response, @Request() req: any) {
     const schema = apenasSchema === 'true';
     await this.service.registrarExport(req.user.id, schema ? 'sql-schema' : 'sql-completo');
-    res.setHeader('Content-Type', 'application/sql');
-    res.setHeader('Content-Disposition', `attachment; filename="${schema ? 'schema' : 'banco-completo'}.sql"`);
-    await this.service.streamPgDump(schema, res);
+    // Headers só são setados dentro de streamPgDump, no primeiro byte real
+    // recebido do pg_dump — ver comentário no service pro bug que isso evita
+    // (download "de sucesso" com 0 bytes quando pg_dump falha).
+    try {
+      await this.service.streamPgDump(schema, res);
+    } catch (err: any) {
+      if (!res.headersSent) {
+        res.status(err?.status ?? 500).json({ statusCode: err?.status ?? 500, message: err?.message ?? 'Falha ao gerar dump SQL.' });
+      }
+    }
   }
 
   @Get('dump-xlsx')
@@ -64,8 +71,13 @@ export class RelatoriosMasterController {
   @ApiOperation({ summary: 'ZIP de tudo em uploads/ (avatars, documentos, capturas de prova, branding)' })
   async uploadsZip(@Res() res: Response, @Request() req: any) {
     await this.service.registrarExport(req.user.id, 'uploads-zip');
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="uploads.zip"');
-    await this.service.streamUploadsZip(res);
+    // Headers são setados dentro de streamUploadsZip — mesmo padrão do dump-sql.
+    try {
+      await this.service.streamUploadsZip(res);
+    } catch (err: any) {
+      if (!res.headersSent) {
+        res.status(err?.status ?? 500).json({ statusCode: err?.status ?? 500, message: err?.message ?? 'Falha ao gerar ZIP.' });
+      }
+    }
   }
 }

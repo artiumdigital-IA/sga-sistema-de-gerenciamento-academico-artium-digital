@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
+import { formatarData } from '@/lib/format';
 
 type Parcela = {
   id: string; numero: number; valor: number; dataVencimento: string;
@@ -23,7 +24,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 function fmt(v: number) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v); }
-function fmtDate(s: string) { return new Date(s).toLocaleDateString('pt-BR'); }
+function fmtDate(s: string) { return formatarData(s); }
 
 function Badge({ s }: { s: string }) {
   return <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: (STATUS_COLOR[s] ?? 'var(--gray-200)') + '22', color: STATUS_COLOR[s] ?? 'var(--gray-700)' }}>{s}</span>;

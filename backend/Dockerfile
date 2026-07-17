@@ -59,5 +59,11 @@ COPY tsconfig.json ./
 
 EXPOSE 3001
 
-# Roda migrations e sobe o servidor
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
+# Roda migrations, seed (idempotente — upsert/ON CONFLICT, nunca falha em
+# banco já populado) e sobe o servidor. O seed usa ";" (não "&&") de
+# propósito: se ele falhar por algum motivo inesperado, isso NÃO deve
+# impedir a aplicação de subir — só o backup de dados de teste fica
+# faltando, não o sistema inteiro. Corrige o gap achado no teste E2E
+# (Jul/2026): a produção nunca tinha rodado o seed, deixando o Painel do
+# Sistema/Calendário Acadêmico/etc. sem nenhum dado de exemplo.
+CMD ["sh", "-c", "npx prisma migrate deploy && (npx prisma db seed || true) && node dist/src/main"]

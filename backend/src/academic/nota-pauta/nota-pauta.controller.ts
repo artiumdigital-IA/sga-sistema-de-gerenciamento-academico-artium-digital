@@ -13,11 +13,12 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class NotaPautaController {
   constructor(private readonly service: NotaPautaService) {}
 
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.PROFESSOR)
   @Get()
   @ApiOperation({ summary: 'Pauta de uma oferta (semestre) — Lançamento de Notas & Frequência por Pauta' })
   @ApiQuery({ name: 'ofertaId', required: true })
-  pauta(@Query('ofertaId') ofertaId: string) {
-    return this.service.pauta(ofertaId);
+  pauta(@Query('ofertaId') ofertaId: string, @Request() req: { user: { id: string; perfil: string } }) {
+    return this.service.pauta(ofertaId, req.user);
   }
 
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.PROFESSOR)
@@ -26,8 +27,8 @@ export class NotaPautaController {
   salvar(
     @Param('matriculaDisciplinaId') matriculaDisciplinaId: string,
     @Body() dto: UpsertNotaPautaDto,
-    @Request() req: { user?: { id?: string } },
+    @Request() req: { user: { id: string; perfil: string } },
   ) {
-    return this.service.salvar(matriculaDisciplinaId, dto, req.user?.id);
+    return this.service.salvar(matriculaDisciplinaId, dto, req.user);
   }
 }
