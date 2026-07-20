@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { INPUT, LBL, BTN_P, CARD, CHECK_LABEL } from './ui';
+import FrentePreview from './FrentePreview';
 
 type TextOption = '1' | '2' | '3';
 type Modalidade = 'Presencial' | 'Online' | 'Híbrido';
@@ -51,6 +52,16 @@ export default function FrenteTab() {
   const [secGeralName, setSecGeralName] = useState('');
   const [gerando, setGerando] = useState(false);
   const [erro, setErro] = useState('');
+  const [bgPreviewUrl, setBgPreviewUrl] = useState<string | null>(null);
+
+  // object URL só pra pré-visualização — criado/revogado a cada troca de
+  // arquivo pra não vazar memória (blob URL fica vivo até revogar).
+  useEffect(() => {
+    if (!bgFile) { setBgPreviewUrl(null); return; }
+    const url = URL.createObjectURL(bgFile);
+    setBgPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [bgFile]);
 
   const lblSubject = textOption === '2' ? 'Nome do Evento' : 'Nome do Curso';
   const lblTime = textOption === '2' ? 'Data do Evento' : 'Período (Início e Fim)';
@@ -175,7 +186,8 @@ export default function FrenteTab() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+    <div style={{ flex: '1 1 480px', minWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={CARD}>
         <h2 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700 }}>1. Configuração Básica</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -262,6 +274,25 @@ export default function FrenteTab() {
       <button style={{ ...BTN_P, alignSelf: 'flex-start', opacity: gerando ? 0.6 : 1 }} disabled={gerando} onClick={gerar}>
         {gerando ? 'Gerando...' : 'Gerar Certificados (PDF)'}
       </button>
+    </div>
+
+    <div style={{ flex: '1 1 460px', minWidth: 400, position: 'sticky', top: 16 }}>
+      <FrentePreview
+        bgUrl={bgPreviewUrl}
+        textOption={textOption}
+        mainSubject={mainSubject}
+        timeData={timeData}
+        semPeriodo={semPeriodo}
+        hours={hours}
+        semCargaHoraria={semCargaHoraria}
+        modality={modality}
+        certDate={certDate}
+        nomeAluno={studentList.split('\n').map(n => n.trim()).filter(Boolean)[0] ?? ''}
+        cargoAssinatura={cargoAssinatura}
+        secGeralName={secGeralName}
+        reitora={REITORA}
+      />
+    </div>
     </div>
   );
 }

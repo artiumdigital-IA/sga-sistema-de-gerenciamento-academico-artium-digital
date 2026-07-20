@@ -7,7 +7,7 @@ export default function GeradorCertificadoPage() {
   const [tab, setTab] = useState<'frente' | 'verso'>('frente');
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: tab === 'verso' ? 1500 : 900 }}>
+    <div style={{ padding: '24px 28px', maxWidth: 1500 }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Gerador de Certificado</h1>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--gray-500)' }}>
