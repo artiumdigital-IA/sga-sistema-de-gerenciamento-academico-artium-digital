@@ -2,8 +2,20 @@
 import { useState } from 'react';
 import { INPUT, LBL, BTN_P, BTN_G, BTN_D, CARD } from './ui';
 
-interface AlunoRow { nome: string; cpf: string; }
+interface AlunoRow { nome: string; cpf: string; numeroRegistro: string; numeroLivro: string; numeroFolha: string; }
 interface DisciplinaRow { disciplina: string; ch: string; freq: string; nota: string; professor: string; titulacao: string; }
+
+type TipoRegistroBloco2 = 'SEM_REGISTRO' | 'COM_REGISTRO';
+
+// Preview genérico mostrado no bloco 2 quando "Com registro" está marcado —
+// os números de verdade vêm da tabela de Alunos (colunas Nº/Livro/Folha) e
+// são substituídos aluno a aluno na hora de gerar o PDF (ver montarBloco2()).
+const TEXTO_COM_REGISTRO_PREVIEW = 'Certificado registrado sob o n° [nº] no livro n° [nº do livro] folha n° [nº da folha] lei nº 9.394 de 20/12/1996, que estabelece as Diretrizes e Bases da Educação Nacional.';
+
+function montarBloco2(tipo: TipoRegistroBloco2, bloco2Texto: string, aluno: AlunoRow): string {
+  if (tipo !== 'COM_REGISTRO') return bloco2Texto;
+  return `Certificado registrado sob o n° ${aluno.numeroRegistro || '_'} no livro n° ${aluno.numeroLivro || '_'} folha n° ${aluno.numeroFolha || '_'} lei nº 9.394 de 20/12/1996, que estabelece as Diretrizes e Bases da Educação Nacional.`;
+}
 
 const TH: React.CSSProperties = { padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 11.5, borderBottom: '1px solid var(--gray-200)', background: 'var(--gray-50)' };
 const TD: React.CSSProperties = { padding: '2px 6px', borderBottom: '1px solid var(--gray-100)' };
@@ -41,8 +53,10 @@ export default function VersoTab() {
   const [bloco2Texto, setBloco2Texto] = useState('Texto');
   const [bloco3Titulo, setBloco3Titulo] = useState('');
   const [bloco3Texto, setBloco3Texto] = useState('');
+  const [tipoRegistroBloco2, setTipoRegistroBloco2] = useState<TipoRegistroBloco2>('SEM_REGISTRO');
+  const comRegistro = tipoRegistroBloco2 === 'COM_REGISTRO';
 
-  const [alunos, setAlunos] = useState<AlunoRow[]>([{ nome: '', cpf: '' }]);
+  const [alunos, setAlunos] = useState<AlunoRow[]>([{ nome: '', cpf: '', numeroRegistro: '', numeroLivro: '', numeroFolha: '' }]);
   const [disciplinas, setDisciplinas] = useState<DisciplinaRow[]>([{ disciplina: '', ch: '', freq: '100%', nota: '10', professor: '', titulacao: '' }]);
   const [observacoes, setObservacoes] = useState('Texto');
   const [gerando, setGerando] = useState(false);
@@ -98,7 +112,7 @@ export default function VersoTab() {
         const box3H = 40 + 30 * pxParaMm;
 
         textoCaixa(doc, bloco1Titulo, bloco1Texto, margem, box1Y, lateralW, box1H);
-        textoCaixa(doc, bloco2Titulo, bloco2Texto, margem, box2Y, lateralW, box2H);
+        textoCaixa(doc, bloco2Titulo, montarBloco2(tipoRegistroBloco2, bloco2Texto, aluno), margem, box2Y, lateralW, box2H);
         textoCaixa(doc, bloco3Titulo, bloco3Texto, margem, box3Y, lateralW, box3H, false);
 
         doc.setFont('times', 'normal');
@@ -207,7 +221,31 @@ export default function VersoTab() {
           ].map(b => (
             <div key={b.n}>
               <F label={`Título do bloco ${b.n}`}><input style={{ ...INPUT, marginBottom: 8 }} value={b.titulo} onChange={e => b.setTitulo(e.target.value)} /></F>
-              <F label={`Texto do bloco ${b.n}`}><textarea style={{ ...INPUT, minHeight: 72, resize: 'vertical', fontFamily: 'inherit' }} value={b.texto} onChange={e => b.setTexto(e.target.value)} /></F>
+              {b.n === 2 ? (
+                <div>
+                  <label style={LBL}>Texto do bloco 2</label>
+                  <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--gray-700)', cursor: 'pointer' }}>
+                      <input type="radio" name="tipoRegistroBloco2" checked={!comRegistro} onChange={() => setTipoRegistroBloco2('SEM_REGISTRO')} />
+                      Sem registro
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--gray-700)', cursor: 'pointer' }}>
+                      <input type="radio" name="tipoRegistroBloco2" checked={comRegistro} onChange={() => setTipoRegistroBloco2('COM_REGISTRO')} />
+                      Com registro
+                    </label>
+                  </div>
+                  {comRegistro ? (
+                    <>
+                      <textarea style={{ ...INPUT, minHeight: 72, resize: 'vertical', fontFamily: 'inherit', background: 'var(--gray-50)', color: 'var(--gray-500)' }} value={TEXTO_COM_REGISTRO_PREVIEW} readOnly />
+                      <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--gray-400)' }}>Os números de cada aluno saem da tabela de Alunos abaixo (colunas Nº / Nº do Livro / Nº da Folha).</p>
+                    </>
+                  ) : (
+                    <textarea style={{ ...INPUT, minHeight: 72, resize: 'vertical', fontFamily: 'inherit' }} value={bloco2Texto} onChange={e => setBloco2Texto(e.target.value)} />
+                  )}
+                </div>
+              ) : (
+                <F label={`Texto do bloco ${b.n}`}><textarea style={{ ...INPUT, minHeight: 72, resize: 'vertical', fontFamily: 'inherit' }} value={b.texto} onChange={e => b.setTexto(e.target.value)} /></F>
+              )}
             </div>
           ))}
         </div>
@@ -217,19 +255,31 @@ export default function VersoTab() {
         <h2 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700 }}>Alunos</h2>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr><th style={TH}>Aluno(a)</th><th style={TH}>CPF</th><th style={{ ...TH, width: 46 }}></th></tr></thead>
+            <thead>
+              <tr>
+                <th style={TH}>Aluno(a)</th>
+                <th style={TH}>CPF</th>
+                {comRegistro && <th style={TH}>Nº</th>}
+                {comRegistro && <th style={TH}>Nº do Livro</th>}
+                {comRegistro && <th style={TH}>Nº da Folha</th>}
+                <th style={{ ...TH, width: 46 }}></th>
+              </tr>
+            </thead>
             <tbody>
               {alunos.map((a, i) => (
                 <tr key={i}>
                   <td style={TD}><input style={CELL_INPUT} value={a.nome} placeholder="Nome do aluno" onChange={e => atualizarAluno(i, 'nome', e.target.value)} /></td>
                   <td style={TD}><input style={CELL_INPUT} value={a.cpf} placeholder="000.000.000-00" onChange={e => atualizarAluno(i, 'cpf', e.target.value)} /></td>
+                  {comRegistro && <td style={TD}><input style={{ ...CELL_INPUT, width: 70 }} value={a.numeroRegistro} placeholder="nº" onChange={e => atualizarAluno(i, 'numeroRegistro', e.target.value)} /></td>}
+                  {comRegistro && <td style={TD}><input style={{ ...CELL_INPUT, width: 70 }} value={a.numeroLivro} placeholder="nº do livro" onChange={e => atualizarAluno(i, 'numeroLivro', e.target.value)} /></td>}
+                  {comRegistro && <td style={TD}><input style={{ ...CELL_INPUT, width: 70 }} value={a.numeroFolha} placeholder="nº da folha" onChange={e => atualizarAluno(i, 'numeroFolha', e.target.value)} /></td>}
                   <td style={TD}><button style={BTN_D} onClick={() => setAlunos(rows => rows.filter((_, idx) => idx !== i))}>×</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <button style={{ ...BTN_G, marginTop: 10 }} onClick={() => setAlunos(rows => [...rows, { nome: '', cpf: '' }])}>+ Adicionar aluno</button>
+        <button style={{ ...BTN_G, marginTop: 10 }} onClick={() => setAlunos(rows => [...rows, { nome: '', cpf: '', numeroRegistro: '', numeroLivro: '', numeroFolha: '' }])}>+ Adicionar aluno</button>
       </div>
 
       <div style={CARD}>
