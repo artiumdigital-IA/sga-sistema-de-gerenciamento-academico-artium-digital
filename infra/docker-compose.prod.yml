@@ -147,14 +147,14 @@ services:
     # valido. O roteador HTTP (sem TLS) continua aceitando IP normalmente.
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.fiurj-backend-api.rule=(Host(`187.77.56.182`) || Host(`sga.fiurj.edu.br`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
+- "traefik.http.routers.fiurj-backend-api.rule=(Host(`187.77.253.100`) || Host(`sga.artiumdigital.com.br`)) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
       - traefik.http.routers.fiurj-backend-api.entrypoints=http
-      - "traefik.http.routers.fiurj-backend-api-https.rule=Host(`sga.fiurj.edu.br`) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
+      - "traefik.http.routers.fiurj-backend-api-https.rule=Host(`sga.artiumdigital.com.br`) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))"
       - traefik.http.routers.fiurj-backend-api-https.entrypoints=https
       - traefik.http.routers.fiurj-backend-api-https.tls=true
       - traefik.http.routers.fiurj-backend-api-https.tls.certresolver=letsencrypt
       - traefik.http.services.fiurj-backend-api.loadbalancer.server.port=3001
-      - traefik.docker.network=v10jck0yzwz1d35xxcj6akxt
+      - traefik.docker.network=coolify
 
   frontend:
     build:
@@ -192,7 +192,7 @@ services:
     # Timeout (Jul/2026) mesmo com o container saudavel e respondendo
     # normalmente por dentro (`wget http://127.0.0.1:3000` funcionava).
     labels:
-      - traefik.docker.network=v10jck0yzwz1d35xxcj6akxt
+      - traefik.docker.network=coolify
 
 volumes:
   postgres_data:
