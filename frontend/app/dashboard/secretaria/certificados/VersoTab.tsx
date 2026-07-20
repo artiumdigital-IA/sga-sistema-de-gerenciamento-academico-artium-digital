@@ -3,16 +3,37 @@ import { useState } from 'react';
 import { INPUT, LBL, BTN_P, BTN_G, BTN_D, CARD } from './ui';
 import VersoPreview from './VersoPreview';
 
-interface AlunoRow { nome: string; cpf: string; numeroRegistro: string; numeroLivro: string; numeroFolha: string; }
+interface AlunoRow { nome: string; cpf: string; numeroRegistro: string; numeroLivro: string; numeroFolha: string; dataRegistro: string; }
 interface DisciplinaRow { disciplina: string; ch: string; freq: string; nota: string; professor: string; titulacao: string; }
 
 type TipoRegistroBloco2 = 'SEM_REGISTRO' | 'COM_REGISTRO';
 
-const ALUNO_VAZIO: AlunoRow = { nome: '', cpf: '', numeroRegistro: '', numeroLivro: '', numeroFolha: '' };
+const ALUNO_VAZIO: AlunoRow = { nome: '', cpf: '', numeroRegistro: '', numeroLivro: '', numeroFolha: '', dataRegistro: '' };
 
 function montarBloco2(tipo: TipoRegistroBloco2, bloco2Texto: string, aluno: AlunoRow): string {
   if (tipo !== 'COM_REGISTRO') return bloco2Texto;
   return `Certificado registrado sob o n° ${aluno.numeroRegistro || '_'} no livro n° ${aluno.numeroLivro || '_'} folha n° ${aluno.numeroFolha || '_'} lei nº 9.394 de 20/12/1996, que estabelece as Diretrizes e Bases da Educação Nacional.`;
+}
+
+// Input type="date" devolve "AAAA-MM-DD" — monta "DD/MM/AAAA" na mão (sem
+// passar por new Date()) pra não cair no bug já conhecido de fuso horário
+// (new Date("2026-07-06") vira meia-noite UTC e pode voltar um dia quando
+// formatada no fuso local — ver "Bug #6" no histórico do projeto).
+function formatarDataBR(iso: string): string {
+  if (!iso) return '_/_/_';
+  const [ano, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+// Página de declaração de registro — só gerada quando "Com registro" está
+// marcado (sem registro não gera essa página). Uma por aluno, com os dados
+// daquele aluno específico substituídos no texto.
+function montarTextoRegistro(aluno: AlunoRow): string[] {
+  return [
+    'Credenciada pela Portaria MEC nº 501 de 8 de julho de 2021, publicada no D.O.U em 9 de julho de 2021.',
+    `Certificado registrado em nome de ${aluno.nome || '______'}, sob o Nº ${aluno.numeroRegistro || '____'}, no livro ${aluno.numeroLivro || '__'}, da folha ${aluno.numeroFolha || '__'} em ${formatarDataBR(aluno.dataRegistro)}.`,
+    'Registro válido em todo o território Nacional nos termos dispostos do parágrafo 1º do art.48 da lei 9.394 de 20/12/1996, que estabelece as Diretrizes e Bases da Educação Nacional.',
+  ];
 }
 
 const TH: React.CSSProperties = { padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 11.5, borderBottom: '1px solid var(--gray-200)', background: 'var(--gray-50)' };
@@ -54,7 +75,7 @@ export default function VersoTab() {
   const [tipoRegistroBloco2, setTipoRegistroBloco2] = useState<TipoRegistroBloco2>('SEM_REGISTRO');
   const comRegistro = tipoRegistroBloco2 === 'COM_REGISTRO';
 
-  const [alunos, setAlunos] = useState<AlunoRow[]>([{ nome: '', cpf: '', numeroRegistro: '', numeroLivro: '', numeroFolha: '' }]);
+  const [alunos, setAlunos] = useState<AlunoRow[]>([{ ...ALUNO_VAZIO }]);
   const [disciplinas, setDisciplinas] = useState<DisciplinaRow[]>([{ disciplina: '', ch: '', freq: '100%', nota: '10', professor: '', titulacao: '' }]);
   const [observacoes, setObservacoes] = useState('Texto');
   const [gerando, setGerando] = useState(false);
@@ -179,6 +200,26 @@ export default function VersoTab() {
         doc.text(doc.splitTextToSize(observacoes, conteudoW - 7), conteudoX + 3, obsY + 10);
       });
 
+      // Páginas extras de declaração de registro — uma por aluno, só quando
+      // "Com registro" está marcado (sem registro não gera essas páginas).
+      // Ficam no final do PDF, depois de todos os versos.
+      if (tipoRegistroBloco2 === 'COM_REGISTRO') {
+        alunosValidos.forEach(aluno => {
+          doc.addPage();
+          doc.setTextColor(0, 0, 0);
+          doc.setFont('times', 'normal');
+          doc.setFontSize(13);
+          const margemDecl = 35;
+          const larguraDecl = w - margemDecl * 2;
+          let yDecl = 80;
+          montarTextoRegistro(aluno).forEach(paragrafo => {
+            const linhas = doc.splitTextToSize(paragrafo, larguraDecl);
+            doc.text(linhas, w / 2, yDecl, { align: 'center' });
+            yDecl += linhas.length * 8 + 10;
+          });
+        });
+      }
+
       const blobUrl = URL.createObjectURL(doc.output('blob'));
       if (novaAba) novaAba.location.href = blobUrl;
       else window.open(blobUrl); // navegador bloqueou a 1ª tentativa (aba em branco) — tenta de novo mesmo assim
@@ -261,6 +302,7 @@ export default function VersoTab() {
                 {comRegistro && <th style={TH}>Nº</th>}
                 {comRegistro && <th style={TH}>Nº do Livro</th>}
                 {comRegistro && <th style={TH}>Nº da Folha</th>}
+                {comRegistro && <th style={TH}>Data do Registro</th>}
                 <th style={{ ...TH, width: 46 }}></th>
               </tr>
             </thead>
@@ -272,13 +314,14 @@ export default function VersoTab() {
                   {comRegistro && <td style={TD}><input style={{ ...CELL_INPUT, width: 70 }} value={a.numeroRegistro} placeholder="nº" onChange={e => atualizarAluno(i, 'numeroRegistro', e.target.value)} /></td>}
                   {comRegistro && <td style={TD}><input style={{ ...CELL_INPUT, width: 70 }} value={a.numeroLivro} placeholder="nº do livro" onChange={e => atualizarAluno(i, 'numeroLivro', e.target.value)} /></td>}
                   {comRegistro && <td style={TD}><input style={{ ...CELL_INPUT, width: 70 }} value={a.numeroFolha} placeholder="nº da folha" onChange={e => atualizarAluno(i, 'numeroFolha', e.target.value)} /></td>}
+                  {comRegistro && <td style={TD}><input type="date" style={{ ...CELL_INPUT, width: 130 }} value={a.dataRegistro} onChange={e => atualizarAluno(i, 'dataRegistro', e.target.value)} /></td>}
                   <td style={TD}><button style={BTN_D} onClick={() => setAlunos(rows => rows.filter((_, idx) => idx !== i))}>×</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <button style={{ ...BTN_G, marginTop: 10 }} onClick={() => setAlunos(rows => [...rows, { nome: '', cpf: '', numeroRegistro: '', numeroLivro: '', numeroFolha: '' }])}>+ Adicionar aluno</button>
+        <button style={{ ...BTN_G, marginTop: 10 }} onClick={() => setAlunos(rows => [...rows, { ...ALUNO_VAZIO }])}>+ Adicionar aluno</button>
       </div>
 
       <div style={CARD}>
@@ -317,7 +360,10 @@ export default function VersoTab() {
       <button style={{ ...BTN_P, alignSelf: 'flex-start', opacity: gerando ? 0.6 : 1 }} disabled={gerando} onClick={gerar}>
         {gerando ? 'Gerando...' : 'Gerar Certificados (PDF)'}
       </button>
-      <p style={{ fontSize: 11.5, color: 'var(--gray-400)', margin: 0 }}>Será gerado um PDF com uma página de verso por aluno cadastrado.</p>
+      <p style={{ fontSize: 11.5, color: 'var(--gray-400)', margin: 0 }}>
+        Será gerado um PDF com uma página de verso por aluno cadastrado
+        {comRegistro ? ', mais uma página de declaração de registro por aluno no final do PDF.' : '.'}
+      </p>
     </div>
 
     <div style={{ flex: '1 1 460px', minWidth: 400, position: 'sticky', top: 16 }}>
