@@ -7,10 +7,7 @@ interface DisciplinaRow { disciplina: string; ch: string; freq: string; nota: st
 
 type TipoRegistroBloco2 = 'SEM_REGISTRO' | 'COM_REGISTRO';
 
-// Preview genérico mostrado no bloco 2 quando "Com registro" está marcado —
-// os números de verdade vêm da tabela de Alunos (colunas Nº/Livro/Folha) e
-// são substituídos aluno a aluno na hora de gerar o PDF (ver montarBloco2()).
-const TEXTO_COM_REGISTRO_PREVIEW = 'Certificado registrado sob o n° [nº] no livro n° [nº do livro] folha n° [nº da folha] lei nº 9.394 de 20/12/1996, que estabelece as Diretrizes e Bases da Educação Nacional.';
+const ALUNO_VAZIO: AlunoRow = { nome: '', cpf: '', numeroRegistro: '', numeroLivro: '', numeroFolha: '' };
 
 function montarBloco2(tipo: TipoRegistroBloco2, bloco2Texto: string, aluno: AlunoRow): string {
   if (tipo !== 'COM_REGISTRO') return bloco2Texto;
@@ -236,8 +233,8 @@ export default function VersoTab() {
                   </div>
                   {comRegistro ? (
                     <>
-                      <textarea style={{ ...INPUT, minHeight: 72, resize: 'vertical', fontFamily: 'inherit', background: 'var(--gray-50)', color: 'var(--gray-500)' }} value={TEXTO_COM_REGISTRO_PREVIEW} readOnly />
-                      <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--gray-400)' }}>Os números de cada aluno saem da tabela de Alunos abaixo (colunas Nº / Nº do Livro / Nº da Folha).</p>
+                      <textarea style={{ ...INPUT, minHeight: 72, resize: 'vertical', fontFamily: 'inherit', background: 'var(--gray-50)', color: 'var(--gray-500)' }} value={montarBloco2('COM_REGISTRO', bloco2Texto, alunos[0] ?? ALUNO_VAZIO)} readOnly />
+                      <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--gray-400)' }}>Pré-visualização com os dados do 1º aluno da tabela abaixo — cada aluno usa os próprios números (colunas Nº / Nº do Livro / Nº da Folha) na hora de gerar.</p>
                     </>
                   ) : (
                     <textarea style={{ ...INPUT, minHeight: 72, resize: 'vertical', fontFamily: 'inherit' }} value={bloco2Texto} onChange={e => setBloco2Texto(e.target.value)} />
