@@ -157,6 +157,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Emissão de Carteirinha', href: '/dashboard/secretaria/documentos' },
     { label: 'Emissão de Histórico Escolar', href: '/dashboard/secretaria/documentos' },
     { label: 'Emissão de Calendário Acadêmico', href: '/dashboard/secretaria/documentos' },
+    { label: 'Gerador de Certificado', href: '/dashboard/secretaria/certificados' },
     { label: 'Carômetro', href: null },
     { label: 'Etiqueta', href: null },
     { label: 'Mala Direta / Declarações', href: '/dashboard/secretaria/documentos' },
