@@ -58,6 +58,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   // ── Secretaria ───────────────────────────────────────────────────────
   { chave: 'requerimentos', label: 'Requerimentos', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/requerimentos'] },
   { chave: 'documentos', label: 'Documentos (declaração, boletim, carteirinha...)', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/documentos'] },
+  { chave: 'certificados', label: 'Gerador de Certificado', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/certificados'] },
   { chave: 'avisos', label: 'Avisos', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/avisos'] },
   { chave: 'mensagens', label: 'Mensagens', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/mensagens'] },
   { chave: 'protocolos', label: 'Protocolos', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/protocolos'] },

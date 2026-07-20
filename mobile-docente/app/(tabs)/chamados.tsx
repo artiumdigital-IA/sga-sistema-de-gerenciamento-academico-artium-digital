@@ -34,7 +34,7 @@ const COR_PRIORIDADE: Record<Prioridade, string> = {
  * Chamado de Manutenção — abrir e acompanhar chamados de suporte (elétrica,
  * hidráulica, TI, mobiliário etc.). Diferente das outras telas de Docentes
  * On, não é escopado a uma turma/oferta — é sobre a instalação física. Quem
- * atende é a equipe de manutenção (perfil MANUTENCAO), pelo dashboard web.
+ * atende é a equipe de suporte (perfil SUPORTE), pelo dashboard web.
  */
 export default function ChamadosScreen() {
   const [tipos, setTipos] = useState<TipoChamado[]>([]);

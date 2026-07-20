@@ -63,20 +63,29 @@ const MENU_DOCENTE_GROUP: { title: string; items: RpanelItem[] } = {
   ],
 };
 
-// "Menu Manutenção" — autoatendimento da equipe de manutenção (Jul/2026,
-// perfil MANUTENCAO). Mesmo princípio de Menu Discente/Docente: SUBSTITUI
-// todos os outros grupos.
-const MENU_MANUTENCAO_GROUP: { title: string; items: RpanelItem[] } = {
-  title: 'Manutenção',
+// "Menu Suporte" — autoatendimento da equipe de suporte/manutenção
+// (Jul/2026, perfil SUPORTE — renomeado de MANUTENCAO pra alinhar com o
+// nome já usado no resto do módulo). Mesmo princípio de Menu Discente/
+// Docente: SUBSTITUI todos os outros grupos.
+const MENU_SUPORTE_GROUP: { title: string; items: RpanelItem[] } = {
+  title: 'Suporte',
   items: [
     { label: 'Chamados', href: '/dashboard/suporte/chamados' },
     { label: 'Abrir Chamado', href: '/dashboard/suporte/meus-chamados' },
     { label: 'Tipos de Chamado', href: '/dashboard/suporte/tipos-chamado' },
+    // Biblioteca (Jul/2026) — acesso assimétrico por sub-módulo (ver @Roles
+    // nos controllers de library/): Acervo e Equipamentos são só-leitura pro
+    // Suporte (consulta catálogo, não cadastra/edita/remove); Empréstimos é
+    // gestão completa (registrar empréstimo, receber devolução), já que é
+    // Suporte quem opera o balcão de empréstimo dos equipamentos.
+    { label: 'Biblioteca — Acervo', href: '/dashboard/biblioteca/livros' },
+    { label: 'Biblioteca — Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
+    { label: 'Biblioteca — Empréstimos', href: '/dashboard/biblioteca/emprestimos' },
   ],
 };
 
 // "Ferramentas Master" — atalhos extras do perfil MASTER (Jul/2026), acima
-// do ADMIN comum. Diferente de Menu Discente/Docente/Manutenção, NÃO
+// do ADMIN comum. Diferente de Menu Discente/Docente/Suporte, NÃO
 // substitui os outros grupos — MASTER acessa TUDO sem restrição (ver
 // RolesGuard/PermissoesTelaService: MASTER passa por qualquer @Roles() e
 // enxerga toda tela da matriz, mesmo sem estar listado rota a rota), então
@@ -148,6 +157,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Emissão de Carteirinha', href: '/dashboard/secretaria/documentos' },
     { label: 'Emissão de Histórico Escolar', href: '/dashboard/secretaria/documentos' },
     { label: 'Emissão de Calendário Acadêmico', href: '/dashboard/secretaria/documentos' },
+    { label: 'Gerador de Certificado', href: '/dashboard/secretaria/certificados' },
     { label: 'Carômetro', href: null },
     { label: 'Etiqueta', href: null },
     { label: 'Mala Direta / Declarações', href: '/dashboard/secretaria/documentos' },
@@ -250,8 +260,8 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
    * diferente da sidebar, aqui não há risco de vazar uma tela sensível
    * porque são só rótulos/atalhos, o bloqueio de fato é o guard de rota). */
   chavesHabilitadas: Set<string> | null;
-  /** Perfil do usuário logado — ALUNO, PROFESSOR e MANUTENCAO veem SÓ o
-   * respectivo menu exclusivo (Menu Discente/Docente/Manutenção) na Barra
+  /** Perfil do usuário logado — ALUNO, PROFESSOR e SUPORTE veem SÓ o
+   * respectivo menu exclusivo (Menu Discente/Docente/Suporte) na Barra
    * Rápida, nada dos menus de secretaria/financeiro/admin. MASTER é a
    * exceção: vê os grupos de sempre (igual ADMIN) MAIS o grupo exclusivo
    * "Ferramentas Master" em cima — MASTER não tem restrição nenhuma.
@@ -264,12 +274,12 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
     ? [MENU_DISCENTE_GROUP]
     : perfil === 'PROFESSOR'
       ? [MENU_DOCENTE_GROUP]
-      : perfil === 'MANUTENCAO'
-        ? [MENU_MANUTENCAO_GROUP]
+      : perfil === 'SUPORTE'
+        ? [MENU_SUPORTE_GROUP]
         : perfil === 'MASTER'
           // MASTER acessa TUDO sem restrição (Jul/2026) — painel inteiro de
           // ADMIN (RPANEL_GROUPS) mais as ferramentas exclusivas dele em
-          // cima, ao contrário de ALUNO/PROFESSOR/MANUTENCAO que só veem o
+          // cima, ao contrário de ALUNO/PROFESSOR/SUPORTE que só veem o
           // próprio menu.
           ? [...RPANEL_GROUPS, MENU_MASTER_GROUP]
           : RPANEL_GROUPS;

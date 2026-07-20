@@ -9,9 +9,11 @@ import { Perfil } from '@prisma/client';
 import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 // Sem @Roles() no nível do controller: a leitura do acervo (GET) fica aberta a
-// qualquer autenticado, incluindo ALUNO (uma biblioteca sem consulta pública
-// ao catálogo não serve pra nada). Só escrita (cadastrar/editar/remover livro
-// e exemplares) é restrita a ADMIN/SECRETARIA, decorada rota a rota.
+// qualquer autenticado, incluindo ALUNO e SUPORTE (uma biblioteca sem consulta
+// pública ao catálogo não serve pra nada). Só escrita (cadastrar/editar/
+// remover livro e exemplares) é restrita a ADMIN/SECRETARIA, decorada rota a
+// rota — SUPORTE só lê o acervo, não gerencia (decisão de Jul/2026: ganhou
+// gestão completa de Empréstimos, mas Acervo/Equipamentos ficam só-leitura).
 @ApiTags('Biblioteca — Acervo')
 @ApiBearerAuth()
 @Tela('biblioteca-acervo')

@@ -38,7 +38,7 @@ const SIDEBAR_ITEMS = [
 const PERFIL_LABEL: Record<string, string> = {
   MASTER: 'Master', ADMIN: 'Administrador', SECRETARIA: 'Secretaria',
   FINANCEIRO: 'Financeiro', PROFESSOR: 'Professor', ALUNO: 'Aluno',
-  MANUTENCAO: 'Manutenção',
+  SUPORTE: 'Suporte',
 };
 
 function SvgIcon({ d, size = 18 }: { d: string; size?: number }) {

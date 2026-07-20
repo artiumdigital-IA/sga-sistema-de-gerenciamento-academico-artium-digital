@@ -8,7 +8,8 @@ import { Perfil } from '@prisma/client';
 import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 // Mesmo padrão de LivroController: leitura (GET) aberta a qualquer
-// autenticado, escrita restrita a ADMIN/SECRETARIA rota a rota.
+// autenticado (inclusive SUPORTE), escrita restrita a ADMIN/SECRETARIA
+// rota a rota — SUPORTE só lê o catálogo de equipamentos, não gerencia.
 @ApiTags('Biblioteca — Equipamentos')
 @ApiBearerAuth()
 @Tela('biblioteca-equipamentos')

@@ -33,7 +33,7 @@ export class ChamadoManutencaoController {
     return this.service.meus(req.user.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.MANUTENCAO)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
   @Tela('chamados-manutencao')
   @Get()
   @ApiOperation({ summary: 'Consultar todos os chamados (filtros opcionais)' })
@@ -50,14 +50,14 @@ export class ChamadoManutencaoController {
     return this.service.findAll({ status, tipoId, prioridade, responsavelId });
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.MANUTENCAO)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
   @Tela('chamados-manutencao')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.MANUTENCAO)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
   @Tela('chamados-manutencao')
   @Patch(':id/status')
   @ApiOperation({ summary: 'Atualizar status do chamado (assume automaticamente ao mover pra Em Andamento sem responsável)' })

@@ -1,10 +1,11 @@
-import { Controller, Get, Query, Res, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Res, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Perfil } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 import { RelatoriosMasterService } from './relatorios-master.service';
+import { ImportarLivrosDto } from './dto/importar-livros.dto';
 
 /**
  * Relatórios Master — exportação completa do banco (backup) e dos arquivos
@@ -65,6 +66,21 @@ export class RelatoriosMasterController {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename="banco-completo.json"');
     res.send(JSON.stringify(dados, null, 2));
+  }
+
+  @Get('biblioteca/dump-xlsx')
+  @ApiOperation({ summary: 'Acervo da Biblioteca em XLSX (Livros/Exemplares, Equipamentos, Empréstimos)' })
+  async dumpBibliotecaXlsx(@Res() res: Response, @Request() req: any) {
+    await this.service.registrarExport(req.user.id, 'biblioteca-xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="biblioteca.xlsx"');
+    await this.service.streamBibliotecaXlsx(res);
+  }
+
+  @Post('biblioteca/importar-livros')
+  @ApiOperation({ summary: 'Importação em lote do acervo de livros (1 linha = 1 exemplar físico)' })
+  importarLivros(@Body() dto: ImportarLivrosDto, @Request() req: any) {
+    return this.service.importarLivros(dto.linhas, req.user.id);
   }
 
   @Get('uploads-zip')

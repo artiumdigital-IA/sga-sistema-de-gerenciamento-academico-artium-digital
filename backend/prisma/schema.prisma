@@ -576,7 +576,7 @@ enum Perfil {
   FINANCEIRO
   PROFESSOR
   ALUNO
-  MANUTENCAO
+  SUPORTE
 }
 
 enum UsuarioStatus {
@@ -1022,7 +1022,7 @@ enum StatusProtocolo {
 
 // ── Suporte / Chamados de Manutenção (Jul/2026) ──────────────────
 // Aberto por QUALQUER perfil autenticado (inclusive ALUNO); gerenciado por
-// ADMIN/SECRETARIA/MANUTENCAO. Mesmo padrão de numeração sequencial por ano
+// ADMIN/SECRETARIA/SUPORTE. Mesmo padrão de numeração sequencial por ano
 // do Protocolo (CM20260001...), status simples sem máquina de estados rígida
 // (só a coluna `status`, sem tabela de timeline/comentários — decisão
 // deliberada, ver CLAUDE.md).

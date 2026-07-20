@@ -81,15 +81,25 @@ function RegistrarModal({ onClose, onSave }: { onClose: () => void; onSave: () =
   const [usuarioId, setUsuarioId] = useState('');
   const [dataPrevista, setDataPrevista] = useState('');
   const [observacoes, setObservacoes] = useState('');
-  const [usoInstitucional, setUsoInstitucional] = useState(false);
-  const [usoPorAluno, setUsoPorAluno] = useState(false);
+  // Uso institucional e uso por aluno são mutuamente exclusivos (nunca fez
+  // sentido os dois ao mesmo tempo) — um único estado de 3 opções em vez de
+  // 2 checkboxes independentes garante isso na UI; "NORMAL" é o empréstimo
+  // padrão (nenhuma das duas flags), mesmo default de antes.
+  const [tipoUso, setTipoUso] = useState<'NORMAL' | 'INSTITUCIONAL' | 'ALUNO'>('NORMAL');
+  const usoInstitucional = tipoUso === 'INSTITUCIONAL';
+  const usoPorAluno = tipoUso === 'ALUNO';
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     apiFetch<LivroComExemplares[]>('/biblioteca/livros').then(setLivros).catch(() => {});
     apiFetch<EquipamentoDisp[]>('/biblioteca/equipamentos').then(setEquipamentos).catch(() => {});
-    apiFetch<UsuarioBasico[]>('/usuarios').then(setUsuarios).catch(() => {});
+    // /usuarios é @Roles(ADMIN, SECRETARIA) — perfil SUPORTE (que também
+    // registra empréstimo) recebia 403 nessa chamada e o dropdown ficava
+    // sempre vazio. /mensagens/contatos é a lista mínima já usada pelo chat
+    // (id/nome/email/perfil, sem @Roles — qualquer autenticado acessa) e
+    // serve igualmente bem aqui.
+    apiFetch<UsuarioBasico[]>('/mensagens/contatos').then(setUsuarios).catch(() => {});
   }, []);
 
   useEffect(() => { setItemId(''); }, [tipoItem]);
@@ -154,14 +164,20 @@ function RegistrarModal({ onClose, onSave }: { onClose: () => void; onSave: () =
                 : 'Se em branco: 7 dias (livro) ou 15 dias (equipamento) a partir de hoje.'}
             </p>
           </F>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
-            <input type="checkbox" checked={usoInstitucional} onChange={e => setUsoInstitucional(e.target.checked)} />
-            Uso da instituição
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
-            <input type="checkbox" checked={usoPorAluno} onChange={e => setUsoPorAluno(e.target.checked)} />
-            Uso por aluno (devolução no mesmo dia, até 22:20)
-          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
+              <input type="radio" name="tipoUso" checked={tipoUso === 'NORMAL'} onChange={() => setTipoUso('NORMAL')} />
+              Empréstimo normal
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
+              <input type="radio" name="tipoUso" checked={tipoUso === 'INSTITUCIONAL'} onChange={() => setTipoUso('INSTITUCIONAL')} />
+              Uso da instituição
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
+              <input type="radio" name="tipoUso" checked={tipoUso === 'ALUNO'} onChange={() => setTipoUso('ALUNO')} />
+              Uso por aluno (devolução no mesmo dia, até 22:20)
+            </label>
+          </div>
           <F label={usoInstitucional ? 'Observações *' : 'Observações'}>
             <textarea
               style={{ ...INPUT, minHeight: 50, resize: 'vertical', fontFamily: 'inherit' }}
