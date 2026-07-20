@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { INPUT, LBL, BTN_P, BTN_G, BTN_D, CARD } from './ui';
+import VersoPreview from './VersoPreview';
 
 interface AlunoRow { nome: string; cpf: string; numeroRegistro: string; numeroLivro: string; numeroFolha: string; }
 interface DisciplinaRow { disciplina: string; ch: string; freq: string; nota: string; professor: string; titulacao: string; }
@@ -190,7 +191,8 @@ export default function VersoTab() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+    <div style={{ flex: '1 1 480px', minWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={CARD}>
         <h2 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700 }}>Cabeçalho e Dados do Curso</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -316,6 +318,28 @@ export default function VersoTab() {
         {gerando ? 'Gerando...' : 'Gerar Certificados (PDF)'}
       </button>
       <p style={{ fontSize: 11.5, color: 'var(--gray-400)', margin: 0 }}>Será gerado um PDF com uma página de verso por aluno cadastrado.</p>
+    </div>
+
+    <div style={{ flex: '1 1 460px', minWidth: 400, position: 'sticky', top: 16 }}>
+      <VersoPreview
+        cabecalhoSuperior={cabecalhoSuperior}
+        instituicao={instituicao}
+        cabecalhoPortaria={cabecalhoPortaria}
+        curso={curso}
+        areaConhecimento={areaConhecimento}
+        cargaTotal={cargaTotal}
+        periodoRealizacao={periodoRealizacao}
+        bloco1Titulo={bloco1Titulo}
+        bloco1Texto={bloco1Texto}
+        bloco2Titulo={bloco2Titulo}
+        bloco2Texto={montarBloco2(tipoRegistroBloco2, bloco2Texto, alunos[0] ?? ALUNO_VAZIO)}
+        bloco3Titulo={bloco3Titulo}
+        bloco3Texto={bloco3Texto}
+        aluno={alunos[0] ?? ALUNO_VAZIO}
+        disciplinas={disciplinas}
+        observacoes={observacoes}
+      />
+    </div>
     </div>
   );
 }
