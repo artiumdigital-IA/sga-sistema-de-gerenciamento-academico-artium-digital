@@ -18,8 +18,8 @@ restrito a contas com perfil PROFESSOR (rejeitado no próprio app se a conta nã
   - **Aviso para Turma** — `GET/POST /docente/aviso-turma` (dispara push pros alunos matriculados).
   - **Chamado de Manutenção** — `GET/POST /chamados-manutencao` (self-service, não escopado a
     turma/oferta) + `GET /chamados-manutencao/meus` — abre e acompanha chamados de suporte
-    (elétrica, hidráulica, TI, mobiliário...), atendidos pela equipe de manutenção (perfil
-    MANUTENCAO) pelo dashboard web.
+    (elétrica, hidráulica, TI, mobiliário...), atendidos pela equipe de suporte (perfil
+    SUPORTE) pelo dashboard web.
 
 ## Como rodar
 

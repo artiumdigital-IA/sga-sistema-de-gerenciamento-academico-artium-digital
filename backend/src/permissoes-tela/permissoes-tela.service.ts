@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { TELAS_SISTEMA, TelaSistema } from './telas-sistema';
 
-const TODOS_PERFIS: Perfil[] = ['MASTER', 'ADMIN', 'SECRETARIA', 'FINANCEIRO', 'PROFESSOR', 'ALUNO', 'MANUTENCAO'] as Perfil[];
+const TODOS_PERFIS: Perfil[] = ['MASTER', 'ADMIN', 'SECRETARIA', 'FINANCEIRO', 'PROFESSOR', 'ALUNO', 'SUPORTE'] as Perfil[];
 
 /**
  * Default de uma tela quando não existe registro explícito em PermissaoTela

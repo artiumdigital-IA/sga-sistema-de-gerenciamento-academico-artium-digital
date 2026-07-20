@@ -812,20 +812,25 @@ async function main() {
   console.log(`✅ Usuário master: ${master.email}  (senha: master123)`);
 
   // ── Suporte / Chamados de Manutenção (Jul/2026) ─────────────────────────
-  const senhaManutHash = await bcrypt.hash('manut123', 12);
-  const manutencao = await prisma.usuario.upsert({
+  // Email/senha mantidos como estavam de propósito (perfil MANUTENCAO virou
+  // SUPORTE em Jul/2026, mas o seed usa upsert por email como chave de
+  // idempotência — trocar o email aqui criaria um usuário novo em produção
+  // em vez de atualizar o existente). Só o perfil e o nome de exibição
+  // mudam, que é o que a Matriz de Permissões e a UI mostram pro usuário.
+  const senhaSuporteHash = await bcrypt.hash('manut123', 12);
+  const suporte = await prisma.usuario.upsert({
     where: { email: 'manutencao@fiurj.edu.br' },
     update: {},
     create: {
       email: 'manutencao@fiurj.edu.br',
-      senhaHash: senhaManutHash,
-      perfil: 'MANUTENCAO',
+      senhaHash: senhaSuporteHash,
+      perfil: 'SUPORTE',
       mfaAtivo: false,
       status: 'ATIVO',
-      nome: 'Equipe de Manutenção',
+      nome: 'Equipe de Suporte',
     },
   });
-  console.log(`✅ Usuário manutenção: ${manutencao.email}  (senha: manut123)`);
+  console.log(`✅ Usuário suporte: ${suporte.email}  (senha: manut123)`);
 
   const tipoChamadoCount = await prisma.tipoChamadoManutencao.count();
   if (tipoChamadoCount === 0) {
@@ -838,7 +843,7 @@ async function main() {
     const solicitante = alunos['2024001']
       ? await prisma.usuario.findFirst({ where: { alunoId: alunos['2024001'].id } })
       : null;
-    const solicitanteId = solicitante?.id ?? manutencao.id;
+    const solicitanteId = solicitante?.id ?? suporte.id;
 
     await prisma.chamadoManutencao.create({
       data: {
@@ -850,14 +855,14 @@ async function main() {
     await prisma.chamadoManutencao.create({
       data: {
         numero: 'CM20260002', tipoId: tipoPorNome['TI / Informática'].id, local: 'Laboratório de Informática',
-        prioridade: 'MEDIA', titulo: 'Computador não liga', status: 'EM_ANDAMENTO', solicitanteId, responsavelId: manutencao.id,
+        prioridade: 'MEDIA', titulo: 'Computador não liga', status: 'EM_ANDAMENTO', solicitanteId, responsavelId: suporte.id,
       },
     });
     await prisma.chamadoManutencao.create({
       data: {
         numero: 'CM20260003', tipoId: tipoPorNome['Hidráulica'].id, local: 'Banheiro Térreo',
         prioridade: 'URGENTE', titulo: 'Vazamento na torneira', status: 'CONCLUIDO', solicitanteId,
-        responsavelId: manutencao.id, dataConclusao: new Date(),
+        responsavelId: suporte.id, dataConclusao: new Date(),
       },
     });
     console.log('✅ 6 tipos de chamado + 3 chamados de manutenção de teste');

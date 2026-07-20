@@ -21,7 +21,7 @@ import { Cartao, Carregando, MensagemErro } from '../../lib/ui';
  * TI, mobiliário etc.). Substitui o placeholder antigo (lista de itens "Em
  * breve" sem nenhum backend) por uma feature real, mesmo padrão de abas do
  * módulo Biblioteca (biblioteca.tsx): "Abrir Chamado" / "Meus Chamados".
- * Quem atende é a equipe de manutenção (perfil MANUTENCAO), pelo dashboard
+ * Quem atende é a equipe de suporte (perfil SUPORTE), pelo dashboard
  * web — aqui é só autoatendimento do lado do aluno.
  */
 const COR_STATUS: Record<StatusChamado, string> = {
