@@ -73,6 +73,14 @@ const MENU_SUPORTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Chamados', href: '/dashboard/suporte/chamados' },
     { label: 'Abrir Chamado', href: '/dashboard/suporte/meus-chamados' },
     { label: 'Tipos de Chamado', href: '/dashboard/suporte/tipos-chamado' },
+    // Biblioteca (Jul/2026) — Suporte ganhou o mesmo nível de gestão de
+    // ADMIN/SECRETARIA no módulo (cadastrar/editar acervo e equipamentos,
+    // registrar/devolver empréstimo — ver @Roles nos controllers de
+    // library/), já que a equipe de suporte também cuida fisicamente dos
+    // equipamentos (notebooks, tablets etc.) emprestáveis pela biblioteca.
+    { label: 'Biblioteca — Acervo', href: '/dashboard/biblioteca/livros' },
+    { label: 'Biblioteca — Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
+    { label: 'Biblioteca — Empréstimos', href: '/dashboard/biblioteca/emprestimos' },
   ],
 };
 

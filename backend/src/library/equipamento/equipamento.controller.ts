@@ -8,7 +8,7 @@ import { Perfil } from '@prisma/client';
 import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 // Mesmo padrão de LivroController: leitura (GET) aberta a qualquer
-// autenticado, escrita restrita a ADMIN/SECRETARIA rota a rota.
+// autenticado, escrita restrita a ADMIN/SECRETARIA/SUPORTE rota a rota.
 @ApiTags('Biblioteca — Equipamentos')
 @ApiBearerAuth()
 @Tela('biblioteca-equipamentos')
@@ -16,7 +16,7 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class EquipamentoController {
   constructor(private readonly service: EquipamentoService) {}
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
   @Post()
   @ApiOperation({ summary: 'Cadastrar equipamento' })
   create(@Body() dto: CreateEquipamentoDto, @Request() req: any) {
@@ -36,14 +36,14 @@ export class EquipamentoController {
     return this.service.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
   @Patch(':id')
   @ApiOperation({ summary: 'Editar equipamento' })
   update(@Param('id') id: string, @Body() dto: UpdateEquipamentoDto, @Request() req: any) {
     return this.service.update(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
   @Delete(':id')
   @ApiOperation({ summary: 'Remover equipamento (bloqueado se emprestado)' })
   remove(@Param('id') id: string, @Request() req: any) {
