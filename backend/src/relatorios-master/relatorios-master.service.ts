@@ -9,6 +9,8 @@ import * as archiver from 'archiver';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { LivroService } from '../library/livro/livro.service';
+import { LinhaImportarLivroDto } from './dto/importar-livros.dto';
 
 /**
  * Relatórios Master — exportação completa do banco (backup/disaster
@@ -24,6 +26,7 @@ export class RelatoriosMasterService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly livroService: LivroService,
   ) {}
 
   /** Registra quem baixou o quê, mesmo que o dump falhe depois — dado o
@@ -171,6 +174,184 @@ export class RelatoriosMasterService {
       resultado[nomeModelo] = linhas.map((linha) => this.redigir(nomeModelo, linha));
     }
     return resultado;
+  }
+
+  /**
+   * XLSX só do módulo Biblioteca — 3 abas (Livros com um linha por
+   * exemplar físico, Equipamentos, Empréstimos com o item/usuário já
+   * resolvidos por nome). Card "Módulo Biblioteca" da tela Relatórios
+   * Master — visão pra auditoria/controle de acervo, separada do dump
+   * genérico "1 aba por tabela" que já existe.
+   */
+  async streamBibliotecaXlsx(res: Response): Promise<void> {
+    const workbook = new (ExcelJS as any).stream.xlsx.WorkbookWriter({ stream: res });
+
+    const livros = await this.prisma.livro.findMany({
+      include: { exemplares: true },
+      orderBy: { titulo: 'asc' },
+    });
+    const sheetLivros = workbook.addWorksheet('Livros');
+    sheetLivros.columns = [
+      { header: 'Título', key: 'titulo' },
+      { header: 'Autor', key: 'autor' },
+      { header: 'Editora', key: 'editora' },
+      { header: 'ISBN', key: 'isbn' },
+      { header: 'Categoria', key: 'categoria' },
+      { header: 'Ano', key: 'anoPublicacao' },
+      { header: 'CDD', key: 'cdd' },
+      { header: 'Cutter', key: 'cutter' },
+      { header: 'Edição', key: 'edicao' },
+      { header: 'Nº Exemplar', key: 'numeroExemplar' },
+      { header: 'Código Tombamento', key: 'codigoTombamento' },
+      { header: 'Localização', key: 'localizacao' },
+      { header: 'Status Exemplar', key: 'statusExemplar' },
+    ];
+    for (const livro of livros) {
+      const exemplares = livro.exemplares.length > 0 ? livro.exemplares : [null];
+      for (const ex of exemplares) {
+        sheetLivros
+          .addRow({
+            titulo: livro.titulo,
+            autor: livro.autor,
+            editora: livro.editora,
+            isbn: livro.isbn,
+            categoria: livro.categoria,
+            anoPublicacao: livro.anoPublicacao,
+            cdd: livro.cdd,
+            cutter: livro.cutter,
+            edicao: livro.edicao,
+            numeroExemplar: ex?.numeroExemplar ?? null,
+            codigoTombamento: ex?.codigoTombamento ?? null,
+            localizacao: ex?.localizacao ?? null,
+            statusExemplar: ex?.status ?? null,
+          })
+          .commit();
+      }
+    }
+    sheetLivros.commit();
+
+    const equipamentos = await this.prisma.equipamento.findMany({ orderBy: { patrimonio: 'asc' } });
+    const sheetEquip = workbook.addWorksheet('Equipamentos');
+    sheetEquip.columns = [
+      { header: 'Patrimônio', key: 'patrimonio' },
+      { header: 'Tipo', key: 'tipo' },
+      { header: 'Modelo', key: 'modelo' },
+      { header: 'Nº Série', key: 'numeroSerie' },
+      { header: 'Status', key: 'status' },
+      { header: 'Observações', key: 'observacoes' },
+    ];
+    for (const eq of equipamentos) sheetEquip.addRow(eq).commit();
+    sheetEquip.commit();
+
+    const emprestimos = await this.prisma.emprestimo.findMany({
+      include: {
+        exemplarLivro: { include: { livro: { select: { titulo: true } } } },
+        equipamento: { select: { patrimonio: true, modelo: true } },
+        usuario: { select: { nome: true, email: true } },
+      },
+      orderBy: { dataEmprestimo: 'desc' },
+    });
+    const sheetEmp = workbook.addWorksheet('Emprestimos');
+    sheetEmp.columns = [
+      { header: 'Tipo', key: 'tipoItem' },
+      { header: 'Item', key: 'item' },
+      { header: 'Usuário', key: 'usuario' },
+      { header: 'E-mail', key: 'email' },
+      { header: 'Data Empréstimo', key: 'dataEmprestimo' },
+      { header: 'Prevista Devolução', key: 'dataPrevistaDevolucao' },
+      { header: 'Data Devolução', key: 'dataDevolucao' },
+      { header: 'Status', key: 'status' },
+      { header: 'Uso Institucional', key: 'usoInstitucional' },
+      { header: 'Uso por Aluno', key: 'usoPorAluno' },
+      { header: 'Observações', key: 'observacoes' },
+    ];
+    for (const emp of emprestimos) {
+      sheetEmp
+        .addRow({
+          tipoItem: emp.tipoItem,
+          item: emp.exemplarLivro?.livro.titulo ?? (emp.equipamento ? `${emp.equipamento.modelo} (${emp.equipamento.patrimonio})` : null),
+          usuario: emp.usuario?.nome ?? null,
+          email: emp.usuario?.email ?? null,
+          dataEmprestimo: emp.dataEmprestimo,
+          dataPrevistaDevolucao: emp.dataPrevistaDevolucao,
+          dataDevolucao: emp.dataDevolucao,
+          status: emp.status,
+          usoInstitucional: emp.usoInstitucional,
+          usoPorAluno: emp.usoPorAluno,
+          observacoes: emp.observacoes,
+        })
+        .commit();
+    }
+    sheetEmp.commit();
+
+    await workbook.commit();
+  }
+
+  /**
+   * Importação em lote do acervo de livros — cada linha da planilha é UM
+   * exemplar físico (código de tombamento único); título+autor iguais
+   * (case-insensitive) reaproveitam o mesmo `Livro`, senão criam um novo.
+   * Substitui o processo manual de gerar SQL e rodar via `psql` na VPS
+   * (ver playbook documentado no CLAUDE.md) por um upload direto na tela.
+   * Reaproveita `LivroService.create`/`addExemplar` de propósito — mantém
+   * as mesmas validações e auditoria já usadas no cadastro manual (ex.:
+   * tombamento duplicado vira erro por linha, não trava o lote inteiro).
+   */
+  async importarLivros(linhas: LinhaImportarLivroDto[], usuarioId: string) {
+    const resultado: { linha: number; titulo: string; codigoTombamento: string; status: 'ok' | 'erro'; mensagem?: string }[] = [];
+    const cacheLivroId = new Map<string, string>();
+
+    for (let i = 0; i < linhas.length; i++) {
+      const linha = linhas[i];
+      try {
+        const chave = `${linha.titulo.trim().toLowerCase()}::${linha.autor.trim().toLowerCase()}`;
+        let livroId = cacheLivroId.get(chave);
+        if (!livroId) {
+          const existente = await this.prisma.livro.findFirst({
+            where: { titulo: { equals: linha.titulo.trim(), mode: 'insensitive' }, autor: { equals: linha.autor.trim(), mode: 'insensitive' } },
+          });
+          if (existente) {
+            livroId = existente.id;
+          } else {
+            const novo = await this.livroService.create(
+              {
+                titulo: linha.titulo.trim(),
+                autor: linha.autor.trim(),
+                editora: linha.editora,
+                isbn: linha.isbn,
+                categoria: linha.categoria,
+                anoPublicacao: linha.anoPublicacao,
+                cdd: linha.cdd,
+                cutter: linha.cutter,
+                edicao: linha.edicao,
+              },
+              usuarioId,
+            );
+            livroId = novo.id;
+          }
+          cacheLivroId.set(chave, livroId);
+        }
+
+        await this.livroService.addExemplar(livroId, { codigoTombamento: linha.codigoTombamento.trim(), localizacao: linha.localizacao }, usuarioId);
+        resultado.push({ linha: i + 2, titulo: linha.titulo, codigoTombamento: linha.codigoTombamento, status: 'ok' });
+      } catch (e: any) {
+        resultado.push({ linha: i + 2, titulo: linha.titulo, codigoTombamento: linha.codigoTombamento, status: 'erro', mensagem: e?.message ?? 'Erro desconhecido.' });
+      }
+    }
+
+    await this.audit.log({
+      usuarioId,
+      acao: 'IMPORT',
+      entidade: 'Livro',
+      dadosDepois: { total: linhas.length, sucesso: resultado.filter(r => r.status === 'ok').length, erro: resultado.filter(r => r.status === 'erro').length },
+    });
+
+    return {
+      total: linhas.length,
+      sucesso: resultado.filter(r => r.status === 'ok').length,
+      erro: resultado.filter(r => r.status === 'erro').length,
+      detalhes: resultado,
+    };
   }
 
   /** ZIP de tudo em uploads/ (avatars, documentos, capturas-prova,

@@ -11,5 +11,6 @@ import { EmprestimoService } from './emprestimo/emprestimo.service';
   imports: [AuditModule],
   controllers: [LivroController, EquipamentoController, EmprestimoController],
   providers: [LivroService, EquipamentoService, EmprestimoService],
+  exports: [LivroService],
 })
 export class LibraryModule {}
