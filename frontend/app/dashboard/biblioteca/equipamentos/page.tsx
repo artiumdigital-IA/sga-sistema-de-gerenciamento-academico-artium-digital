@@ -92,7 +92,7 @@ export default function EquipamentosPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const token = getToken();
   const perfil = token ? parseJwt(token)?.perfil : null;
-  const podeEditar = perfil === 'ADMIN' || perfil === 'SECRETARIA' || perfil === 'MASTER' || perfil === 'SUPORTE';
+  const podeEditar = perfil === 'ADMIN' || perfil === 'SECRETARIA' || perfil === 'MASTER';
 
   const load = useCallback(async (termo?: string) => {
     setLoading(true); setError('');

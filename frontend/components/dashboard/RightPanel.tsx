@@ -73,11 +73,11 @@ const MENU_SUPORTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Chamados', href: '/dashboard/suporte/chamados' },
     { label: 'Abrir Chamado', href: '/dashboard/suporte/meus-chamados' },
     { label: 'Tipos de Chamado', href: '/dashboard/suporte/tipos-chamado' },
-    // Biblioteca (Jul/2026) — Suporte ganhou o mesmo nível de gestão de
-    // ADMIN/SECRETARIA no módulo (cadastrar/editar acervo e equipamentos,
-    // registrar/devolver empréstimo — ver @Roles nos controllers de
-    // library/), já que a equipe de suporte também cuida fisicamente dos
-    // equipamentos (notebooks, tablets etc.) emprestáveis pela biblioteca.
+    // Biblioteca (Jul/2026) — acesso assimétrico por sub-módulo (ver @Roles
+    // nos controllers de library/): Acervo e Equipamentos são só-leitura pro
+    // Suporte (consulta catálogo, não cadastra/edita/remove); Empréstimos é
+    // gestão completa (registrar empréstimo, receber devolução), já que é
+    // Suporte quem opera o balcão de empréstimo dos equipamentos.
     { label: 'Biblioteca — Acervo', href: '/dashboard/biblioteca/livros' },
     { label: 'Biblioteca — Equipamentos', href: '/dashboard/biblioteca/equipamentos' },
     { label: 'Biblioteca — Empréstimos', href: '/dashboard/biblioteca/emprestimos' },

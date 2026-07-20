@@ -9,11 +9,11 @@ import { Perfil } from '@prisma/client';
 import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 
 // Sem @Roles() no nível do controller: a leitura do acervo (GET) fica aberta a
-// qualquer autenticado, incluindo ALUNO (uma biblioteca sem consulta pública
-// ao catálogo não serve pra nada). Só escrita (cadastrar/editar/remover livro
-// e exemplares) é restrita a ADMIN/SECRETARIA/SUPORTE, decorada rota a rota
-// (SUPORTE ganhou gestão completa em Jul/2026 — cuida fisicamente do acervo
-// junto com secretaria).
+// qualquer autenticado, incluindo ALUNO e SUPORTE (uma biblioteca sem consulta
+// pública ao catálogo não serve pra nada). Só escrita (cadastrar/editar/
+// remover livro e exemplares) é restrita a ADMIN/SECRETARIA, decorada rota a
+// rota — SUPORTE só lê o acervo, não gerencia (decisão de Jul/2026: ganhou
+// gestão completa de Empréstimos, mas Acervo/Equipamentos ficam só-leitura).
 @ApiTags('Biblioteca — Acervo')
 @ApiBearerAuth()
 @Tela('biblioteca-acervo')
@@ -21,7 +21,7 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class LivroController {
   constructor(private readonly service: LivroService) {}
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Post()
   @ApiOperation({ summary: 'Cadastrar livro no acervo' })
   create(@Body() dto: CreateLivroDto, @Request() req: any) {
@@ -47,28 +47,28 @@ export class LivroController {
     return this.service.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Patch(':id')
   @ApiOperation({ summary: 'Editar livro' })
   update(@Param('id') id: string, @Body() dto: UpdateLivroDto, @Request() req: any) {
     return this.service.update(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Delete(':id')
   @ApiOperation({ summary: 'Remover livro (bloqueado se houver exemplar emprestado)' })
   remove(@Param('id') id: string, @Request() req: any) {
     return this.service.remove(id, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Post(':id/exemplares')
   @ApiOperation({ summary: 'Adicionar exemplar físico ao livro' })
   addExemplar(@Param('id') id: string, @Body() dto: CreateExemplarDto, @Request() req: any) {
     return this.service.addExemplar(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.SUPORTE)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
   @Delete(':id/exemplares/:exemplarId')
   @ApiOperation({ summary: 'Remover exemplar físico (bloqueado se emprestado)' })
   removeExemplar(@Param('id') id: string, @Param('exemplarId') exemplarId: string, @Request() req: any) {
