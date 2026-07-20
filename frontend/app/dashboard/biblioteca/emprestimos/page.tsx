@@ -89,7 +89,12 @@ function RegistrarModal({ onClose, onSave }: { onClose: () => void; onSave: () =
   useEffect(() => {
     apiFetch<LivroComExemplares[]>('/biblioteca/livros').then(setLivros).catch(() => {});
     apiFetch<EquipamentoDisp[]>('/biblioteca/equipamentos').then(setEquipamentos).catch(() => {});
-    apiFetch<UsuarioBasico[]>('/usuarios').then(setUsuarios).catch(() => {});
+    // /usuarios é @Roles(ADMIN, SECRETARIA) — perfil SUPORTE (que também
+    // registra empréstimo) recebia 403 nessa chamada e o dropdown ficava
+    // sempre vazio. /mensagens/contatos é a lista mínima já usada pelo chat
+    // (id/nome/email/perfil, sem @Roles — qualquer autenticado acessa) e
+    // serve igualmente bem aqui.
+    apiFetch<UsuarioBasico[]>('/mensagens/contatos').then(setUsuarios).catch(() => {});
   }, []);
 
   useEffect(() => { setItemId(''); }, [tipoItem]);
