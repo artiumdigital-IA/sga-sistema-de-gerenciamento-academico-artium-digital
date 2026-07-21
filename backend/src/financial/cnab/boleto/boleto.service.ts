@@ -125,4 +125,25 @@ export class BoletoService {
     if (!boleto) throw new NotFoundException('Boleto não encontrado.');
     return boleto;
   }
+
+  // Transições manuais de status — Fase 5 do módulo CNAB. Só os estados que
+  // fazem sentido operar sem depender de um retorno do banco (ex.: cancelar
+  // um boleto que nunca foi enviado, ou registrar por telefone/portal que o
+  // cartório protestou/sustou). LIQUIDADO fica de fora de propósito: baixa
+  // por pagamento sempre passa pela conciliação real (retorno CNAB ou
+  // pagamento manual da parcela), nunca por troca de status solta, senão
+  // Boleto e Parcela ficam dessincronizados.
+  private readonly STATUS_MANUAIS_PERMITIDOS = ['CANCELADO', 'PROTESTADO', 'REGISTRADO'] as const;
+
+  async mudarStatus(id: string, novoStatus: string, userId: string) {
+    if (!this.STATUS_MANUAIS_PERMITIDOS.includes(novoStatus as any)) {
+      throw new BadRequestException(`Status "${novoStatus}" não pode ser definido manualmente. Permitidos: ${this.STATUS_MANUAIS_PERMITIDOS.join(', ')}.`);
+    }
+    const boleto = await (this.prisma as any).boleto.findUnique({ where: { id } });
+    if (!boleto) throw new NotFoundException('Boleto não encontrado.');
+
+    const atualizado = await (this.prisma as any).boleto.update({ where: { id }, data: { status: novoStatus } });
+    await this.audit.log({ usuarioId: userId, acao: 'UPDATE', entidade: 'Boleto', entidadeId: id, dadosAntes: boleto, dadosDepois: atualizado });
+    return atualizado;
+  }
 }

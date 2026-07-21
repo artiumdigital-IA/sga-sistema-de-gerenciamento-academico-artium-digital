@@ -67,7 +67,7 @@ function montarHeader(conta: ContaBancariaParaRemessa, sequencial: number, dataG
   return montarLinha400(campos.map(c => c.v));
 }
 
-function montarDetalhe(boleto: BoletoParaRemessa, conta: ContaBancariaParaRemessa, numeroRegistro: number): string {
+function montarDetalhe(boleto: BoletoParaRemessa, conta: ContaBancariaParaRemessa, numeroRegistro: number, tipoOperacao: 'ENTRADA' | 'BAIXA'): string {
   const campoLivre = montarCampoLivreItau({
     agencia: conta.agencia,
     contaCorrente: conta.numeroConta,
@@ -101,7 +101,9 @@ function montarDetalhe(boleto: BoletoParaRemessa, conta: ContaBancariaParaRemess
     { v: '01', t: 2 },                              // espécie do título (01 = duplicata mercantil)
     { v: 'N', t: 1 },                               // aceite
     { v: dataDDMMAA(new Date()), t: 6 },            // data de emissão
-    { v: zeros(2), t: 2 },                          // instrução 1 (não usado)
+    // Instrução 1 — "02" = pedido de baixa (única instrução que este
+    // adapter emite; demais códigos de instrução não implementados).
+    { v: tipoOperacao === 'BAIXA' ? '02' : zeros(2), t: 2 },
     { v: zeros(2), t: 2 },                          // instrução 2 (não usado)
     { v: zeros(13), t: 13 },                        // valor de mora/dia (não usado)
     { v: zeros(6), t: 6 },                          // data limite p/ desconto (não usado)
@@ -180,10 +182,10 @@ export const itauAdapter: CnabBankAdapter = {
   banco: BancoCnab.ITAU,
   layout: LayoutCnab.CNAB400,
 
-  gerarRemessa({ boletos, conta, sequencial, dataGeracao }) {
+  gerarRemessa({ boletos, conta, sequencial, dataGeracao, tipoOperacao = 'ENTRADA' }) {
     const linhas: string[] = [];
     linhas.push(montarHeader(conta, sequencial, dataGeracao));
-    boletos.forEach((b, i) => linhas.push(montarDetalhe(b, conta, i + 2)));
+    boletos.forEach((b, i) => linhas.push(montarDetalhe(b, conta, i + 2, tipoOperacao)));
     linhas.push(montarTrailer(boletos.length));
     return linhas.join('\r\n') + '\r\n';
   },

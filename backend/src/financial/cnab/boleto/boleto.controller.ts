@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { BoletoService } from './boleto.service';
 import { CreateBoletoDto } from './dto/create-boleto.dto';
@@ -31,5 +31,12 @@ export class BoletoController {
   @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
+  }
+
+  @Patch(':id/status')
+  @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
+  @ApiOperation({ summary: 'Mudar status manualmente (CANCELADO/PROTESTADO/REGISTRADO — não LIQUIDADO, que sempre passa pela conciliação real)' })
+  mudarStatus(@Param('id') id: string, @Body('status') status: string, @Request() req: any) {
+    return this.service.mudarStatus(id, status, req.user.sub);
   }
 }

@@ -16,6 +16,32 @@ export class RemessaService {
   ) {}
 
   async gerar(dto: CreateRemessaDto, userId: string) {
+    return this.gerarInterno(dto, userId, {
+      tipoOperacao: 'ENTRADA',
+      statusOrigem: ['EMITIDO'],
+      statusDestino: 'ENVIADO_REMESSA',
+      mensagemVazio: 'Nenhum boleto EMITIDO encontrado pra essa conta (já enviados não entram de novo).',
+    });
+  }
+
+  // Fase 5 — remessa de baixa/cancelamento: pega boletos já enviados/
+  // registrados no banco e pede o cancelamento. Reaproveita o mesmo adapter
+  // e o mesmo fluxo de gravação de gerar(), só muda o filtro de origem, o
+  // tipoOperacao repassado ao adapter e o status de destino.
+  async gerarBaixa(dto: CreateRemessaDto, userId: string) {
+    return this.gerarInterno(dto, userId, {
+      tipoOperacao: 'BAIXA',
+      statusOrigem: ['ENVIADO_REMESSA', 'REGISTRADO'],
+      statusDestino: 'CANCELADO',
+      mensagemVazio: 'Nenhum boleto enviado/registrado encontrado pra pedir baixa nessa conta.',
+    });
+  }
+
+  private async gerarInterno(
+    dto: CreateRemessaDto,
+    userId: string,
+    opts: { tipoOperacao: 'ENTRADA' | 'BAIXA'; statusOrigem: string[]; statusDestino: string; mensagemVazio: string },
+  ) {
     const conta = await (this.prisma as any).contaBancaria.findUnique({ where: { id: dto.contaBancariaId } });
     if (!conta) throw new NotFoundException('Conta bancária não encontrada.');
     if (!conta.cnabHabilitado || !conta.codigoBancoFebraban) {
@@ -25,13 +51,13 @@ export class RemessaService {
     const boletos = await (this.prisma as any).boleto.findMany({
       where: {
         contaBancariaId: conta.id,
-        status: 'EMITIDO',
+        status: { in: opts.statusOrigem },
         ...(dto.boletoIds ? { id: { in: dto.boletoIds } } : {}),
       },
       include: { parcela: { include: { contrato: { include: { aluno: true } } } } },
     });
     if (boletos.length === 0) {
-      throw new BadRequestException('Nenhum boleto EMITIDO encontrado pra essa conta (já enviados não entram de novo).');
+      throw new BadRequestException(opts.mensagemVazio);
     }
 
     const adapter = resolveAdapter(resolveBancoCnab(conta.codigoBancoFebraban));
@@ -61,11 +87,13 @@ export class RemessaService {
       },
       sequencial,
       dataGeracao,
+      tipoOperacao: opts.tipoOperacao,
     });
 
     const valorTotal = boletosParaRemessa.reduce((soma, b) => soma + b.valor, 0);
     const timestamp = dataGeracao.toISOString().replace(/[:.]/g, '-');
-    const arquivoNome = `remessa-${conta.banco}-${sequencial}-${timestamp}.txt`;
+    const sufixo = opts.tipoOperacao === 'BAIXA' ? 'baixa' : 'entrada';
+    const arquivoNome = `remessa-${sufixo}-${conta.banco}-${sequencial}-${timestamp}.txt`;
     const caminhoArquivo = join(process.cwd(), 'uploads', 'cnab', 'remessas', arquivoNome);
     await fs.writeFile(caminhoArquivo, conteudoArquivo, 'latin1'); // CNAB é ASCII/latin1, não UTF-8
 
@@ -88,12 +116,12 @@ export class RemessaService {
       });
 
       await tx.contaBancaria.update({ where: { id: conta.id }, data: { sequencialRemessa: sequencial } });
-      await tx.boleto.updateMany({ where: { id: { in: boletos.map((b: any) => b.id) } }, data: { status: 'ENVIADO_REMESSA' } });
+      await tx.boleto.updateMany({ where: { id: { in: boletos.map((b: any) => b.id) } }, data: { status: opts.statusDestino } });
 
       return criada;
     });
 
-    await this.audit.log({ usuarioId: userId, acao: 'CREATE', entidade: 'RemessaCnab', entidadeId: remessa.id, dadosDepois: remessa });
+    await this.audit.log({ usuarioId: userId, acao: 'CREATE', entidade: 'RemessaCnab', entidadeId: remessa.id, dadosDepois: { remessa, tipoOperacao: opts.tipoOperacao } });
     return remessa;
   }
 

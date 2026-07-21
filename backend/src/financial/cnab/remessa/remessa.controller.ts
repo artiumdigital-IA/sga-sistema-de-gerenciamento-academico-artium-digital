@@ -21,6 +21,13 @@ export class RemessaController {
     return this.service.gerar(dto, req.user.sub);
   }
 
+  @Post('baixa')
+  @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
+  @ApiOperation({ summary: 'Gerar remessa de baixa/cancelamento pros boletos já enviados/registrados' })
+  gerarBaixa(@Body() dto: CreateRemessaDto, @Request() req: any) {
+    return this.service.gerarBaixa(dto, req.user.sub);
+  }
+
   @Get()
   @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
   findAll() {

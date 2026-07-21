@@ -27,13 +27,26 @@ export default function BoletoDetalhePage() {
   const [data, setData] = useState<BoletoDetalhe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [mudando, setMudando] = useState(false);
 
-  useEffect(() => {
+  function carregar() {
     apiFetch<BoletoDetalhe>(`/financeiro/cnab/boletos/${id}`)
       .then(setData)
       .catch(e => setError(e instanceof Error ? e.message : 'Boleto não encontrado'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }
+
+  useEffect(() => { carregar(); }, [id]);
+
+  async function mudarStatus(novoStatus: string, confirmacao: string) {
+    if (!confirm(confirmacao)) return;
+    setMudando(true);
+    try {
+      await apiFetch(`/financeiro/cnab/boletos/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: novoStatus }) });
+      carregar();
+    } catch (e: unknown) { alert(e instanceof Error ? e.message : 'Erro ao mudar status'); }
+    finally { setMudando(false); }
+  }
 
   if (loading) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando...</div>;
   if (error) return <div style={{ padding: 40, color: '#ef4444' }}>{error}</div>;
@@ -58,6 +71,26 @@ export default function BoletoDetalhePage() {
           ← Voltar
         </button>
         <div style={{ marginLeft: 12 }}><StatusBadge status={data.status} /></div>
+        <div style={{ flex: 1 }} />
+        {!['CANCELADO', 'LIQUIDADO'].includes(data.status) && (
+          <button disabled={mudando}
+            onClick={() => mudarStatus('CANCELADO', 'Marcar este boleto como cancelado? Isso não gera arquivo de remessa de baixa — pra pedir cancelamento no banco, use "Gerar remessa de baixa" na tela de Remessas.')}
+            style={{ padding: '7px 14px', background: 'transparent', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 4, cursor: 'pointer', fontSize: 12.5 }}>
+            Cancelar boleto
+          </button>
+        )}
+        {data.status === 'REGISTRADO' && (
+          <button disabled={mudando} onClick={() => mudarStatus('PROTESTADO', 'Marcar este boleto como protestado?')}
+            style={{ padding: '7px 14px', background: 'transparent', color: '#92400e', border: '1px solid #92400e', borderRadius: 4, cursor: 'pointer', fontSize: 12.5 }}>
+            Marcar protestado
+          </button>
+        )}
+        {data.status === 'PROTESTADO' && (
+          <button disabled={mudando} onClick={() => mudarStatus('REGISTRADO', 'Sustar o protesto e voltar o boleto pra Registrado?')}
+            style={{ padding: '7px 14px', background: 'transparent', color: 'var(--gray-700)', border: '1px solid var(--gray-300)', borderRadius: 4, cursor: 'pointer', fontSize: 12.5 }}>
+            Sustar protesto
+          </button>
+        )}
       </div>
 
       <div id="documento" style={{ background: '#fff', maxWidth: 720, margin: '0 auto', padding: 32, fontFamily: 'Arial, Helvetica, sans-serif', color: '#000', border: '1px solid #999' }}>

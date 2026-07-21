@@ -41,6 +41,16 @@ export interface OcorrenciaParseada {
 export interface CnabBankAdapter {
   banco: BancoCnab;
   layout: LayoutCnab;
-  gerarRemessa(params: { boletos: BoletoParaRemessa[]; conta: ContaBancariaParaRemessa; sequencial: number; dataGeracao: Date }): string;
+  gerarRemessa(params: {
+    boletos: BoletoParaRemessa[];
+    conta: ContaBancariaParaRemessa;
+    sequencial: number;
+    dataGeracao: Date;
+    // ENTRADA (padrão) = registrar o título; BAIXA = pedir cancelamento de
+    // um título já registrado. Ver Fase 5 do plano — usa o mesmo slot de
+    // instrução que já existia zerado no layout, sem mudar posição de mais
+    // nenhum campo já testado.
+    tipoOperacao?: 'ENTRADA' | 'BAIXA';
+  }): string;
   parseRetorno(conteudoArquivo: string): OcorrenciaParseada[];
 }

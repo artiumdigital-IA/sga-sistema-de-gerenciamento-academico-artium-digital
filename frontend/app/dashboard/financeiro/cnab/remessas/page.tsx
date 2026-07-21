@@ -16,6 +16,7 @@ export default function RemessasPage() {
   const [contas, setContas] = useState<ContaBancaria[]>([]);
   const [contaEscolhida, setContaEscolhida] = useState('');
   const [gerando, setGerando] = useState(false);
+  const [gerandoBaixa, setGerandoBaixa] = useState(false);
   const [erro, setErro] = useState('');
   const [remessas, setRemessas] = useState<Remessa[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -51,6 +52,17 @@ export default function RemessasPage() {
     finally { setGerando(false); }
   }
 
+  async function gerarBaixa() {
+    if (!contaEscolhida) { setErro('Escolha a conta bancária.'); return; }
+    if (!confirm('Gerar remessa de baixa/cancelamento pra todos os boletos enviados/registrados dessa conta? Eles vão passar pra status Cancelado.')) return;
+    setErro(''); setGerandoBaixa(true);
+    try {
+      await apiFetch('/financeiro/cnab/remessas/baixa', { method: 'POST', body: JSON.stringify({ contaBancariaId: contaEscolhida }) });
+      carregar();
+    } catch (e: unknown) { setErro(e instanceof Error ? e.message : 'Erro ao gerar remessa de baixa'); }
+    finally { setGerandoBaixa(false); }
+  }
+
   async function baixar(r: Remessa) {
     setBaixando(r.id);
     try { await apiDownload(`/financeiro/cnab/remessas/${r.id}/download`, r.arquivoNome); }
@@ -78,6 +90,9 @@ export default function RemessasPage() {
         </div>
         <button style={BTN_P} disabled={gerando || !contaEscolhida} onClick={gerar}>
           {gerando ? 'Gerando...' : 'Gerar remessa'}
+        </button>
+        <button style={{ ...BTN_P, background: 'transparent', color: '#dc2626', border: '1px solid #dc2626' }} disabled={gerandoBaixa || !contaEscolhida} onClick={gerarBaixa}>
+          {gerandoBaixa ? 'Gerando...' : 'Gerar remessa de baixa'}
         </button>
       </div>
       {erro && <p style={{ color: '#dc2626', fontSize: 12.5, margin: '0 0 16px' }}>{erro}</p>}

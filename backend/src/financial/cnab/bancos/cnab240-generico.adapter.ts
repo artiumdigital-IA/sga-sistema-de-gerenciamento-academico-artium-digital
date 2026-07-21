@@ -95,7 +95,7 @@ function montarLoteHeader(conta: ContaBancariaParaRemessa, cfg: ConfigBancoCnab2
   return montarLinha240(campos);
 }
 
-function montarSegmentoP(boleto: BoletoParaRemessa, conta: ContaBancariaParaRemessa, cfg: ConfigBancoCnab240, numeroSequencial: number): string {
+function montarSegmentoP(boleto: BoletoParaRemessa, conta: ContaBancariaParaRemessa, cfg: ConfigBancoCnab240, numeroSequencial: number, tipoOperacao: 'ENTRADA' | 'BAIXA'): string {
   const nossoNumero20 = num(boleto.nossoNumero, 20);
   const valorCentavos = num(Math.round(boleto.valor * 100), 15);
   const campos = [
@@ -105,7 +105,7 @@ function montarSegmentoP(boleto: BoletoParaRemessa, conta: ContaBancariaParaReme
     num(numeroSequencial, 5),
     'P',                                // segmento
     brancos(1),
-    '01',                               // código de movimento (entrada de título)
+    tipoOperacao === 'BAIXA' ? '02' : '01', // código de movimento (01=entrada, 02=pedido de baixa)
     num(conta.agencia, 5),
     brancos(1),
     num(conta.numeroConta, 12),
@@ -238,13 +238,13 @@ export function criarAdapterCnab240(cfg: ConfigBancoCnab240): CnabBankAdapter {
     banco: cfg.banco,
     layout: LayoutCnab.CNAB240,
 
-    gerarRemessa({ boletos, conta, sequencial, dataGeracao }) {
+    gerarRemessa({ boletos, conta, sequencial, dataGeracao, tipoOperacao = 'ENTRADA' }) {
       const linhas: string[] = [];
       linhas.push(montarFileHeader(conta, cfg, sequencial, dataGeracao));
       linhas.push(montarLoteHeader(conta, cfg));
       let seq = 1;
       boletos.forEach(b => {
-        linhas.push(montarSegmentoP(b, conta, cfg, ++seq));
+        linhas.push(montarSegmentoP(b, conta, cfg, ++seq, tipoOperacao));
         linhas.push(montarSegmentoQ(b, ++seq, cfg));
       });
       linhas.push(montarLoteTrailer(cfg, boletos.length * 2));
