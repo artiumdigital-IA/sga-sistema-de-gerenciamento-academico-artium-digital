@@ -204,20 +204,28 @@ export default function VersoTab() {
       // "Com registro" está marcado (sem registro não gera essas páginas).
       // Ficam no final do PDF, depois de todos os versos.
       if (tipoRegistroBloco2 === 'COM_REGISTRO') {
+        const tamanhoFonteDecl = 13;
+        // Espaçamento simples (fator 1) — padrão do jsPDF é 1.15, que deixava
+        // as linhas mais afastadas do que o texto pedia. alturaLinhaMm seguindo
+        // o mesmo fator garante que o avanço de yDecl bate com o que o jsPDF
+        // realmente desenha (senão sobra espaço em branco entre parágrafos).
+        doc.setLineHeightFactor(1);
+        const alturaLinhaMm = tamanhoFonteDecl * (25.4 / 72);
         alunosValidos.forEach(aluno => {
           doc.addPage();
           doc.setTextColor(0, 0, 0);
           doc.setFont('times', 'normal');
-          doc.setFontSize(13);
+          doc.setFontSize(tamanhoFonteDecl);
           const margemDecl = 35;
           const larguraDecl = w - margemDecl * 2;
           let yDecl = 80;
           montarTextoRegistro(aluno).forEach(paragrafo => {
             const linhas = doc.splitTextToSize(paragrafo, larguraDecl);
             doc.text(linhas, w / 2, yDecl, { align: 'center' });
-            yDecl += linhas.length * 8 + 10;
+            yDecl += linhas.length * alturaLinhaMm + 6;
           });
         });
+        doc.setLineHeightFactor(1.15); // volta ao padrão do jsPDF pro resto do doc
       }
 
       const blobUrl = URL.createObjectURL(doc.output('blob'));
