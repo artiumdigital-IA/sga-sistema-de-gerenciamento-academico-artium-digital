@@ -139,8 +139,9 @@ function ContaModal({ conta, onClose, onSave }: { conta: Conta | null; onClose: 
                   <input style={INPUT} value={form.variacaoCarteira ?? ''} onChange={e => set('variacaoCarteira', e.target.value)} />
                 </F>
                 <p style={{ margin: 0, fontSize: 11.5, color: 'var(--gray-500)' }}>
-                  Dados fornecidos pelo banco na homologação do convênio de cobrança. Hoje só o Itaú
-                  (341) tem emissão de boleto implementada.
+                  Dados fornecidos pelo banco na homologação do convênio de cobrança. Itaú (CNAB
+                  400) é o layout mais testado; Safra/Santander/Caixa (CNAB 240) ainda precisam de
+                  validação contra o manual de cada banco antes do primeiro envio real.
                 </p>
               </div>
             )}

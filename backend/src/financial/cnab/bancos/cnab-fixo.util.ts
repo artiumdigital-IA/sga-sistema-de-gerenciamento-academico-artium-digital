@@ -31,6 +31,32 @@ export function dataDDMMAA(d: Date): string {
   return `${dd}${mm}${aa}`;
 }
 
+// CNAB 240 usa ano com 4 dígitos na maioria das datas (DDMMAAAA), diferente
+// do CNAB 400 (DDMMAA).
+export function dataDDMMAAAA(d: Date): string {
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const aaaa = String(d.getUTCFullYear());
+  return `${dd}${mm}${aaaa}`;
+}
+
+export function horaHHMMSS(d: Date): string {
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
+  const ss = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${hh}${mm}${ss}`;
+}
+
+// Mesma ideia de montarLinha400, pro layout CNAB 240 (registros de 240
+// posições, organizados em segmentos dentro de um lote).
+export function montarLinha240(campos: string[]): string {
+  const linha = campos.join('');
+  if (linha.length !== 240) {
+    throw new Error(`Linha CNAB 240 malformada: ${linha.length} caracteres (esperado 240).`);
+  }
+  return linha;
+}
+
 // Monta uma linha CNAB 400 a partir de uma lista de [valor, tamanho] e valida
 // que o total fecha em 400 — pega erro de campo (tamanho errado/faltando)
 // na hora de gerar, em vez de mandar arquivo corrompido pro banco.

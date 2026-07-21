@@ -15,8 +15,9 @@ export function resolveBancoCnab(codigoBancoFebraban: string): BancoCnab {
   return banco;
 }
 
-// Bancos com adapter de fato implementado (emissão de boleto + campo livre).
-// Remessa (Fase 2) e retorno (Fase 3) hoje só têm adapter pronto pro Itaú —
-// ver backend/src/financial/cnab/bancos/itau-campo-livre.util.ts. Safra,
-// Santander e Caixa (CNAB 240) ficam de fora até serem homologados (Fase 4).
-export const BANCOS_IMPLEMENTADOS: BancoCnab[] = [BancoCnab.ITAU];
+// Bancos com adapter implementado. Itaú (CNAB 400) é o piloto — testado com
+// auto-consistência (ver itau.adapter.ts). Safra/Santander/Caixa (CNAB 240,
+// Fase 4) usam o adapter genérico cnab240-generico.adapter.ts, com
+// confiança MENOR no layout exato (ver aviso no topo daquele arquivo) — não
+// usar em produção sem validar contra o manual/homologação de cada banco.
+export const BANCOS_IMPLEMENTADOS: BancoCnab[] = [BancoCnab.ITAU, BancoCnab.SAFRA, BancoCnab.SANTANDER, BancoCnab.CAIXA];
