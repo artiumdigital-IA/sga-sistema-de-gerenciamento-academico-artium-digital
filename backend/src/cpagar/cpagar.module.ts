@@ -8,10 +8,14 @@ import { TabelaInssController } from './tabela-inss/tabela-inss.controller';
 import { TabelaInssService } from './tabela-inss/tabela-inss.service';
 import { TabelaIrrfController } from './tabela-irrf/tabela-irrf.controller';
 import { TabelaIrrfService } from './tabela-irrf/tabela-irrf.service';
+import { FolhaPagamentoController } from './folha-pagamento/folha-pagamento.controller';
+import { FolhaPagamentoService } from './folha-pagamento/folha-pagamento.service';
+import { ContrachequeController } from './contracheque/contracheque.controller';
+import { ContrachequeService } from './contracheque/contracheque.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [ColaboradorController, DadosFolhaProfessorController, TabelaInssController, TabelaIrrfController],
-  providers: [ColaboradorService, DadosFolhaProfessorService, TabelaInssService, TabelaIrrfService],
+  controllers: [ColaboradorController, DadosFolhaProfessorController, TabelaInssController, TabelaIrrfController, FolhaPagamentoController, ContrachequeController],
+  providers: [ColaboradorService, DadosFolhaProfessorService, TabelaInssService, TabelaIrrfService, FolhaPagamentoService, ContrachequeService],
 })
 export class CpagarModule {}
