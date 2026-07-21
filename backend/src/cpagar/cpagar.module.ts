@@ -14,10 +14,12 @@ import { ContrachequeController } from './contracheque/contracheque.controller';
 import { ContrachequeService } from './contracheque/contracheque.service';
 import { PagamentoPrestadorController } from './pagamento-prestador/pagamento-prestador.controller';
 import { PagamentoPrestadorService } from './pagamento-prestador/pagamento-prestador.service';
+import { AcordoPagarController } from './acordo-pagar/acordo-pagar.controller';
+import { AcordoPagarService } from './acordo-pagar/acordo-pagar.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [ColaboradorController, DadosFolhaProfessorController, TabelaInssController, TabelaIrrfController, FolhaPagamentoController, ContrachequeController, PagamentoPrestadorController],
-  providers: [ColaboradorService, DadosFolhaProfessorService, TabelaInssService, TabelaIrrfService, FolhaPagamentoService, ContrachequeService, PagamentoPrestadorService],
+  controllers: [ColaboradorController, DadosFolhaProfessorController, TabelaInssController, TabelaIrrfController, FolhaPagamentoController, ContrachequeController, PagamentoPrestadorController, AcordoPagarController],
+  providers: [ColaboradorService, DadosFolhaProfessorService, TabelaInssService, TabelaIrrfService, FolhaPagamentoService, ContrachequeService, PagamentoPrestadorService, AcordoPagarService],
 })
 export class CpagarModule {}
