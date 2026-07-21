@@ -221,8 +221,8 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Folha de Pagamento', href: '/dashboard/cpagar/folha' },
     { label: 'Prestadores de Serviço', href: '/dashboard/cpagar/prestadores' },
     { label: 'Acordos', href: '/dashboard/cpagar/acordos' },
-    { label: 'Gastos Fixos', href: null },
-    { label: 'Gastos Variáveis', href: null },
+    { label: 'Gastos Fixos', href: '/dashboard/cpagar/gastos' },
+    { label: 'Gastos Variáveis', href: '/dashboard/cpagar/gastos' },
   ]},
   { title: 'Relatórios', items: [
     { label: 'Relatório de Inadimplência', href: '/dashboard/relatorios/financeiro' },

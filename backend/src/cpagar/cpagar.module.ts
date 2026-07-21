@@ -16,10 +16,24 @@ import { PagamentoPrestadorController } from './pagamento-prestador/pagamento-pr
 import { PagamentoPrestadorService } from './pagamento-prestador/pagamento-prestador.service';
 import { AcordoPagarController } from './acordo-pagar/acordo-pagar.controller';
 import { AcordoPagarService } from './acordo-pagar/acordo-pagar.service';
+import { CategoriaDespesaController } from './categoria-despesa/categoria-despesa.controller';
+import { CategoriaDespesaService } from './categoria-despesa/categoria-despesa.service';
+import { GastoFixoController } from './gasto-fixo/gasto-fixo.controller';
+import { GastoFixoService } from './gasto-fixo/gasto-fixo.service';
+import { GastoVariavelController } from './gasto-variavel/gasto-variavel.controller';
+import { GastoVariavelService } from './gasto-variavel/gasto-variavel.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [ColaboradorController, DadosFolhaProfessorController, TabelaInssController, TabelaIrrfController, FolhaPagamentoController, ContrachequeController, PagamentoPrestadorController, AcordoPagarController],
-  providers: [ColaboradorService, DadosFolhaProfessorService, TabelaInssService, TabelaIrrfService, FolhaPagamentoService, ContrachequeService, PagamentoPrestadorService, AcordoPagarService],
+  controllers: [
+    ColaboradorController, DadosFolhaProfessorController, TabelaInssController, TabelaIrrfController,
+    FolhaPagamentoController, ContrachequeController, PagamentoPrestadorController, AcordoPagarController,
+    CategoriaDespesaController, GastoFixoController, GastoVariavelController,
+  ],
+  providers: [
+    ColaboradorService, DadosFolhaProfessorService, TabelaInssService, TabelaIrrfService,
+    FolhaPagamentoService, ContrachequeService, PagamentoPrestadorService, AcordoPagarService,
+    CategoriaDespesaService, GastoFixoService, GastoVariavelService,
+  ],
 })
 export class CpagarModule {}
