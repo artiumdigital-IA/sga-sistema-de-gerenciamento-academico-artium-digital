@@ -87,8 +87,15 @@ export default function FrenteTab() {
       // arquivo quebraria a renderização no servidor (Next.js SSR).
       const { jsPDF } = await import('jspdf');
       // Sem template enviado: baixa o modelo padrão (frente já assinada) e
-      // usa como se fosse o arquivo escolhido pelo usuário.
-      const bgBlob = bgFile ?? await fetch(BG_PADRAO_URL).then(r => r.blob());
+      // usa como se fosse o arquivo escolhido pelo usuário. Narrowing de
+      // `bgFile` (state, capturada por closure) não sobrevive ao await do
+      // fetch — por isso o if/else explícito em vez de `bgFile ?? await ...`.
+      let bgBlob: Blob;
+      if (bgFile) {
+        bgBlob = bgFile;
+      } else {
+        bgBlob = await fetch(BG_PADRAO_URL).then(r => r.blob());
+      }
       const bgData = await new Promise<string>((resolve, reject) => {
         const fr = new FileReader();
         fr.onload = () => resolve(fr.result as string);
