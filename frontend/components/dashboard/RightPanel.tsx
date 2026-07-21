@@ -208,7 +208,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Observações Financeiras', href: '/dashboard/academico/alunos' },
     { label: 'Associação Alunos x Planos', href: null },
     { label: 'Emissão de Remessa (CNAB)', href: '/dashboard/financeiro/cnab/remessas' },
-    { label: 'Importação Arquivo Retorno', href: null },
+    { label: 'Importação Arquivo Retorno', href: '/dashboard/financeiro/cnab/retornos' },
     { label: 'Registro Bancário', href: '/dashboard/financeiro/contas-bancarias' },
     { label: 'Manutenção de Títulos', href: '/dashboard/financeiro/contratos' },
     { label: 'Condições Especiais', href: null },

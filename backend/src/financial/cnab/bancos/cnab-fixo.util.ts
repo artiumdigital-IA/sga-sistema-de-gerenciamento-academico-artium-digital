@@ -41,3 +41,26 @@ export function montarLinha400(campos: string[]): string {
   }
   return linha;
 }
+
+// Extrai um campo de uma linha já lida (1-indexed, inclusive, igual à
+// documentação de layout CNAB — fatiaPosicional(linha, 38, 62) pega os
+// caracteres da posição 38 até a 62).
+export function fatiaPosicional(linha: string, inicio: number, fim: number): string {
+  return linha.slice(inicio - 1, fim);
+}
+
+export function paraNumero(campo: string): number {
+  const n = Number(campo.replace(/\D/g, '') || '0');
+  return isNaN(n) ? 0 : n;
+}
+
+export function paraData(ddmmaa: string): Date | null {
+  const digitos = ddmmaa.replace(/\D/g, '');
+  if (digitos.length !== 6) return null;
+  const dd = Number(digitos.slice(0, 2));
+  const mm = Number(digitos.slice(2, 4));
+  const aa = Number(digitos.slice(4, 6));
+  if (dd === 0 || mm === 0) return null;
+  const anoCompleto = aa <= 50 ? 2000 + aa : 1900 + aa; // janela de século comum em CNAB
+  return new Date(Date.UTC(anoCompleto, mm - 1, dd));
+}
