@@ -1,6 +1,11 @@
 'use client';
 import { CARD } from './ui';
 
+// Modelo padrão usado no preview enquanto o usuário não envia o template
+// real (frente já assinada) — só pra dar uma referência visual, o PDF
+// gerado de fato sempre usa o arquivo enviado em "Template (imagem de fundo)".
+const BG_PADRAO = '/assets/bg-certificado-assinado.jpeg';
+
 type TextOption = '1' | '2' | '3';
 
 interface FrentePreviewProps {
@@ -69,7 +74,7 @@ export default function FrentePreview({
           position: 'relative',
           width: '100%',
           aspectRatio: '297 / 210',
-          background: bgUrl ? `#fff url(${bgUrl}) center / cover no-repeat` : 'repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 10px, #e5e7eb 10px, #e5e7eb 20px)',
+          background: `#fff url(${bgUrl || BG_PADRAO}) center / cover no-repeat`,
           border: '1px solid #999',
           boxShadow: '0 2px 8px rgba(0,0,0,.12)',
           fontFamily: 'Arial, Helvetica, sans-serif',
@@ -79,8 +84,8 @@ export default function FrentePreview({
         } as React.CSSProperties}
       >
         {!bgUrl && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#9ca3af', textAlign: 'center', padding: '0 10%' }}>
-            Envie o template (imagem de fundo) pra ver a pré-visualização completa
+          <div style={{ position: 'absolute', top: '2%', left: 0, width: '100%', textAlign: 'center', fontSize: '1.1cqw', color: '#dc2626', fontWeight: 700 }}>
+            Modelo padrão — envie o template (imagem de fundo) pra pré-visualizar com o arquivo real
           </div>
         )}
 

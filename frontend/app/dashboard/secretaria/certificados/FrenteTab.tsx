@@ -9,6 +9,10 @@ type Cargo = 'Secretária Geral' | 'Coordenador(a)';
 
 const REITORA = 'Dra. Carla Dolezel Trindade';
 
+// Usado na geração do PDF quando nenhum template é enviado — mesmo arquivo
+// usado como modelo padrão no preview (ver FrentePreview.tsx).
+const BG_PADRAO_URL = '/assets/bg-certificado-assinado.jpeg';
+
 function F({ label, children }: { label: string; children: React.ReactNode }) {
   return <div><label style={LBL}>{label}</label>{children}</div>;
 }
@@ -68,7 +72,6 @@ export default function FrenteTab() {
 
   async function gerar() {
     setErro('');
-    if (!bgFile) { setErro('Selecione a imagem de fundo (template do certificado).'); return; }
     const names = studentList.split('\n').map(n => n.trim()).filter(Boolean);
     if (names.length === 0) { setErro('Digite pelo menos um nome na lista.'); return; }
 
@@ -83,13 +86,23 @@ export default function FrenteTab() {
       // Import dinâmico — jsPDF só existe no browser, importar no topo do
       // arquivo quebraria a renderização no servidor (Next.js SSR).
       const { jsPDF } = await import('jspdf');
+      // Sem template enviado: baixa o modelo padrão (frente já assinada) e
+      // usa como se fosse o arquivo escolhido pelo usuário. Narrowing de
+      // `bgFile` (state, capturada por closure) não sobrevive ao await do
+      // fetch — por isso o if/else explícito em vez de `bgFile ?? await ...`.
+      let bgBlob: Blob;
+      if (bgFile) {
+        bgBlob = bgFile;
+      } else {
+        bgBlob = await fetch(BG_PADRAO_URL).then(r => r.blob());
+      }
       const bgData = await new Promise<string>((resolve, reject) => {
         const fr = new FileReader();
         fr.onload = () => resolve(fr.result as string);
         fr.onerror = reject;
-        fr.readAsDataURL(bgFile);
+        fr.readAsDataURL(bgBlob);
       });
-      const formatoImagem = bgFile.type.includes('png') ? 'PNG' : 'JPEG';
+      const formatoImagem = bgBlob.type.includes('png') ? 'PNG' : 'JPEG';
 
       const doc = new jsPDF('l', 'mm', 'a4');
       const w = doc.internal.pageSize.getWidth();
@@ -191,9 +204,11 @@ export default function FrenteTab() {
       <div style={CARD}>
         <h2 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700 }}>1. Configuração Básica</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <F label="Template (imagem de fundo) *">
+          <F label="Template (imagem de fundo)">
             <input type="file" accept="image/*" onChange={e => setBgFile(e.target.files?.[0] ?? null)} style={{ fontSize: 12 }} />
-            {bgFile && <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--gray-500)' }}>{bgFile.name}</p>}
+            <p style={{ margin: '4px 0 0', fontSize: 11.5, color: 'var(--gray-500)' }}>
+              {bgFile ? bgFile.name : 'Se não enviar, usa o modelo padrão (frente já assinada).'}
+            </p>
           </F>
           <F label="Modelo de Texto">
             <select style={INPUT} value={textOption} onChange={e => setTextOption(e.target.value as TextOption)}>
