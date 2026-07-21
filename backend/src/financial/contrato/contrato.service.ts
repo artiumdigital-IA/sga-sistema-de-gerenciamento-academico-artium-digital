@@ -44,7 +44,7 @@ export class ContratoService {
           })),
         },
       },
-      include: { parcelas: { orderBy: { numero: 'asc' } }, aluno: true, periodoLetivo: true },
+      include: { parcelas: { orderBy: { numero: 'asc' }, include: { boleto: { select: { id: true, status: true } } } }, aluno: true, periodoLetivo: true },
     });
 
     await this.audit.log({ usuarioId: userId, acao: 'CREATE', entidade: 'ContratoMatricula', entidadeId: contrato.id, dadosDepois: contrato });
@@ -60,7 +60,7 @@ export class ContratoService {
       include: {
         aluno: { select: { id: true, nome: true, ra: true } },
         periodoLetivo: { select: { id: true, ano: true, semestre: true } },
-        parcelas: { orderBy: { numero: 'asc' } },
+        parcelas: { orderBy: { numero: 'asc' }, include: { boleto: { select: { id: true, status: true } } } },
       },
       orderBy: { criadoEm: 'desc' },
     });
@@ -69,7 +69,7 @@ export class ContratoService {
   async findOne(id: string) {
     const c = await (this.prisma as any).contratoMatricula.findUnique({
       where: { id },
-      include: { aluno: true, periodoLetivo: true, parcelas: { orderBy: { numero: 'asc' } } },
+      include: { aluno: true, periodoLetivo: true, parcelas: { orderBy: { numero: 'asc' }, include: { boleto: { select: { id: true, status: true } } } } },
     });
     if (!c) throw new NotFoundException('Contrato não encontrado');
     return c;
