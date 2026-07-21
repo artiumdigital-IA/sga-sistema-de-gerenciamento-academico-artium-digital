@@ -235,6 +235,7 @@ model Professor {
   ofertas Oferta[]
   capturasProva CapturaProva[]
   provasGeradas ProvaGerada[]
+  dadosFolha DadosFolhaProfessor?
 
   @@map("professores")
 }
@@ -1530,4 +1531,329 @@ model OcorrenciaCnab {
   criadoEm DateTime @default(now())
 
   @@map("ocorrencias_cnab")
+}
+
+// =============================================================================
+// CPAGAR — Contas a Pagar (folha de pagamento, prestadores, acordos, gastos) —
+// Jul/2026
+//
+// Módulo novo, sem equivalente mapeado no Kirsch (o spike de exploração nunca
+// encontrou um menu de RH/folha/contas a pagar lá). Cobre o lado inverso do
+// CReceber: aqui é a FIURJ que paga terceiros (professor, colaborador,
+// prestador de serviço, fornecedor).
+//
+// ⚠️ RISCO MAIOR que o módulo CNAB — aqui o erro é calcular errado o salário
+// líquido de uma pessoa real e/ou informar valor errado ao Fisco, não só um
+// arquivo rejeitado pelo banco. Por isso as tabelas de INSS/IRRF são cadastro
+// editável (TabelaInss/TabelaIrrf), não constante no código — precisam ser
+// conferidas/atualizadas por um contador antes de qualquer folha real. Ver
+// aviso completo no plano de implementação e nos comentários de
+// backend/src/cpagar/calculo-folha.util.ts.
+// =============================================================================
+
+enum TipoVinculo {
+  PRESTADOR_SERVICO
+  COLABORADOR
+}
+
+enum StatusFolha {
+  ABERTA
+  FECHADA
+  PAGA
+}
+
+enum TipoLancamentoFolha {
+  PROVENTO
+  DESCONTO
+}
+
+enum StatusAcordoPagar {
+  ATIVO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum StatusParcelaPagar {
+  PENDENTE
+  PAGO
+  VENCIDO
+  CANCELADO
+}
+
+// Extensão 1-1 opcional do Professor já existente — dados de pagamento não
+// entram no model acadêmico (mesmo padrão de FichaSaude/Boleto: extensão à
+// parte pra não poluir um model com campos de outro domínio).
+model DadosFolhaProfessor {
+  id                String    @id @default(uuid())
+  professorId       String    @unique
+  professor         Professor @relation(fields: [professorId], references: [id])
+  salarioBase       Decimal   @db.Decimal(10, 2)
+  numeroDependentes Int       @default(0)
+  dataAdmissao      DateTime  @db.Date
+  dataDemissao      DateTime? @db.Date
+  ativo             Boolean   @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  itensFolha ItemFolha[]
+
+  @@map("dados_folha_professor")
+}
+
+// Cadastro novo pra Prestador de Serviço e Colaborador interno (Professor já
+// tem seu próprio cadastro acadêmico, ver DadosFolhaProfessor acima).
+model Colaborador {
+  id                String      @id @default(uuid())
+  nome              String
+  cpf               String      @unique
+  email             String?
+  telefone          String?
+  tipoVinculo       TipoVinculo
+  cargo             String?
+  // Só relevante pra COLABORADOR (passa pelo motor de cálculo igual
+  // professor) — Prestador de Serviço usa valor por pagamento avulso, ver
+  // PagamentoPrestador.
+  salarioBase       Decimal?    @db.Decimal(10, 2)
+  numeroDependentes Int         @default(0)
+  dataAdmissao      DateTime    @db.Date
+  dataDemissao      DateTime?   @db.Date
+  ativo             Boolean     @default(true)
+  banco             String?
+  agencia           String?
+  contaBancaria     String?
+  observacoes       String?     @db.Text
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  itensFolha ItemFolha[]
+  pagamentos PagamentoPrestador[]
+
+  @@map("colaboradores")
+}
+
+// Tabelas de INSS/IRRF — cadastro versionado por vigência, editável na tela
+// (ADMIN/FINANCEIRO), pra poder corrigir sem deploy quando a tabela oficial
+// mudar (normalmente todo ano). `ativa` marca qual vale hoje; sem campo de
+// "teto" redundante — o teto do INSS emerge de aplicar a última faixa até o
+// limiteFinal dela.
+model TabelaInss {
+  id             String   @id @default(uuid())
+  vigenciaInicio DateTime @db.Date
+  ativa          Boolean  @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  faixas FaixaInss[]
+
+  @@map("tabelas_inss")
+}
+
+model FaixaInss {
+  id            String     @id @default(uuid())
+  tabelaId      String
+  tabela        TabelaInss @relation(fields: [tabelaId], references: [id])
+  ordem         Int
+  limiteInicial Decimal    @db.Decimal(10, 2)
+  limiteFinal   Decimal?   @db.Decimal(10, 2) // null = última faixa, sem limite
+  aliquota      Decimal    @db.Decimal(5, 2)  // ex.: 14.00 = 14%
+
+  @@map("faixas_inss")
+}
+
+model TabelaIrrf {
+  id                        String   @id @default(uuid())
+  vigenciaInicio            DateTime @db.Date
+  ativa                     Boolean  @default(true)
+  valorDeducaoPorDependente Decimal  @db.Decimal(10, 2)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  faixas FaixaIrrf[]
+
+  @@map("tabelas_irrf")
+}
+
+model FaixaIrrf {
+  id              String     @id @default(uuid())
+  tabelaId        String
+  tabela          TabelaIrrf @relation(fields: [tabelaId], references: [id])
+  ordem           Int
+  limiteInicial   Decimal    @db.Decimal(10, 2)
+  limiteFinal     Decimal?   @db.Decimal(10, 2)
+  aliquota        Decimal    @db.Decimal(5, 2)
+  parcelaDeduzir  Decimal    @db.Decimal(10, 2)
+
+  @@map("faixas_irrf")
+}
+
+model FolhaPagamento {
+  id                String      @id @default(uuid())
+  competenciaMes    Int
+  competenciaAno    Int
+  status            StatusFolha @default(ABERTA)
+  dataFechamento    DateTime?
+  dataPagamento     DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  itens ItemFolha[]
+
+  @@unique([competenciaMes, competenciaAno])
+  @@map("folhas_pagamento")
+}
+
+// Um lançamento de professor OU colaborador numa folha — discriminado por
+// tipoVinculo + 2 FKs opcionais (mesmo padrão já usado em Emprestimo, no
+// módulo Biblioteca, pra "um registro representa A ou B"). Professor não tem
+// valor próprio em TipoVinculo porque já é identificado só por professorId
+// estar preenchido.
+model ItemFolha {
+  id                    String              @id @default(uuid())
+  folhaId               String
+  folha                 FolhaPagamento      @relation(fields: [folhaId], references: [id])
+  professorId           String?
+  professor             DadosFolhaProfessor? @relation(fields: [professorId], references: [id])
+  colaboradorId         String?
+  colaborador           Colaborador?        @relation(fields: [colaboradorId], references: [id])
+
+  salarioBase           Decimal             @db.Decimal(10, 2)
+  totalProventos        Decimal             @default(0) @db.Decimal(10, 2)
+  totalDescontosOutros  Decimal             @default(0) @db.Decimal(10, 2)
+  inss                  Decimal             @default(0) @db.Decimal(10, 2)
+  irrf                  Decimal             @default(0) @db.Decimal(10, 2)
+  fgts                  Decimal             @default(0) @db.Decimal(10, 2) // informativo, não é desconto
+  salarioLiquido         Decimal            @db.Decimal(10, 2)
+  status                StatusParcelaPagar  @default(PENDENTE)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  lancamentos ItemFolhaLancamento[]
+
+  @@map("itens_folha")
+}
+
+model ItemFolhaLancamento {
+  id          String               @id @default(uuid())
+  itemFolhaId String
+  itemFolha   ItemFolha            @relation(fields: [itemFolhaId], references: [id])
+  tipo        TipoLancamentoFolha
+  descricao   String
+  valor       Decimal              @db.Decimal(10, 2)
+
+  criadoEm DateTime @default(now())
+
+  @@map("itens_folha_lancamentos")
+}
+
+// Pagamento avulso de Prestador de Serviço — sem motor de INSS/IRRF (a
+// maioria emite nota fiscal como PJ, sem retenção de folha); ISS retido é
+// opcional. Ver aviso de risco no topo desta seção sobre autônomo/RPA (fora
+// de escopo).
+model PagamentoPrestador {
+  id                String             @id @default(uuid())
+  colaboradorId     String
+  colaborador       Colaborador        @relation(fields: [colaboradorId], references: [id])
+  data              DateTime           @db.Date
+  descricaoServico  String
+  numeroNotaFiscal  String?
+  valorBruto        Decimal            @db.Decimal(10, 2)
+  valorIssRetido    Decimal?           @db.Decimal(10, 2)
+  valorLiquido      Decimal            @db.Decimal(10, 2)
+  status            StatusParcelaPagar @default(PENDENTE)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("pagamentos_prestador")
+}
+
+// Acordo de parcelamento de dívida com fornecedor/prestador — espelha
+// ContratoMatricula/Parcela (lado do aluno), agora do lado de quem a FIURJ
+// paga.
+model AcordoPagar {
+  id             String            @id @default(uuid())
+  fornecedorNome String
+  cnpjCpf        String?
+  valorTotal     Decimal           @db.Decimal(10, 2)
+  numeroParcelas Int
+  diaVencimento  Int
+  status         StatusAcordoPagar @default(ATIVO)
+  observacoes    String?           @db.Text
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  parcelas ParcelaPagar[]
+
+  @@map("acordos_pagar")
+}
+
+model ParcelaPagar {
+  id             String             @id @default(uuid())
+  acordoId       String
+  acordo         AcordoPagar        @relation(fields: [acordoId], references: [id])
+  numero         Int
+  valor          Decimal            @db.Decimal(10, 2)
+  dataVencimento DateTime           @db.Date
+  dataPagamento  DateTime?          @db.Date
+  valorPago      Decimal?           @db.Decimal(10, 2)
+  status         StatusParcelaPagar @default(PENDENTE)
+  formaPagamento String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("parcelas_pagar")
+}
+
+// Espelha CategoriaReceita já existente.
+model CategoriaDespesa {
+  id          String   @id @default(uuid())
+  nome        String
+  descricao   String?
+  ativa       Boolean  @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  gastosFixos    GastoFixo[]
+  gastosVariaveis GastoVariavel[]
+
+  @@map("categorias_despesa")
+}
+
+model GastoFixo {
+  id             String           @id @default(uuid())
+  categoriaId    String
+  categoria      CategoriaDespesa @relation(fields: [categoriaId], references: [id])
+  descricao      String
+  valorMensal    Decimal          @db.Decimal(10, 2)
+  diaVencimento  Int
+  ativo          Boolean          @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("gastos_fixos")
+}
+
+model GastoVariavel {
+  id          String           @id @default(uuid())
+  categoriaId String
+  categoria   CategoriaDespesa @relation(fields: [categoriaId], references: [id])
+  descricao   String
+  valor       Decimal          @db.Decimal(10, 2)
+  data        DateTime         @db.Date
+  observacoes String?          @db.Text
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("gastos_variaveis")
 }

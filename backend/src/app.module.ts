@@ -10,6 +10,7 @@ import { EnrollmentModule } from './enrollment/enrollment.module';
 import { RegistryModule } from './registry/registry.module';
 import { ReportingModule } from './reporting/reporting.module';
 import { FinancialModule } from './financial/financial.module';
+import { CpagarModule } from './cpagar/cpagar.module';
 import { SystemModule } from './system/system.module';
 import { BrandingModule } from './branding/branding.module';
 import { PermissoesTelaModule } from './permissoes-tela/permissoes-tela.module';
@@ -35,6 +36,7 @@ import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guar
     RegistryModule,
     ReportingModule,
     FinancialModule,
+    CpagarModule,
     SystemModule,
     BrandingModule,
     PermissoesTelaModule,

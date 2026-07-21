@@ -215,6 +215,15 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Relação Conta x Turma', href: null },
     { label: 'Transferência Cartão e Cheque para Dinheiro', href: null },
   ]},
+  { title: 'CPagar', items: [
+    { label: 'Colaboradores', href: '/dashboard/cpagar/colaboradores' },
+    { label: 'Tabelas de Imposto', href: '/dashboard/cpagar/tabelas-imposto' },
+    { label: 'Folha de Pagamento', href: '/dashboard/cpagar/folha' },
+    { label: 'Prestadores de Serviço', href: '/dashboard/cpagar/prestadores' },
+    { label: 'Acordos', href: '/dashboard/cpagar/acordos' },
+    { label: 'Gastos Fixos', href: null },
+    { label: 'Gastos Variáveis', href: null },
+  ]},
   { title: 'Relatórios', items: [
     { label: 'Relatório de Inadimplência', href: '/dashboard/relatorios/financeiro' },
     { label: 'Resumo Financeiro por Turma', href: '/dashboard/relatorios/financeiro' },

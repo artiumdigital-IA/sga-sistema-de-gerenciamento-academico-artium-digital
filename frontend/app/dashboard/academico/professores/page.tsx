@@ -161,6 +161,79 @@ function ProfessorModal({ professor, onClose, onSave }: {
   );
 }
 
+// ── modal de dados de folha (CPagar) ──────────────────────────────────
+interface DadosFolha {
+  salarioBase: number; numeroDependentes: number; dataAdmissao: string; dataDemissao: string | null; ativo: boolean;
+}
+const DADOS_FOLHA_EMPTY: DadosFolha = { salarioBase: 0, numeroDependentes: 0, dataAdmissao: '', dataDemissao: null, ativo: true };
+
+function DadosFolhaModal({ professor, onClose }: { professor: Professor; onClose: () => void }) {
+  const [form, setForm] = useState<DadosFolha>(DADOS_FOLHA_EMPTY);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    apiFetch<{ dados: DadosFolha | null }>(`/cpagar/professores/${professor.id}/dados-folha`)
+      .then(r => { if (r.dados) setForm(r.dados); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [professor.id]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setError(''); setSaving(true);
+    try {
+      const body = { ...form, dataDemissao: form.dataDemissao || undefined };
+      await apiFetch(`/cpagar/professores/${professor.id}/dados-folha`, { method: 'PUT', body: JSON.stringify(body) });
+      onClose();
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Erro ao salvar');
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: 'var(--white)', borderRadius: 10, padding: 24, width: 440, boxShadow: '0 10px 40px rgba(0,0,0,.18)' }}>
+        <h2 style={{ margin: '0 0 4px', fontSize: 17, fontWeight: 700 }}>Dados de Folha — {professor.nome}</h2>
+        <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--gray-500)' }}>Usado no CPagar (folha de pagamento).</p>
+        {loading ? <p style={{ fontSize: 13, color: 'var(--gray-500)' }}>Carregando...</p> : (
+          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={LABEL}>Salário base *</label>
+                <input style={INPUT} type="number" step="0.01" required value={form.salarioBase} onChange={e => setForm(f => ({ ...f, salarioBase: Number(e.target.value) }))} />
+              </div>
+              <div>
+                <label style={LABEL}>Nº dependentes (IRRF)</label>
+                <input style={INPUT} type="number" min={0} value={form.numeroDependentes} onChange={e => setForm(f => ({ ...f, numeroDependentes: Number(e.target.value) }))} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={LABEL}>Data de admissão *</label>
+                <input style={INPUT} type="date" required value={form.dataAdmissao?.slice(0, 10) ?? ''} onChange={e => setForm(f => ({ ...f, dataAdmissao: e.target.value }))} />
+              </div>
+              <div>
+                <label style={LABEL}>Data de demissão</label>
+                <input style={INPUT} type="date" value={form.dataDemissao?.slice(0, 10) ?? ''} onChange={e => setForm(f => ({ ...f, dataDemissao: e.target.value || null }))} />
+              </div>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gray-700)' }}>
+              <input type="checkbox" checked={form.ativo} onChange={e => setForm(f => ({ ...f, ativo: e.target.checked }))} />
+              Ativo
+            </label>
+            {error && <p style={{ color: '#e02424', fontSize: 13, margin: 0 }}>{error}</p>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+              <button type="button" style={BTN('ghost')} onClick={onClose}>Cancelar</button>
+              <button type="submit" style={BTN('primary')} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── badge de titulação ─────────────────────────────────────────────────
 const TITULACAO_STYLE: Record<Titulacao, { bg: string; color: string }> = {
   GRADUADO:    { bg: 'var(--gray-100)', color: 'var(--gray-700)' },
@@ -176,6 +249,7 @@ export default function ProfessoresPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modal, setModal] = useState<'new' | Professor | null>(null);
+  const [modalFolha, setModalFolha] = useState<Professor | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -270,6 +344,7 @@ export default function ProfessoresPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModal(p)}>Editar</button>
+                        <button style={{ ...BTN('ghost'), padding: '4px 10px', fontSize: 12 }} onClick={() => setModalFolha(p)}>Folha</button>
                         <button style={{ ...BTN('danger'), padding: '4px 10px', fontSize: 12 }}
                           disabled={deleting === p.id} onClick={() => deleteProfessor(p.id)}>
                           {deleting === p.id ? '...' : 'Excluir'}
@@ -291,6 +366,7 @@ export default function ProfessoresPage() {
           onSave={load}
         />
       )}
+      {modalFolha && <DadosFolhaModal professor={modalFolha} onClose={() => setModalFolha(null)} />}
     </div>
   );
 }

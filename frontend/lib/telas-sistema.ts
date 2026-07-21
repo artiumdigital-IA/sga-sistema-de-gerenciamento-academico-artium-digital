@@ -75,6 +75,14 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'cnab-remessas', label: 'Remessas (CNAB)', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/cnab/remessas'] },
   { chave: 'cnab-retornos', label: 'Retornos (CNAB)', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/cnab/retornos'] },
 
+  // ── CPagar (Contas a Pagar) ──────────────────────────────────────────
+  { chave: 'cpagar-colaboradores', label: 'Colaboradores', grupo: 'CPagar', prefixos: ['/dashboard/cpagar/colaboradores'] },
+  { chave: 'cpagar-tabelas-imposto', label: 'Tabelas de Imposto', grupo: 'CPagar', prefixos: ['/dashboard/cpagar/tabelas-imposto'] },
+  { chave: 'cpagar-folha', label: 'Folha de Pagamento', grupo: 'CPagar', prefixos: ['/dashboard/cpagar/folha'] },
+  { chave: 'cpagar-prestadores', label: 'Prestadores de Serviço', grupo: 'CPagar', prefixos: ['/dashboard/cpagar/prestadores'] },
+  { chave: 'cpagar-acordos', label: 'Acordos', grupo: 'CPagar', prefixos: ['/dashboard/cpagar/acordos'] },
+  { chave: 'cpagar-gastos', label: 'Gastos Fixos e Variáveis', grupo: 'CPagar', prefixos: ['/dashboard/cpagar/gastos'] },
+
   // ── Relatórios ───────────────────────────────────────────────────────
   { chave: 'censo', label: 'Censo / INEP', grupo: 'Relatórios', prefixos: ['/dashboard/relatorios/censo'] },
   { chave: 'bolsistas', label: 'Bolsistas', grupo: 'Relatórios', prefixos: ['/dashboard/relatorios/bolsistas', '/dashboard/financeiro/bolsistas'] },
