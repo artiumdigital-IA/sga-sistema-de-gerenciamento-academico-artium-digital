@@ -870,6 +870,55 @@ async function main() {
     console.log('↷ Tipos/chamados de manutenção já existem, seed não duplicou.');
   }
 
+  // Tabelas de INSS/IRRF — referência 2024, confiança razoável mas NÃO
+  // validada contra a publicação oficial vigente. Só pro sistema não nascer
+  // sem nenhuma tabela cadastrada; confirmar/atualizar com um contador antes
+  // de fechar qualquer folha real (ver aviso em backend/prisma/schema.prisma,
+  // seção "CPAGAR", e em backend/src/cpagar/calculo-folha.util.ts).
+  const tabelaInssCount = await prisma.tabelaInss.count();
+  if (tabelaInssCount === 0) {
+    await prisma.tabelaInss.create({
+      data: {
+        vigenciaInicio: new Date('2024-01-01'),
+        ativa: true,
+        faixas: {
+          create: [
+            { ordem: 1, limiteInicial: 0, limiteFinal: 1412.00, aliquota: 7.5 },
+            { ordem: 2, limiteInicial: 1412.00, limiteFinal: 2666.68, aliquota: 9 },
+            { ordem: 3, limiteInicial: 2666.68, limiteFinal: 4000.03, aliquota: 12 },
+            { ordem: 4, limiteInicial: 4000.03, limiteFinal: 7786.02, aliquota: 14 },
+          ],
+        },
+      },
+    });
+    console.log('✅ Tabela de INSS 2024 (referência, precisa validação) cadastrada.');
+  } else {
+    console.log('↷ Tabela de INSS já existe, seed não duplicou.');
+  }
+
+  const tabelaIrrfCount = await prisma.tabelaIrrf.count();
+  if (tabelaIrrfCount === 0) {
+    await prisma.tabelaIrrf.create({
+      data: {
+        vigenciaInicio: new Date('2024-01-01'),
+        ativa: true,
+        valorDeducaoPorDependente: 189.59,
+        faixas: {
+          create: [
+            { ordem: 1, limiteInicial: 0, limiteFinal: 2259.20, aliquota: 0, parcelaDeduzir: 0 },
+            { ordem: 2, limiteInicial: 2259.20, limiteFinal: 2826.65, aliquota: 7.5, parcelaDeduzir: 169.44 },
+            { ordem: 3, limiteInicial: 2826.65, limiteFinal: 3751.05, aliquota: 15, parcelaDeduzir: 381.44 },
+            { ordem: 4, limiteInicial: 3751.05, limiteFinal: 4664.68, aliquota: 22.5, parcelaDeduzir: 662.77 },
+            { ordem: 5, limiteInicial: 4664.68, limiteFinal: null, aliquota: 27.5, parcelaDeduzir: 896.00 },
+          ],
+        },
+      },
+    });
+    console.log('✅ Tabela de IRRF 2024 (referência, precisa validação) cadastrada.');
+  } else {
+    console.log('↷ Tabela de IRRF já existe, seed não duplicou.');
+  }
+
   console.log('\n⚠️  ATENÇÃO: Altere as senhas em produção!');
   console.log('🏁 Seed concluído.');
 }
