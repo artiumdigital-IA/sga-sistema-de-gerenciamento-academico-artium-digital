@@ -201,7 +201,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Tesouraria', href: null },
     { label: 'Acordo/Parcelamento', href: '/dashboard/financeiro/contratos' },
     { label: 'Cadastro de Bolsistas', href: '/dashboard/academico/alunos' },
-    { label: 'Emissão de Títulos', href: null },
+    { label: 'Emissão de Títulos', href: '/dashboard/financeiro/cnab/boletos' },
   ]},
   { title: 'CReceber', items: [
     { label: 'Consulta posição do Aluno', href: '/dashboard/academico/alunos' },

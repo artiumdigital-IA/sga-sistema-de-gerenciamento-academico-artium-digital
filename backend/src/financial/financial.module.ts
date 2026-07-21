@@ -10,11 +10,13 @@ import { CategoriaReceitaController } from './categoria-receita/categoria-receit
 import { CategoriaReceitaService } from './categoria-receita/categoria-receita.service';
 import { BolsistaController } from './bolsista/bolsista.controller';
 import { BolsistaService } from './bolsista/bolsista.service';
+import { BoletoController } from './cnab/boleto/boleto.controller';
+import { BoletoService } from './cnab/boleto/boleto.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [ContratoController, ParcelaController, ContaBancariaController, CategoriaReceitaController, BolsistaController],
-  providers: [ContratoService, ParcelaService, ContaBancariaService, CategoriaReceitaService, BolsistaService],
+  controllers: [ContratoController, ParcelaController, ContaBancariaController, CategoriaReceitaController, BolsistaController, BoletoController],
+  providers: [ContratoService, ParcelaService, ContaBancariaService, CategoriaReceitaService, BolsistaService, BoletoService],
   // ContratoService exportado pro DiscenteModule reaproveitar a listagem de
   // contratos/parcelas (autoatendimento — "Financeiro" do aluno, somente leitura).
   exports: [ContratoService],

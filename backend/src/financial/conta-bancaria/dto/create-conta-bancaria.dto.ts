@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsEnum, IsNumber, IsBoolean, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TipoContaBancaria } from '@prisma/client';
+import { TipoContaBancaria, LayoutCnab } from '@prisma/client';
 
 export { TipoContaBancaria };
 
@@ -15,4 +15,12 @@ export class CreateContaBancariaDto {
   @ApiPropertyOptional({ default: 0 }) @IsOptional() @IsNumber() @Min(0) saldoInicial?: number;
   @ApiPropertyOptional({ default: true }) @IsOptional() @IsBoolean() ativa?: boolean;
   @ApiPropertyOptional() @IsOptional() @IsString() observacoes?: string;
+
+  // ── CNAB ──
+  @ApiPropertyOptional({ default: false }) @IsOptional() @IsBoolean() cnabHabilitado?: boolean;
+  @ApiPropertyOptional({ example: '341' }) @IsOptional() @IsString() codigoBancoFebraban?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() codigoCedente?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() carteira?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() variacaoCarteira?: string;
+  @ApiPropertyOptional({ enum: LayoutCnab }) @IsOptional() @IsEnum(LayoutCnab) layoutCnab?: LayoutCnab;
 }

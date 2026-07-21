@@ -3,17 +3,31 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 
 type TipoConta = 'CORRENTE' | 'POUPANCA' | 'PAGAMENTO';
+type LayoutCnab = 'CNAB400' | 'CNAB240';
 interface Conta {
   id: string; banco: string; agencia: string; numeroConta: string; tipoConta: TipoConta;
   titular: string; cnpjCpfTitular: string | null; saldoInicial: number; ativa: boolean; observacoes: string | null;
+  cnabHabilitado: boolean; codigoBancoFebraban: string | null; codigoCedente: string | null;
+  carteira: string | null; variacaoCarteira: string | null; layoutCnab: LayoutCnab | null;
 }
 type FormData = Omit<Conta, 'id'>;
 
 const TIPO_LABEL: Record<TipoConta, string> = { CORRENTE: 'Corrente', POUPANCA: 'Poupança', PAGAMENTO: 'Pagamento' };
 
+// Bancos com adapter CNAB implementado hoje (ver backend/src/financial/cnab/bancos/bancos.util.ts) —
+// os outros 3 do escopo (Safra, Santander, Caixa) ainda ficam disponíveis pra cadastro/preparo, mas
+// a emissão de boleto de fato só funciona pro Itaú até a Fase 4 do módulo CNAB.
+const BANCOS_FEBRABAN: { codigo: string; nome: string }[] = [
+  { codigo: '341', nome: '341 — Itaú' },
+  { codigo: '422', nome: '422 — Safra' },
+  { codigo: '033', nome: '033 — Santander' },
+  { codigo: '104', nome: '104 — Caixa Econômica Federal' },
+];
+
 const EMPTY: FormData = {
   banco: '', agencia: '', numeroConta: '', tipoConta: 'CORRENTE',
   titular: '', cnpjCpfTitular: '', saldoInicial: 0, ativa: true, observacoes: '',
+  cnabHabilitado: false, codigoBancoFebraban: '', codigoCedente: '', carteira: '', variacaoCarteira: '', layoutCnab: 'CNAB400',
 };
 
 const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box' };
@@ -44,7 +58,15 @@ function ContaModal({ conta, onClose, onSave }: { conta: Conta | null; onClose: 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(''); setSaving(true);
     try {
-      const body = { ...form, cnpjCpfTitular: form.cnpjCpfTitular || undefined, observacoes: form.observacoes || undefined };
+      const body = {
+        ...form,
+        cnpjCpfTitular: form.cnpjCpfTitular || undefined,
+        observacoes: form.observacoes || undefined,
+        codigoBancoFebraban: form.codigoBancoFebraban || undefined,
+        codigoCedente: form.codigoCedente || undefined,
+        carteira: form.carteira || undefined,
+        variacaoCarteira: form.variacaoCarteira || undefined,
+      };
       if (conta) await apiFetch(`/financeiro/contas-bancarias/${conta.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       else await apiFetch('/financeiro/contas-bancarias', { method: 'POST', body: JSON.stringify(body) });
       onSave(); onClose();
@@ -82,6 +104,47 @@ function ContaModal({ conta, onClose, onSave }: { conta: Conta | null; onClose: 
             <input type="checkbox" checked={form.ativa} onChange={e => set('ativa', e.target.checked)} />
             Conta ativa
           </label>
+
+          <div style={{ borderTop: '1px solid var(--gray-200)', paddingTop: 12, marginTop: 4 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--gray-700)', marginBottom: form.cnabHabilitado ? 12 : 0 }}>
+              <input type="checkbox" checked={form.cnabHabilitado} onChange={e => set('cnabHabilitado', e.target.checked)} />
+              Habilitada pra CNAB (emissão de boleto)
+            </label>
+
+            {form.cnabHabilitado && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <G cols="1fr 1fr">
+                  <F label="Banco (FEBRABAN) *">
+                    <select style={INPUT} value={form.codigoBancoFebraban ?? ''} required={form.cnabHabilitado} onChange={e => set('codigoBancoFebraban', e.target.value)}>
+                      <option value="">Selecione...</option>
+                      {BANCOS_FEBRABAN.map(b => <option key={b.codigo} value={b.codigo}>{b.nome}</option>)}
+                    </select>
+                  </F>
+                  <F label="Layout">
+                    <select style={INPUT} value={form.layoutCnab ?? 'CNAB400'} onChange={e => set('layoutCnab', e.target.value)}>
+                      <option value="CNAB400">CNAB 400</option>
+                      <option value="CNAB240">CNAB 240</option>
+                    </select>
+                  </F>
+                </G>
+                <G cols="1fr 1fr">
+                  <F label="Código do cedente (convênio) *">
+                    <input style={INPUT} value={form.codigoCedente ?? ''} required={form.cnabHabilitado} onChange={e => set('codigoCedente', e.target.value)} />
+                  </F>
+                  <F label="Carteira *">
+                    <input style={INPUT} value={form.carteira ?? ''} required={form.cnabHabilitado} onChange={e => set('carteira', e.target.value)} />
+                  </F>
+                </G>
+                <F label="Variação da carteira">
+                  <input style={INPUT} value={form.variacaoCarteira ?? ''} onChange={e => set('variacaoCarteira', e.target.value)} />
+                </F>
+                <p style={{ margin: 0, fontSize: 11.5, color: 'var(--gray-500)' }}>
+                  Dados fornecidos pelo banco na homologação do convênio de cobrança. Hoje só o Itaú
+                  (341) tem emissão de boleto implementada.
+                </p>
+              </div>
+            )}
+          </div>
 
           {error && <p style={{ color: '#e02424', fontSize: 13, margin: 0 }}>{error}</p>}
 
@@ -139,14 +202,14 @@ export default function ContasBancariasPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
-                {['Banco', 'Agência', 'Conta', 'Tipo', 'Titular', 'Saldo inicial', 'Status', ''].map(h => (
+                {['Banco', 'Agência', 'Conta', 'Tipo', 'Titular', 'Saldo inicial', 'Status', 'CNAB', ''].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {contas.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhuma conta cadastrada ainda.</td></tr>
+                <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhuma conta cadastrada ainda.</td></tr>
               )}
               {contas.map((c, i) => (
                 <tr key={c.id} style={{ borderBottom: '1px solid var(--gray-100)', background: i % 2 ? 'var(--gray-50)' : 'var(--white)' }}>
@@ -160,6 +223,15 @@ export default function ContasBancariasPage() {
                     <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: c.ativa ? '#d1fae5' : 'var(--gray-100)', color: c.ativa ? '#065f46' : 'var(--gray-500)' }}>
                       {c.ativa ? 'Ativa' : 'Inativa'}
                     </span>
+                  </td>
+                  <td style={{ padding: '10px 14px' }}>
+                    {c.cnabHabilitado ? (
+                      <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: '#dbeafe', color: '#1e40af' }}>
+                        {c.codigoBancoFebraban ?? 'sim'}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 11.5, color: 'var(--gray-400)' }}>—</span>
+                    )}
                   </td>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>

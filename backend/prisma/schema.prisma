@@ -736,6 +736,8 @@ model Parcela {
   criadoEm      DateTime      @default(now())
   atualizadoEm  DateTime      @updatedAt
 
+  boleto Boleto?
+
   @@map("parcelas")
 }
 
@@ -869,8 +871,11 @@ model FichaSaude {
 }
 
 // ── Contas Bancárias ────────────────────────────────────────────
-// Cadastro interno de contas da instituição (base pra conciliação futura
-// com Asaas na Fase 6b). Não é conta de aluno/fornecedor.
+// Cadastro interno de contas da instituição. Campos `cnab*`/`sequencialRemessa`
+// (Jul/2026) habilitam a conta pra emissão/registro de boleto via arquivo CNAB
+// direto com o banco (substituiu o plano anterior de integração via Asaas —
+// ver seção "Módulo Financeiro — Integração Bancária CNAB" do CLAUDE.md).
+// Não é conta de aluno/fornecedor.
 model ContaBancaria {
   id             String            @id @default(uuid())
   banco          String
@@ -883,8 +888,21 @@ model ContaBancaria {
   ativa          Boolean           @default(true)
   observacoes    String?           @db.Text
 
+  // ── CNAB (opcionais — só preenchidos quando cnabHabilitado = true) ──
+  cnabHabilitado      Boolean    @default(false)
+  codigoBancoFebraban String?    // ex.: "341" Itaú, "422" Safra, "033" Santander, "104" Caixa
+  codigoCedente        String?   // convênio / código de beneficiário junto ao banco
+  carteira             String?
+  variacaoCarteira     String?
+  layoutCnab           LayoutCnab?
+  sequencialRemessa    Int        @default(0) // incrementado a cada remessa gerada por esta conta
+
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
+
+  boletos   Boleto[]
+  remessas  RemessaCnab[]
+  retornos  RetornoCnab[]
 
   @@map("contas_bancarias")
 }
@@ -1352,4 +1370,164 @@ model Emprestimo {
   atualizadoEm DateTime @updatedAt
 
   @@map("emprestimos_biblioteca")
+}
+
+// =============================================================================
+// FINANCEIRO — CNAB (boleto, remessa, retorno, baixa automática) — Jul/2026
+//
+// Substitui o plano anterior de integração via Asaas (Fase 6b). Cada `Boleto`
+// representa uma `Parcela` já existente (1-1 opcional — nem toda parcela
+// precisa de boleto, pagamento manual continua funcionando como antes).
+// `Boleto.status` guarda só o estado consolidado de ciclo de vida que o resto
+// do sistema precisa entender; o histórico cru de cada ocorrência lida do
+// arquivo de retorno do banco fica em `OcorrenciaCnab`, pra rastreabilidade
+// completa sem precisar modelar os dezenas de códigos de ocorrência de cada
+// banco como enum. Interface única de banco (`CnabBankAdapter`, em
+// backend/src/financial/cnab/bancos/) + um adapter por banco — só o Itaú
+// (CNAB 400) está implementado nesta rodada; Safra/Santander/Caixa (CNAB 240)
+// ficam como stub até serem homologados.
+// =============================================================================
+
+enum BancoCnab {
+  ITAU
+  SAFRA
+  SANTANDER
+  CAIXA
+}
+
+enum LayoutCnab {
+  CNAB400
+  CNAB240
+}
+
+enum StatusBoleto {
+  EMITIDO         // criado no sistema, ainda não enviado numa remessa
+  ENVIADO_REMESSA // incluído numa remessa, aguardando confirmação do banco
+  REGISTRADO      // banco confirmou o registro
+  LIQUIDADO       // pago/baixado
+  REJEITADO       // banco rejeitou o registro
+  CANCELADO       // baixa solicitada / cancelamento processado
+  PROTESTADO
+}
+
+enum StatusRemessa {
+  GERADA
+  ENVIADA
+}
+
+enum StatusOcorrenciaCnab {
+  PROCESSADA
+  NAO_LOCALIZADO
+  ERRO
+}
+
+model Boleto {
+  id             String   @id @default(uuid())
+  parcelaId      String   @unique
+  parcela        Parcela  @relation(fields: [parcelaId], references: [id])
+  contaBancariaId String
+  contaBancaria  ContaBancaria @relation(fields: [contaBancariaId], references: [id])
+  banco          BancoCnab
+
+  nossoNumero    String   @unique
+  carteira       String
+  especie        String   @default("DM")
+  status         StatusBoleto @default(EMITIDO)
+
+  linhaDigitavel String
+  codigoBarras   String
+
+  dataRegistro   DateTime?
+  dataLiquidacao DateTime?
+  valorPago      Decimal? @db.Decimal(10, 2)
+  valorJuros     Decimal? @db.Decimal(10, 2)
+  valorMulta     Decimal? @db.Decimal(10, 2)
+  valorDesconto  Decimal? @db.Decimal(10, 2)
+
+  ultimaOcorrenciaCodigo      String?
+  ultimaOcorrenciaDescricao   String?
+  motivoRejeicao              String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  itensRemessa  RemessaCnabItem[]
+  ocorrencias   OcorrenciaCnab[]
+
+  @@map("boletos")
+}
+
+model RemessaCnab {
+  id                  String        @id @default(uuid())
+  contaBancariaId     String
+  contaBancaria       ContaBancaria @relation(fields: [contaBancariaId], references: [id])
+  banco               BancoCnab
+  layout              LayoutCnab
+  sequencial          Int
+  dataGeracao         DateTime      @default(now())
+  quantidadeRegistros Int
+  valorTotal          Decimal       @db.Decimal(12, 2)
+  status              StatusRemessa @default(GERADA)
+  arquivoNome         String
+  arquivoUrl          String
+  usuarioId           String
+
+  itens RemessaCnabItem[]
+
+  @@map("remessas_cnab")
+}
+
+// Join Remessa x Boleto — uma linha por boleto incluído numa remessa; um
+// boleto pode aparecer em mais de uma remessa se for reenviado após rejeição.
+model RemessaCnabItem {
+  id        String      @id @default(uuid())
+  remessaId String
+  remessa   RemessaCnab @relation(fields: [remessaId], references: [id])
+  boletoId  String
+  boleto    Boleto      @relation(fields: [boletoId], references: [id])
+
+  criadoEm DateTime @default(now())
+
+  @@map("remessas_cnab_itens")
+}
+
+model RetornoCnab {
+  id                    String        @id @default(uuid())
+  contaBancariaId       String
+  contaBancaria         ContaBancaria @relation(fields: [contaBancariaId], references: [id])
+  banco                 BancoCnab
+  nomeArquivoOriginal   String
+  dataImportacao        DateTime      @default(now())
+  quantidadeRegistros   Int
+  valorTotalOcorrencias Decimal       @db.Decimal(12, 2)
+  usuarioId             String
+
+  ocorrencias OcorrenciaCnab[]
+
+  @@map("retornos_cnab")
+}
+
+model OcorrenciaCnab {
+  id                String      @id @default(uuid())
+  retornoId         String
+  retorno           RetornoCnab @relation(fields: [retornoId], references: [id])
+  boletoId          String?
+  boleto            Boleto?     @relation(fields: [boletoId], references: [id])
+  nossoNumero       String      // valor cru lido do arquivo — útil pra investigar não-localizados
+
+  codigoOcorrencia    String
+  descricaoOcorrencia String
+  dataOcorrencia      DateTime
+
+  valorPago     Decimal? @db.Decimal(10, 2)
+  valorJuros    Decimal? @db.Decimal(10, 2)
+  valorMulta    Decimal? @db.Decimal(10, 2)
+  valorDesconto Decimal? @db.Decimal(10, 2)
+
+  statusProcessamento StatusOcorrenciaCnab
+  mensagemErro        String?
+
+  criadoEm DateTime @default(now())
+
+  @@map("ocorrencias_cnab")
 }

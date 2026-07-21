@@ -71,6 +71,9 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'contratos', label: 'Contratos / Mensalidades', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/contratos'] },
   { chave: 'receitas', label: 'Receitas', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/receitas'] },
   { chave: 'contas-bancarias', label: 'Contas Bancárias', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/contas-bancarias'] },
+  { chave: 'cnab-boletos', label: 'Boletos (CNAB)', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/cnab/boletos'] },
+  { chave: 'cnab-remessas', label: 'Remessas (CNAB)', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/cnab/remessas'] },
+  { chave: 'cnab-retornos', label: 'Retornos (CNAB)', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/cnab/retornos'] },
 
   // ── Relatórios ───────────────────────────────────────────────────────
   { chave: 'censo', label: 'Censo / INEP', grupo: 'Relatórios', prefixos: ['/dashboard/relatorios/censo'] },
