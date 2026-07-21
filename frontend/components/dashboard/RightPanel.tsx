@@ -219,7 +219,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Colaboradores', href: '/dashboard/cpagar/colaboradores' },
     { label: 'Tabelas de Imposto', href: '/dashboard/cpagar/tabelas-imposto' },
     { label: 'Folha de Pagamento', href: '/dashboard/cpagar/folha' },
-    { label: 'Prestadores de Serviço', href: null },
+    { label: 'Prestadores de Serviço', href: '/dashboard/cpagar/prestadores' },
     { label: 'Acordos', href: null },
     { label: 'Gastos Fixos', href: null },
     { label: 'Gastos Variáveis', href: null },
