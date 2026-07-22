@@ -20,6 +20,7 @@ import { LibraryModule } from './library/library.module';
 import { PushModule } from './push/push.module';
 import { DocenteModule } from './docente/docente.module';
 import { RelatoriosMasterModule } from './relatorios-master/relatorios-master.module';
+import { MigrationModule } from './migration/migration.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guard';
@@ -46,6 +47,7 @@ import { TelaPermissaoGuard } from './permissoes-tela/guards/tela-permissao.guar
     PushModule,
     DocenteModule,
     RelatoriosMasterModule,
+    MigrationModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

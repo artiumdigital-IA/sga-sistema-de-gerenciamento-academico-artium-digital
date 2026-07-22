@@ -37,6 +37,8 @@ async function bootstrap() {
   if (!existsSync(cnabRemessasDir)) mkdirSync(cnabRemessasDir, { recursive: true });
   const cnabRetornosDir = join(process.cwd(), 'uploads', 'cnab', 'retornos');
   if (!existsSync(cnabRetornosDir)) mkdirSync(cnabRetornosDir, { recursive: true });
+  const importacaoLegadoDir = join(process.cwd(), 'uploads', 'importacao-legado');
+  if (!existsSync(importacaoLegadoDir)) mkdirSync(importacaoLegadoDir, { recursive: true });
 
   // Serve arquivos estaticos (uploads) — fora do prefixo /api/v1
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
