@@ -137,14 +137,15 @@ export default function LoginPage() {
           {/* MFA (condicional) */}
           {showMfa && (
             <div style={{ marginBottom: 18 }}>
-              <label style={labelStyle}>Codigo MFA (6 digitos)</label>
-              <input type="text" inputMode="numeric" maxLength={6}
+              <label style={labelStyle}>Codigo MFA (ou codigo de recuperacao)</label>
+              <input type="text" maxLength={10}
                 placeholder="000000" value={totpToken}
-                onChange={e => setTotpToken(e.target.value.replace(/\D/g, ''))}
+                onChange={e => setTotpToken(e.target.value.toUpperCase().replace(/[^0-9A-F]/g, ''))}
                 required autoFocus
-                style={{ ...inputStyle, letterSpacing: 8, textAlign: 'center', fontSize: 18 }} />
+                style={{ ...inputStyle, letterSpacing: 4, textAlign: 'center', fontSize: 16 }} />
               <p style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 4 }}>
-                Abra o app autenticador e insira o codigo de 6 digitos.
+                Abra o app autenticador e insira o codigo de 6 digitos, ou use um dos seus codigos de
+                recuperacao caso tenha perdido o acesso ao app.
               </p>
             </div>
           )}
