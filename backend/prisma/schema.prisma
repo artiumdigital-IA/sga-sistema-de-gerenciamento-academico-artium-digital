@@ -388,6 +388,7 @@ model Usuario {
   pushTokens         PushToken[]
   chamadosAbertos    ChamadoManutencao[] @relation("ChamadoManutencaoSolicitante")
   chamadosAtendidos  ChamadoManutencao[] @relation("ChamadoManutencaoResponsavel")
+  importacoesLegado  ImportacaoLegado[]
 
   @@map("usuarios")
 }
@@ -1858,4 +1859,63 @@ model GastoVariavel {
   atualizadoEm DateTime @updatedAt
 
   @@map("gastos_variaveis")
+}
+
+// =============================================================================
+// FASE 9 — IMPORTAÇÃO DE DADOS LEGADOS (ETL de análise, sem escrita em dado
+// financeiro real — ver backend/src/migration/). Cada lote (ex: um upload da
+// planilha de parcelas do Kirsch) vira um ImportacaoLegado; cada linha da
+// planilha vira um ImportacaoLegadoLinha — bookkeeping do próprio processo de
+// análise, não confundir com ContratoMatricula/Parcela reais.
+// =============================================================================
+
+model ImportacaoLegado {
+  id                    String                 @id @default(uuid())
+  tipo                  String                 // "PARCELAS_LEGADO" — string livre, permite outros tipos no futuro
+  arquivoNome           String
+  usuarioId             String
+  usuario               Usuario                @relation(fields: [usuarioId], references: [id])
+  status                StatusImportacaoLegado @default(PROCESSANDO)
+  totalLinhasArquivo    Int                    // inclui as linhas do bloco de resumo ignorado
+  totalLinhasDetalhe    Int                    // só as linhas de parcela de fato processadas
+  linhasIgnoradasResumo Int                    // quantas linhas do 2º bloco (resumo agregado) foram puladas
+  resumo                Json?                  // agregados calculados ao final (cache do relatório)
+  iniciadoEm            DateTime               @default(now())
+  concluidoEm           DateTime?
+  erro                  String?                @db.Text
+
+  linhas ImportacaoLegadoLinha[]
+
+  @@map("importacoes_legado")
+}
+
+enum StatusImportacaoLegado {
+  PROCESSANDO
+  CONCLUIDA
+  ERRO
+}
+
+model ImportacaoLegadoLinha {
+  id                String                @id @default(uuid())
+  importacaoId      String
+  importacao        ImportacaoLegado      @relation(fields: [importacaoId], references: [id], onDelete: Cascade)
+  numeroLinha       Int                   // linha original na planilha, pra rastreabilidade/suporte
+  dadosOriginais    Json                  // todas as colunas originais da linha, sem tratamento
+  status            StatusLinhaImportacao
+  alunoEncontradoId String?               // preenchido só quando status = PRONTA_CPF
+  alunoSugeridoId   String?               // preenchido só quando status = SUGESTAO_NOME
+  scoreSugestao     Float?                // 0–1, similaridade do nome (só pra SUGESTAO_NOME)
+  anoInferido       Int?                  // ano do período que a parcela cairia, calculado da Data Vencimento
+  semestreInferido  String?               // "S1" | "S2"
+  motivoPendencia   String?               // texto legível pro admin entender por que não bateu
+
+  @@index([importacaoId, status])
+  @@map("importacoes_legado_linhas")
+}
+
+enum StatusLinhaImportacao {
+  PRONTA_CPF
+  SUGESTAO_NOME
+  SEM_CORRESPONDENCIA
+  DADO_INVALIDO
 }

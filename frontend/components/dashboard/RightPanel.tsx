@@ -103,6 +103,7 @@ const MENU_MASTER_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Consulta a registro de acesso ao sistema', href: '/dashboard/admin/log' },
     { label: 'Permissões de Tela', href: '/dashboard/admin/permissoes' },
     { label: 'Relatórios Master', href: '/dashboard/admin/relatorios-master' },
+    { label: 'Importação de Dados Legados', href: '/dashboard/admin/importacao-legado' },
   ],
 };
 

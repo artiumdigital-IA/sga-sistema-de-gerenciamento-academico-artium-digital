@@ -94,6 +94,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'sistema', label: 'Painel do Sistema', grupo: 'Administração', prefixos: ['/dashboard/admin/sistema'] },
   { chave: 'visual', label: 'Identidade Visual', grupo: 'Administração', prefixos: ['/dashboard/admin/visual'] },
   { chave: 'relatorios-master', label: 'Relatórios Master', grupo: 'Administração', prefixos: ['/dashboard/admin/relatorios-master'] },
+  { chave: 'importacao-legado', label: 'Importação de Dados Legados', grupo: 'Administração', prefixos: ['/dashboard/admin/importacao-legado'] },
 
   // ── Utilitários ──────────────────────────────────────────────────────
   { chave: 'calculadora', label: 'Calculadora', grupo: 'Utilitários', prefixos: ['/dashboard/utilitarios/calculadora'] },
