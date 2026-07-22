@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { apiFetch, apiFileUrl } from '@/lib/api';
+import { apiFetch, apiFileUrl, webUrl } from '@/lib/api';
 import { formatarData } from '@/lib/format';
 import { useBranding } from '@/lib/branding';
 import QrCode from '@/components/QrCode';
@@ -29,8 +29,8 @@ export default function CarteiraEstudantePage() {
       .catch(e => setErro(e.message ?? 'Erro ao carregar carteira de estudante.'));
   }, []);
 
-  const linkValidacao = dados && typeof window !== 'undefined'
-    ? `${window.location.origin}/validar-carteirinha?codigo=${encodeURIComponent(dados.codigoValidacao)}`
+  const linkValidacao = dados
+    ? webUrl(`/validar-carteirinha?codigo=${encodeURIComponent(dados.codigoValidacao)}`)
     : '';
 
   return (

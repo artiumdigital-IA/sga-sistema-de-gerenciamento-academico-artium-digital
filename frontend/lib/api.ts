@@ -17,6 +17,22 @@ export function apiFileUrl(path?: string | null): string | null {
   return `${API_ORIGIN}${path}`;
 }
 
+/**
+ * Monta uma URL absoluta pro domínio público da própria plataforma (ex: link
+ * de validação de carteirinha embutido no QR code). Usa NEXT_PUBLIC_WEB_URL
+ * (fixo, definido no build) em vez de window.location.origin — senão o link
+ * herda o endereço que estava na barra do navegador no momento em que o
+ * documento foi gerado (pode ser um IP antigo ou um endereço interno), não
+ * necessariamente o domínio público real que quem for escanear o QR consegue
+ * acessar. Cai em window.location.origin só como fallback de desenvolvimento
+ * local, quando a variável não está definida.
+ */
+export function webUrl(path: string): string {
+  const base = process.env.NEXT_PUBLIC_WEB_URL
+    ?? (typeof window !== 'undefined' ? window.location.origin : '');
+  return `${base}${path}`;
+}
+
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
