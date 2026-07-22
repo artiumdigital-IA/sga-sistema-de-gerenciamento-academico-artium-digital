@@ -429,6 +429,7 @@ function MinhaConta() {
   const [erro, setErro] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
   const [alterandoSenha, setAlterandoSenha] = useState(false);
+  const [gerenciandoMfa, setGerenciandoMfa] = useState(false);
 
   function carregar() {
     setLoading(true);
@@ -496,6 +497,10 @@ function MinhaConta() {
                     <button onClick={() => setAlterandoSenha(true)} style={{ padding: '3px 8px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 11, cursor: 'pointer', color: 'var(--accent-blue-text)', fontWeight: 600 }}>
                       Alterar
                     </button>
+                  ) : label === '2FA' ? (
+                    <button onClick={() => setGerenciandoMfa(true)} style={{ padding: '3px 8px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 11, cursor: 'pointer', color: 'var(--accent-blue-text)', fontWeight: 600 }}>
+                      {perfil.mfaAtivo ? 'Gerenciar' : 'Ativar'}
+                    </button>
                   ) : (
                     <span style={{ color: 'var(--gray-700)', fontWeight: 500 }}>{val}</span>
                   )}
@@ -516,6 +521,10 @@ function MinhaConta() {
 
       {alterandoSenha && (
         <AlterarSenhaModal onClose={() => setAlterandoSenha(false)} />
+      )}
+
+      {gerenciandoMfa && (
+        <MfaModal ativo={perfil.mfaAtivo} onClose={() => setGerenciandoMfa(false)} onChanged={carregar} />
       )}
     </div>
   );
@@ -721,6 +730,231 @@ function AlterarSenhaModal({ onClose }: { onClose: () => void }) {
                 opacity: salvando ? 0.7 : 1,
               }}>
                 {salvando ? 'Salvando…' : 'Salvar'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Modal: MFA (autenticação em duas etapas) ───
+   Componente definido no nível de módulo (mesmo motivo do EditarPerfilModal:
+   evitar remount/perda de foco a cada render do pai). */
+function MfaModal({ ativo, onClose, onChanged }: {
+  ativo: boolean;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  type Modo = 'menu' | 'setup-qr' | 'setup-confirmar' | 'setup-codigos' | 'desativar' | 'regerar' | 'regerar-codigos';
+  const [modo, setModo] = useState<Modo>(ativo ? 'menu' : 'setup-qr');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [chaveManual, setChaveManual] = useState('');
+  const [codigo, setCodigo] = useState('');
+  const [senha, setSenha] = useState('');
+  const [codigosRecuperacao, setCodigosRecuperacao] = useState<string[]>([]);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (modo === 'setup-qr' && !qrCodeDataUrl) {
+      setCarregando(true);
+      apiFetch<{ qrCodeDataUrl: string; chaveManual: string }>('/auth/mfa/setup', { method: 'POST' })
+        .then(d => { setQrCodeDataUrl(d.qrCodeDataUrl); setChaveManual(d.chaveManual); })
+        .catch(e => setErro(e.message ?? 'Erro ao gerar QR code.'))
+        .finally(() => setCarregando(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo]);
+
+  async function confirmar() {
+    setErro(null);
+    if (codigo.trim().length !== 6) { setErro('Digite o código de 6 dígitos do app.'); return; }
+    setCarregando(true);
+    try {
+      const r = await apiFetch<{ codigosRecuperacao: string[] }>('/auth/mfa/ativar', {
+        method: 'POST', body: JSON.stringify({ totpToken: codigo.trim() }),
+      });
+      setCodigosRecuperacao(r.codigosRecuperacao);
+      setModo('setup-codigos');
+      // onChanged() só é chamado ao fechar (botão "Concluir") — chamar aqui refaz o fetch de
+      // /usuarios/me, que passa por um estado `loading` no pai (MinhaConta) e desmonta este
+      // modal antes do usuário conseguir ver/copiar os códigos de recuperação.
+    } catch (e: any) {
+      setErro(e.message ?? 'Código inválido.');
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function desativar() {
+    setErro(null);
+    if (!senha) { setErro('Informe sua senha.'); return; }
+    setCarregando(true);
+    try {
+      await apiFetch('/auth/mfa/desativar', { method: 'POST', body: JSON.stringify({ senha }) });
+      onChanged();
+      onClose();
+    } catch (e: any) {
+      setErro(e.message ?? 'Erro ao desativar MFA.');
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function regerar() {
+    setErro(null);
+    if (!senha) { setErro('Informe sua senha.'); return; }
+    setCarregando(true);
+    try {
+      const r = await apiFetch<{ codigosRecuperacao: string[] }>('/auth/mfa/recovery-codes/regenerar', {
+        method: 'POST', body: JSON.stringify({ senha }),
+      });
+      setCodigosRecuperacao(r.codigosRecuperacao);
+      setModo('regerar-codigos');
+    } catch (e: any) {
+      setErro(e.message ?? 'Erro ao gerar códigos.');
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  function copiarCodigos() {
+    navigator.clipboard?.writeText(codigosRecuperacao.join('\n')).catch(() => {});
+  }
+
+  const btnPrimary = { padding: '7px 14px', border: 'none', borderRadius: 4, background: 'var(--blue-dark)', fontSize: 12, cursor: 'pointer', color: '#fff' } as const;
+  const btnGhost = { padding: '7px 14px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'transparent', fontSize: 12, cursor: 'pointer', color: 'var(--gray-600)' } as const;
+  const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 12.5, boxSizing: 'border-box' as const, marginBottom: 12 };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 100,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--white)', borderRadius: 8, width: 400, maxWidth: '92vw',
+        padding: 20, boxShadow: '0 8px 30px rgba(0,0,0,.2)', maxHeight: '88vh', overflowY: 'auto',
+      }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-700)', marginBottom: 16 }}>
+          Autenticação em Duas Etapas (MFA)
+        </div>
+
+        {modo === 'menu' && (
+          <>
+            <div style={{ fontSize: 12.5, color: 'var(--gray-600)', marginBottom: 16 }}>
+              O MFA está <strong style={{ color: '#16a34a' }}>ativado</strong> na sua conta.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              <button onClick={() => { setModo('regerar'); setSenha(''); setErro(null); }} style={btnGhost}>
+                Gerar novos códigos de recuperação
+              </button>
+              <button onClick={() => { setModo('desativar'); setSenha(''); setErro(null); }} style={{ ...btnGhost, color: 'var(--accent-red-text)' }}>
+                Desativar MFA
+              </button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={onClose} style={btnPrimary}>Fechar</button>
+            </div>
+          </>
+        )}
+
+        {modo === 'setup-qr' && (
+          <>
+            <div style={{ fontSize: 12.5, color: 'var(--gray-600)', marginBottom: 12 }}>
+              1. Abra o Google Authenticator (ou similar) e escaneie o QR code abaixo.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              {carregando && !qrCodeDataUrl ? (
+                <div style={{ fontSize: 12, color: 'var(--gray-400)', padding: 30 }}>Gerando QR code…</div>
+              ) : qrCodeDataUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qrCodeDataUrl} alt="QR code MFA" width={200} height={200} style={{ border: '1px solid var(--gray-200)', borderRadius: 4 }} />
+              ) : null}
+            </div>
+            {chaveManual && (
+              <div style={{ fontSize: 11, color: 'var(--gray-500)', marginBottom: 16, textAlign: 'center' }}>
+                Não consegue escanear? Digite a chave manualmente:
+                <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: 'var(--gray-700)', marginTop: 4, letterSpacing: 1 }}>
+                  {chaveManual}
+                </div>
+              </div>
+            )}
+            {erro && <div style={{ fontSize: 11.5, color: 'var(--accent-red-text)', marginBottom: 10 }}>{erro}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={onClose} style={btnGhost}>Cancelar</button>
+              <button onClick={() => setModo('setup-confirmar')} disabled={!qrCodeDataUrl} style={{ ...btnPrimary, opacity: qrCodeDataUrl ? 1 : 0.6 }}>
+                Já escaneei →
+              </button>
+            </div>
+          </>
+        )}
+
+        {modo === 'setup-confirmar' && (
+          <>
+            <div style={{ fontSize: 12.5, color: 'var(--gray-600)', marginBottom: 12 }}>
+              2. Digite o código de 6 dígitos exibido no app agora:
+            </div>
+            <input value={codigo} onChange={e => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000" maxLength={6}
+              style={{ width: '100%', textAlign: 'center', letterSpacing: 6, fontSize: 20, padding: '10px', border: '1px solid var(--gray-300)', borderRadius: 4, boxSizing: 'border-box', marginBottom: 12 }} />
+            {erro && <div style={{ fontSize: 11.5, color: 'var(--accent-red-text)', marginBottom: 10 }}>{erro}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={() => setModo('setup-qr')} style={btnGhost}>← Voltar</button>
+              <button onClick={confirmar} disabled={carregando} style={{ ...btnPrimary, opacity: carregando ? 0.7 : 1 }}>
+                {carregando ? 'Confirmando…' : 'Ativar MFA'}
+              </button>
+            </div>
+          </>
+        )}
+
+        {(modo === 'setup-codigos' || modo === 'regerar-codigos') && (
+          <>
+            <div style={{ fontSize: 12.5, color: '#16a34a', fontWeight: 600, marginBottom: 8 }}>
+              ✓ {modo === 'setup-codigos' ? 'MFA ativado com sucesso.' : 'Novos códigos gerados.'}
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--gray-500)', marginBottom: 8 }}>
+              Guarde estes códigos em local seguro. Cada um só pode ser usado uma vez, no lugar do código do
+              app, caso você perca acesso a ele. Eles não serão mostrados de novo.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, background: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: 4, padding: 12, fontFamily: 'monospace', fontSize: 13, color: 'var(--gray-700)' }}>
+              {codigosRecuperacao.map(c => <div key={c}>{c}</div>)}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+              <button onClick={copiarCodigos} style={btnGhost}>Copiar códigos</button>
+              <button onClick={() => { if (modo === 'setup-codigos') onChanged(); onClose(); }} style={btnPrimary}>Concluir</button>
+            </div>
+          </>
+        )}
+
+        {modo === 'desativar' && (
+          <>
+            <div style={{ fontSize: 12.5, color: 'var(--gray-600)', marginBottom: 12 }}>
+              Confirme sua senha para desativar o MFA. Isso torna sua conta menos segura.
+            </div>
+            <input type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Senha atual" style={inputStyle} />
+            {erro && <div style={{ fontSize: 11.5, color: 'var(--accent-red-text)', marginBottom: 10 }}>{erro}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={() => setModo('menu')} style={btnGhost}>← Voltar</button>
+              <button onClick={desativar} disabled={carregando} style={{ padding: '7px 14px', border: 'none', borderRadius: 4, background: 'var(--red)', fontSize: 12, cursor: 'pointer', color: '#fff', opacity: carregando ? 0.7 : 1 }}>
+                {carregando ? 'Desativando…' : 'Desativar MFA'}
+              </button>
+            </div>
+          </>
+        )}
+
+        {modo === 'regerar' && (
+          <>
+            <div style={{ fontSize: 12.5, color: 'var(--gray-600)', marginBottom: 12 }}>
+              Confirme sua senha para gerar um novo lote de códigos. Os códigos antigos deixarão de funcionar.
+            </div>
+            <input type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="Senha atual" style={inputStyle} />
+            {erro && <div style={{ fontSize: 11.5, color: 'var(--accent-red-text)', marginBottom: 10 }}>{erro}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={() => setModo('menu')} style={btnGhost}>← Voltar</button>
+              <button onClick={regerar} disabled={carregando} style={{ ...btnPrimary, opacity: carregando ? 0.7 : 1 }}>
+                {carregando ? 'Gerando…' : 'Gerar novos códigos'}
               </button>
             </div>
           </>

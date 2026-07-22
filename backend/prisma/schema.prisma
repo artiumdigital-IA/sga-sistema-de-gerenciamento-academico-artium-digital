@@ -361,7 +361,9 @@ model Usuario {
   senhaHash   String
   perfil      Perfil
   mfaAtivo    Boolean       @default(false)
-  mfaSegredo  String?       // TOTP secret — nunca expor via API
+  mfaSegredo  String?       // TOTP secret ativo — nunca expor via API
+  mfaSegredoPendente String? // TOTP secret gerado no setup, aguardando confirmação
+  mfaRecoveryCodes   String[] @default([]) // hashes bcrypt de códigos de recuperação de uso único
   status      UsuarioStatus @default(ATIVO)
 
   // Perfil pessoal (auto-servico via /usuarios/me)
