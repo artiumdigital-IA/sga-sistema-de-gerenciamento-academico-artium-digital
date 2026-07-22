@@ -10,9 +10,17 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Variável de build — sobrescreva via ARG no Coolify
+# Variáveis de build — sobrescreva via ARG no Coolify
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# Endereço público canônico da plataforma — usado em QR codes/links que
+# precisam ficar corretos independente de qual endereço (IP antigo, domínio
+# interno, etc.) a secretaria estava usando no navegador ao gerar o
+# documento. Sem isso, o link cai em window.location.origin (o endereço da
+# aba no momento), que pode não ser o domínio público real.
+ARG NEXT_PUBLIC_WEB_URL=http://localhost:3000
+ENV NEXT_PUBLIC_WEB_URL=$NEXT_PUBLIC_WEB_URL
 
 RUN npm run build
 

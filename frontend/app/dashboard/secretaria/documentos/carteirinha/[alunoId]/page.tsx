@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { apiFetch, apiFileUrl } from '@/lib/api';
+import { apiFetch, apiFileUrl, webUrl } from '@/lib/api';
 import { formatarData, formatarDataMesAno } from '@/lib/format';
 import { useBranding } from '@/lib/branding';
 import QrCode from '@/components/QrCode';
@@ -23,11 +23,6 @@ export default function CarteirinhaPage() {
   const [data, setData] = useState<CarteirinhaData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [origin, setOrigin] = useState('');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') setOrigin(window.location.origin);
-  }, []);
 
   useEffect(() => {
     apiFetch<CarteirinhaData>(`/documentos/carteirinha/${alunoId}`)
@@ -43,7 +38,8 @@ export default function CarteirinhaPage() {
   const fotoSrc = apiFileUrl(data.aluno.fotoUrl);
   const validaAteCurta = formatarDataMesAno(data.validaAte);
   const validaAteCompleta = formatarData(data.validaAte);
-  const urlValidacao = origin ? `${origin}/validar-carteirinha?codigo=${data.codigoValidacao}` : '';
+  const enderecoValidacao = webUrl('/validar-carteirinha');
+  const urlValidacao = webUrl(`/validar-carteirinha?codigo=${data.codigoValidacao}`);
   const corPrimaria = branding.corPrimaria || '#1e3a5f';
   const corSecundaria = branding.corSecundaria || '#0f2340';
   const nomeReduzido = branding.nomeCompleto.replace(`${branding.nomeInstituicao} — `, '').replace(`${branding.nomeInstituicao} - `, '');
@@ -126,7 +122,7 @@ export default function CarteirinhaPage() {
               Validação de autenticidade
             </div>
             <div style={{ fontSize: 8.5, opacity: 0.85, wordBreak: 'break-all', lineHeight: 1.5 }}>
-              {origin ? `${origin}/validar-carteirinha` : 'validação online'}
+              {enderecoValidacao}
             </div>
           </div>
 
@@ -145,7 +141,7 @@ export default function CarteirinhaPage() {
 
           <div style={{ fontSize: 7.5, opacity: 0.65, borderTop: '1px solid rgba(255,255,255,.25)', paddingTop: 6 }}>
             Este documento é meramente ilustrativo da condição de estudante. Em caso de dúvida sobre sua
-            autenticidade, valide o código acima em {origin ? `${origin}/validar-carteirinha` : 'nossa plataforma'}.
+            autenticidade, valide o código acima em {enderecoValidacao}.
           </div>
         </div>
       </div>
