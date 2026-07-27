@@ -1,10 +1,24 @@
-import { Body, Controller, Get, Post, Request } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Request, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as multer from 'multer';
+import { extname } from 'path';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Perfil } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 import { DiscenteService } from './discente.service';
 import { AbrirProtocoloDto } from './dto/abrir-protocolo.dto';
+import { AbrirRequerimentoDto } from './dto/abrir-requerimento.dto';
+
+const UPLOAD_DIR_REQUERIMENTOS = './uploads/requerimentos';
+const TIPOS_PERMITIDOS = /\/(jpg|jpeg|png|webp|pdf)$/;
+
+interface ArquivoUpload {
+  originalname: string;
+  filename: string;
+  size: number;
+  mimetype: string;
+}
 
 /**
  * Autoatendimento do aluno ("Menu Discente" — ver components/dashboard/RightPanel.tsx
@@ -98,5 +112,44 @@ export class DiscenteController {
   @ApiOperation({ summary: 'Minhas horas complementares (feitas/total do curso) + lançamentos' })
   horasComplementares(@Request() req: any) {
     return this.service.horasComplementares(req.user.id);
+  }
+
+  @Tela('discente-requerimentos')
+  @Get('requerimentos/tipos')
+  @ApiOperation({ summary: 'Tabela de preços dos requerimentos (só os ativos)' })
+  tiposRequerimento() {
+    return this.service.tiposRequerimento();
+  }
+
+  @Tela('discente-requerimentos')
+  @Get('requerimentos')
+  @ApiOperation({ summary: 'Meus requerimentos (abertura/consulta)' })
+  meusRequerimentos(@Request() req: any) {
+    return this.service.meusRequerimentos(req.user.id);
+  }
+
+  @Tela('discente-requerimentos')
+  @Post('requerimentos')
+  @ApiOperation({ summary: 'Abrir novo requerimento a partir da tabela de preços (anexo obrigatório pra tipos com exigeAnexo, ex: Hora Complementar)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('arquivo', {
+      storage: multer.diskStorage({
+        destination: UPLOAD_DIR_REQUERIMENTOS,
+        filename: (_req: any, file: ArquivoUpload, cb: (error: Error | null, filename: string) => void) => {
+          cb(null, `${Date.now()}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      limits: { fileSize: 20 * 1024 * 1024 }, // 20MB — foto de câmera de celular moderno facilmente passa de 10MB
+      fileFilter: (_req: any, file: ArquivoUpload, cb: (error: Error | null, acceptFile: boolean) => void) => {
+        if (!TIPOS_PERMITIDOS.test(file.mimetype)) {
+          return cb(new Error('Envie um arquivo PDF, JPG, PNG ou WEBP.'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  abrirRequerimento(@Body() dto: AbrirRequerimentoDto, @UploadedFile() arquivo: ArquivoUpload | undefined, @Request() req: any) {
+    return this.service.abrirRequerimento(req.user.id, dto, arquivo);
   }
 }

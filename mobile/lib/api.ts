@@ -48,6 +48,29 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   return res.json() as Promise<T>;
 }
 
+/** Upload multipart (ex.: certificado de Hora Complementar anexado num
+ * Requerimento). Não define Content-Type na mão — o fetch precisa gerar o
+ * boundary sozinho a partir do FormData. */
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  const token = getCurrentToken();
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}) as { message?: string | string[] });
+    const msg = (body as { message?: string | string[] }).message;
+    throw new ApiError(Array.isArray(msg) ? msg.join('; ') : (msg ?? `Erro ${res.status}`), res.status);
+  }
+
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
 /** Monta a URL absoluta de uma tela do frontend web (usado pela WebView de
  * documentos — ver ADR no README sobre impressão/PDF no V1). */
 export function webUrl(path: string): string {

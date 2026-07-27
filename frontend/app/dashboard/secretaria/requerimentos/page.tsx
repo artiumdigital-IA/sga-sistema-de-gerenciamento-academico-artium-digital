@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiFileUrl } from '@/lib/api';
 
 const TIPOS: Record<string, string> = {
   DECLARACAO_MATRICULA: 'Declaração de Matrícula',
@@ -21,6 +21,8 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELADO: 'var(--gray-500)',
 };
 
+type TipoCatalogo = { id: string; nome: string; taxa: number | string; observacaoTaxa: string | null };
+
 type Requerimento = {
   id: string;
   tipo: string;
@@ -29,7 +31,16 @@ type Requerimento = {
   resposta?: string;
   criadoEm: string;
   aluno: { id: string; nome: string; ra: string; curso?: { nome: string } };
+  tipoCatalogo?: TipoCatalogo | null;
+  arquivoNome?: string | null;
+  arquivoUrl?: string | null;
 };
+
+function formatarTaxa(t: TipoCatalogo): string {
+  if (Number(t.taxa) === 0) return t.observacaoTaxa ? `Gratuito (${t.observacaoTaxa})` : 'Gratuito';
+  const valor = `R$ ${Number(t.taxa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return t.observacaoTaxa ? `${valor} (${t.observacaoTaxa})` : valor;
+}
 
 type Aluno = { id: string; nome: string; ra: string };
 
@@ -114,8 +125,15 @@ function ModalResponder({ req, onClose, onSaved }: { req: Requerimento; onClose:
     <div style={overlay} onClick={onClose}>
       <div style={box} onClick={e => e.stopPropagation()}>
         <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Responder Requerimento</h3>
-        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--gray-500)' }}>{req.aluno.nome} — {TIPOS[req.tipo] ?? req.tipo}</p>
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--gray-500)' }}>{req.aluno.nome} — {req.tipoCatalogo?.nome ?? TIPOS[req.tipo] ?? req.tipo}</p>
         {req.descricao && <p style={{ margin: '0 0 16px', fontSize: 13, background: 'var(--gray-50)', padding: '8px 12px', borderRadius: 4 }}>{req.descricao}</p>}
+        {req.arquivoUrl && (
+          <p style={{ margin: '0 0 16px', fontSize: 13 }}>
+            <a href={apiFileUrl(req.arquivoUrl) ?? '#'} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-dark)' }}>
+              📎 Ver certificado anexado{req.arquivoNome ? ` (${req.arquivoNome})` : ''}
+            </a>
+          </p>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <select value={status} onChange={e => setStatus(e.target.value)}
             style={{ padding: '6px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }}>
@@ -196,6 +214,7 @@ export default function RequerimentosPage() {
             <tr>
               <th style={th}>Aluno</th>
               <th style={th}>Tipo</th>
+              <th style={th}>Taxa</th>
               <th style={th}>Status</th>
               <th style={th}>Aberto em</th>
               <th style={th}>Ações</th>
@@ -203,16 +222,17 @@ export default function RequerimentosPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--gray-400)' }}>Carregando...</td></tr>
+              <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--gray-400)' }}>Carregando...</td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum requerimento</td></tr>
+              <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum requerimento</td></tr>
             ) : items.map(r => (
               <tr key={r.id}>
                 <td style={td}>
                   <div style={{ fontWeight: 500 }}>{r.aluno.nome}</div>
                   <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>RA {r.aluno.ra} · {r.aluno.curso?.nome ?? ''}</div>
                 </td>
-                <td style={td}>{TIPOS[r.tipo] ?? r.tipo}</td>
+                <td style={td}>{r.tipoCatalogo?.nome ?? TIPOS[r.tipo] ?? r.tipo}</td>
+                <td style={td}>{r.tipoCatalogo ? formatarTaxa(r.tipoCatalogo) : '—'}</td>
                 <td style={td}>
                   <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: STATUS_COLORS[r.status] + '22', color: STATUS_COLORS[r.status] }}>
                     {r.status.replace('_', ' ')}

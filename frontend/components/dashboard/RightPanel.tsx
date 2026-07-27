@@ -24,6 +24,7 @@ const MENU_DISCENTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Quadro de Horários', href: '/dashboard/discente/horarios' },
     { label: 'Pendências de Documentos', href: '/dashboard/discente/documentos' },
     { label: 'Protocolo (Abertura/Consulta)', href: '/dashboard/discente/protocolo' },
+    { label: 'Requerimentos', href: '/dashboard/discente/requerimentos' },
     { label: 'Carteira de Estudante', href: '/dashboard/discente/carteira' },
     { label: 'Minha Renovação', href: '/dashboard/discente/renovacao' },
     { label: 'Disciplinas e Avaliações', href: '/dashboard/discente/disciplinas' },
@@ -104,6 +105,7 @@ const MENU_MASTER_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Permissões de Tela', href: '/dashboard/admin/permissoes' },
     { label: 'Relatórios Master', href: '/dashboard/admin/relatorios-master' },
     { label: 'Importação de Dados Legados', href: '/dashboard/admin/importacao-legado' },
+    { label: 'Requerimentos', href: '/dashboard/admin/requerimentos-tabela' },
   ],
 };
 
@@ -147,6 +149,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Transferência de Turma', href: '/dashboard/academico/transferencia' },
     { label: 'Mudança de Situação', href: '/dashboard/academico/alunos' },
     { label: 'Motivos de Transferências & Cancelamentos', href: '/dashboard/secretaria/motivos-transferencia' },
+    { label: 'Requerimentos', href: '/dashboard/secretaria/requerimentos' },
     { label: 'Consulta Log de Inscrições', href: '/dashboard/admin/log' },
     { label: 'Ordenação Turmas', href: '/dashboard/academico/ofertas' },
     { label: 'Manutenção de Frequência', href: '/dashboard/academico/frequencia' },

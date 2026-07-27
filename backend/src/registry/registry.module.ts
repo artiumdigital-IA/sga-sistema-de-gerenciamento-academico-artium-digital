@@ -14,10 +14,12 @@ import { MotivoTransferenciaModule } from './motivo-transferencia/motivo-transfe
 import { TipoChamadoManutencaoModule } from './tipo-chamado-manutencao/tipo-chamado-manutencao.module';
 import { ChamadoManutencaoModule } from './chamado-manutencao/chamado-manutencao.module';
 import { ProvaGeradaModule } from './prova-gerada/prova-gerada.module';
+import { TipoRequerimentoModule } from './tipo-requerimento/tipo-requerimento.module';
 
 @Module({
   imports: [
     RequerimentoModule,
+    TipoRequerimentoModule,
     DocumentoModule,
     AvisoModule,
     DocumentoAlunoModule,

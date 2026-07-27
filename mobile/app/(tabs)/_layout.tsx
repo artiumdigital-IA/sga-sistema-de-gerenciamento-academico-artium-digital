@@ -83,6 +83,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="avisos" options={opcoesTelaAntiga('Avisos')} />
       <Tabs.Screen name="biblioteca" options={opcoesTelaAntiga('Biblioteca')} />
       <Tabs.Screen name="horas-complementares" options={opcoesTelaAntiga('Horas Complementares')} />
+      <Tabs.Screen name="requerimentos" options={opcoesTelaAntiga('Requerimentos')} />
     </Tabs>
   );
 }

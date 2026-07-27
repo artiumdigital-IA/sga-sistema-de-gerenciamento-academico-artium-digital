@@ -10,7 +10,7 @@
  * commit be01ffd) porque não dá pra pedir o painel/carteira de outro aluno
  * trocando um id na URL.
  */
-import { apiFetch } from './api';
+import { apiFetch, apiUpload } from './api';
 
 export type Painel = {
   aluno: { id: string; ra: string; nome: string; curso: string; situacaoVinculo: string; fotoUrl: string | null };
@@ -82,6 +82,61 @@ export function getPainel() {
 
 export function getHorasComplementares() {
   return apiFetch<HorasComplementares>('/discente/horas-complementares');
+}
+
+export type TipoRequerimento = {
+  id: string;
+  nome: string;
+  prazoDias: number | null;
+  local: string | null;
+  taxa: number;
+  observacaoTaxa: string | null;
+  exigeAnexo: boolean;
+};
+
+export type Requerimento = {
+  id: string;
+  tipo: string;
+  descricao: string | null;
+  status: string;
+  resposta: string | null;
+  criadoEm: string;
+  tipoCatalogo: TipoRequerimento | null;
+  arquivoNome: string | null;
+  arquivoUrl: string | null;
+};
+
+export function getTiposRequerimento() {
+  return apiFetch<TipoRequerimento[]>('/discente/requerimentos/tipos');
+}
+
+export function getMeusRequerimentos() {
+  return apiFetch<Requerimento[]>('/discente/requerimentos');
+}
+
+export function abrirRequerimento(dto: { tipoCatalogoId: string; descricao?: string }) {
+  return apiFetch<Requerimento>('/discente/requerimentos', { method: 'POST', body: JSON.stringify(dto) });
+}
+
+/** Igual a abrirRequerimento, mas com anexo (certificado foto/PDF) —
+ * obrigatório pra tipos com `exigeAnexo` (ex: Hora Complementar).
+ * `arquivo` é o resultado de expo-image-picker/expo-document-picker. */
+export function abrirRequerimentoComArquivo(dto: {
+  tipoCatalogoId: string;
+  descricao?: string;
+  arquivo: { uri: string; name: string; type: string };
+}) {
+  const formData = new FormData();
+  formData.append('tipoCatalogoId', dto.tipoCatalogoId);
+  if (dto.descricao) formData.append('descricao', dto.descricao);
+  formData.append('arquivo', dto.arquivo as unknown as Blob);
+  return apiUpload<Requerimento>('/discente/requerimentos', formData);
+}
+
+export function formatarTaxa(t: TipoRequerimento): string {
+  if (Number(t.taxa) === 0) return t.observacaoTaxa ? `Gratuito (${t.observacaoTaxa})` : 'Gratuito';
+  const valor = `R$ ${t.taxa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return t.observacaoTaxa ? `${valor} (${t.observacaoTaxa})` : valor;
 }
 
 export function getCarteira() {
