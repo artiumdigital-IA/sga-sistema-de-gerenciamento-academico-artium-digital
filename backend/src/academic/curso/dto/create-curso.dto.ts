@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsString, Min, MinLength } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Grau, Modalidade } from '@prisma/client';
 
@@ -29,4 +29,10 @@ export class CreateCursoDto {
   @IsInt()
   @Min(1)
   prazoIntegralizacaoSemestres: number;
+
+  @ApiProperty({ example: 200, description: 'Horas complementares exigidas pra integralização (certificados/atividades)' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  cargaHorariaComplementarObrigatoria?: number;
 }

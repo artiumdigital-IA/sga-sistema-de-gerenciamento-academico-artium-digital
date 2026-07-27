@@ -27,6 +27,7 @@ model Curso {
   codigoEmec                  String   @unique // [CENSO]
   cargaHorariaTotal           Int
   prazoIntegralizacaoSemestres Int
+  cargaHorariaComplementarObrigatoria Int @default(0) // horas complementares exigidas pra integralização (certificados/atividades)
   status                      CursoStatus @default(ATIVO)
 
   criadoEm   DateTime @default(now())
@@ -213,6 +214,7 @@ model Aluno {
   observacoesFinanceiras ObservacaoFinanceira[]
   bolsas           Bolsista[]
   capturasProva    CapturaProva[]
+  horasComplementares HoraComplementar[]
 
   @@map("alunos")
 }
@@ -236,6 +238,7 @@ model Professor {
   capturasProva CapturaProva[]
   provasGeradas ProvaGerada[]
   dadosFolha DadosFolhaProfessor?
+  horasComplementaresLancadas HoraComplementar[]
 
   @@map("professores")
 }
@@ -807,6 +810,29 @@ model CapturaProva {
   professor Professor @relation(fields: [professorId], references: [id])
 
   @@map("capturas_prova")
+}
+
+// Horas Complementares (Jul/2026) — professor captura o certificado (foto/PDF)
+// de uma atividade extracurricular do aluno e lança a quantidade de horas.
+// Sem vínculo com Oferta de propósito: é uma atividade do curso como um todo,
+// não de uma disciplina específica (diferente de CapturaProva). "Feitas" pro
+// aluno é a soma de `horas` de todos os lançamentos; "total" é
+// Curso.cargaHorariaComplementarObrigatoria.
+model HoraComplementar {
+  id          String   @id @default(uuid())
+  alunoId     String
+  professorId String
+  horas       Int
+  nomeArquivo String
+  url         String
+  tamanho     Int
+  observacoes String?
+  criadoEm    DateTime @default(now())
+
+  aluno     Aluno     @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  professor Professor @relation(fields: [professorId], references: [id])
+
+  @@map("horas_complementares")
 }
 
 // Gerador de Prova (Jul/2026) — professor monta cabeçalho + questões (múltipla

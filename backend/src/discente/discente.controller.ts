@@ -92,4 +92,11 @@ export class DiscenteController {
   financeiro(@Request() req: any) {
     return this.service.financeiro(req.user.id);
   }
+
+  @Tela('discente-aac')
+  @Get('horas-complementares')
+  @ApiOperation({ summary: 'Minhas horas complementares (feitas/total do curso) + lançamentos' })
+  horasComplementares(@Request() req: any) {
+    return this.service.horasComplementares(req.user.id);
+  }
 }

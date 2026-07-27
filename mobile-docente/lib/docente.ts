@@ -98,6 +98,46 @@ export function removerCaptura(id: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Horas Complementares (certificado de atividade extracurricular do aluno).
+// ---------------------------------------------------------------------------
+
+export type HoraComplementar = {
+  id: string;
+  alunoId: string;
+  horas: number;
+  nomeArquivo: string;
+  url: string;
+  tamanho: number;
+  observacoes: string | null;
+  criadoEm: string;
+  aluno: { nome: string; ra: string };
+};
+
+export function getHorasComplementares(filtro: { alunoId?: string }) {
+  const qs = filtro.alunoId ? `?alunoId=${encodeURIComponent(filtro.alunoId)}` : '';
+  return apiFetch<HoraComplementar[]>(`/docente/horas-complementares${qs}`);
+}
+
+/** `arquivo` é o resultado de expo-image-picker/expo-document-picker: { uri, name, type }. */
+export function criarHoraComplementar(dados: {
+  alunoId: string;
+  horas: number;
+  observacoes?: string;
+  arquivo: { uri: string; name: string; type: string };
+}) {
+  const formData = new FormData();
+  formData.append('alunoId', dados.alunoId);
+  formData.append('horas', String(dados.horas));
+  if (dados.observacoes) formData.append('observacoes', dados.observacoes);
+  formData.append('arquivo', dados.arquivo as unknown as Blob);
+  return apiUpload<HoraComplementar>('/docente/horas-complementares', formData);
+}
+
+export function removerHoraComplementar(id: string) {
+  return apiFetch<{ message: string }>(`/docente/horas-complementares/${id}`, { method: 'DELETE' });
+}
+
+// ---------------------------------------------------------------------------
 // Aviso para Turma.
 // ---------------------------------------------------------------------------
 

@@ -59,8 +59,29 @@ export type ContratoFinanceiro = {
   parcelas: Parcela[];
 };
 
+export type LancamentoHoraComplementar = {
+  id: string;
+  horas: number;
+  nomeArquivo: string;
+  url: string;
+  observacoes: string | null;
+  criadoEm: string;
+  professor: string;
+};
+
+export type HorasComplementares = {
+  feitas: number;
+  total: number;
+  percentual: number;
+  lancamentos: LancamentoHoraComplementar[];
+};
+
 export function getPainel() {
   return apiFetch<Painel>('/discente/painel');
+}
+
+export function getHorasComplementares() {
+  return apiFetch<HorasComplementares>('/discente/horas-complementares');
 }
 
 export function getCarteira() {

@@ -129,7 +129,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'discente-renovacao', label: 'Minha Renovação (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/renovacao'] },
   { chave: 'discente-conquistas', label: 'Conquistas e Avaliações (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/conquistas'] },
   { chave: 'discente-provas-polo', label: 'Provas no Polo (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/provas-polo'] },
-  { chave: 'discente-aac', label: 'Horas AAC (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/aac'] },
+  { chave: 'discente-aac', label: 'Horas Complementares', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/aac'] },
   { chave: 'discente-certificacoes', label: 'Certificações (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/certificacoes'] },
   { chave: 'discente-conteudos-extras', label: 'Conteúdos Extras (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/conteudos-extras'] },
   { chave: 'discente-carreiras', label: 'Carreiras (placeholder)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/carreiras'] },
@@ -142,6 +142,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'docente-captura-prova', label: 'Captura de Prova', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/captura-prova'] },
   { chave: 'docente-aviso-turma', label: 'Aviso para Turma', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/aviso-turma'] },
   { chave: 'docente-gerador-prova', label: 'Gerador de Prova', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/gerador-prova'] },
+  { chave: 'docente-horas-complementares', label: 'Horas Complementares', grupo: 'Menu Docente', prefixos: ['/dashboard/docente/horas-complementares'] },
 ];
 
 /** Acha a tela dona de um href (ignorando querystring), comparando prefixo. */

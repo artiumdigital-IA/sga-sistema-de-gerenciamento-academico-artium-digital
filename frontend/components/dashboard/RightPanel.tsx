@@ -30,7 +30,7 @@ const MENU_DISCENTE_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Notas e Histórico', href: '/dashboard/discente/historico' },
     { label: 'Conquistas e Avaliações', href: '/dashboard/discente/conquistas' },
     { label: 'Provas no Polo', href: '/dashboard/discente/provas-polo' },
-    { label: 'Horas AAC', href: '/dashboard/discente/aac' },
+    { label: 'Horas Complementares', href: '/dashboard/discente/aac' },
     { label: 'Certificações', href: '/dashboard/discente/certificacoes' },
     { label: 'Conteúdos Extras', href: '/dashboard/discente/conteudos-extras' },
     { label: 'Financeiro', href: '/dashboard/discente/financeiro' },

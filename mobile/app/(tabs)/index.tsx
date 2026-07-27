@@ -17,12 +17,13 @@ import { Cartao, CartaoIcone, Carregando, GradeCartoes, MensagemErro } from '../
  * grade "Meu curso". Ver lib/discente.ts pros tipos de /discente/painel.
  *
  * Cartões sem dado real no backend (Calendário acadêmico, Conquistas e
- * recompensas, Provas no polo, Horas AAC, Certificações, Conteúdos extras,
+ * recompensas, Provas no polo, Certificações, Conteúdos extras,
  * "Minha renovação") mostram "Em breve" ao tocar -- pedido explícito do
  * usuário pra manter o layout igual à referência mesmo nas partes que a
  * FIURJ ainda não tem pronto. "Disciplinas e avaliações", "Notas e
- * histórico" e "Documentos" são reais e levam pras telas antigas
- * (boletim/historico/documentos, ver app/(tabs)/_layout.tsx).
+ * histórico", "Documentos", "Biblioteca" e "Horas Complementares" (antiga
+ * "Horas AAC") são reais e levam pras telas próprias (ver
+ * app/(tabs)/_layout.tsx).
  */
 export default function InicioScreen() {
   const router = useRouter();
@@ -140,7 +141,7 @@ export default function InicioScreen() {
           />
           <CartaoIcone icone="map-pin" titulo="Provas no polo" aoPressionar={() => emBreve('Provas no polo')} />
           <CartaoIcone icone="refresh-cw" titulo="Minha renovação" aoPressionar={() => emBreve('Minha renovação')} />
-          <CartaoIcone icone="clock" titulo="Horas AAC" aoPressionar={() => emBreve('Horas AAC')} />
+          <CartaoIcone icone="clock" titulo="Horas Complementares" aoPressionar={() => router.push('/horas-complementares')} />
           <CartaoIcone icone="award" titulo="Certificações" aoPressionar={() => emBreve('Certificações')} />
           <CartaoIcone icone="sidebar" titulo="Conteúdos extras" aoPressionar={() => emBreve('Conteúdos extras')} />
         </GradeCartoes>

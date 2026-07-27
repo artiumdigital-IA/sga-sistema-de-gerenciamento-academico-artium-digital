@@ -4,8 +4,9 @@ import { theme } from '../../lib/theme';
 import { CartaoIcone, GradeCartoes } from '../../lib/ui';
 
 /**
- * Docentes On — hub com os 6 atalhos do dia a dia do professor: Pauta,
- * Notas, Captura de Prova, Alunos, Aviso para Turma, Chamado de Manutenção.
+ * Docentes On — hub com os 7 atalhos do dia a dia do professor: Pauta,
+ * Notas, Captura de Prova, Alunos, Aviso para Turma, Horas Complementares,
+ * Chamado de Manutenção.
  * Mesmo visual da grade "Meu curso" do app do aluno (CartaoIcone/GradeCartoes,
  * ver lib/ui.tsx). Cada cartão navega pra uma tela "de dados" própria (ver
  * app/(tabs)/_layout.tsx — todas têm href: null, então só são alcançadas
@@ -27,6 +28,7 @@ export default function DocentesOnScreen() {
         <CartaoIcone icone="camera" titulo="Captura de Prova" aoPressionar={() => router.push('/captura-prova')} />
         <CartaoIcone icone="users" titulo="Alunos" aoPressionar={() => router.push('/alunos')} />
         <CartaoIcone icone="bell" titulo="Aviso para Turma" aoPressionar={() => router.push('/aviso-turma')} />
+        <CartaoIcone icone="award" titulo="Horas Complementares" aoPressionar={() => router.push('/horas-complementares')} />
         <CartaoIcone icone="tool" titulo="Chamado de Manutenção" aoPressionar={() => router.push('/chamados')} />
       </GradeCartoes>
     </ScrollView>
