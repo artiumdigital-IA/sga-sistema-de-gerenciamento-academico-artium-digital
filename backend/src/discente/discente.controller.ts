@@ -140,7 +140,7 @@ export class DiscenteController {
           cb(null, `${Date.now()}${extname(file.originalname).toLowerCase()}`);
         },
       }),
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+      limits: { fileSize: 20 * 1024 * 1024 }, // 20MB — foto de câmera de celular moderno facilmente passa de 10MB
       fileFilter: (_req: any, file: ArquivoUpload, cb: (error: Error | null, acceptFile: boolean) => void) => {
         if (!TIPOS_PERMITIDOS.test(file.mimetype)) {
           return cb(new Error('Envie um arquivo PDF, JPG, PNG ou WEBP.'), false);
