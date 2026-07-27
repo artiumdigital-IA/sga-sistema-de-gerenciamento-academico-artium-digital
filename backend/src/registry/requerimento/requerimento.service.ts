@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateRequerimentoDto } from './dto/create-requerimento.dto';
 import { UpdateRequerimentoDto } from './dto/update-requerimento.dto';
+
+interface ArquivoUpload {
+  originalname: string;
+  filename: string;
+  size: number;
+}
 
 @Injectable()
 export class RequerimentoService {
@@ -23,13 +29,28 @@ export class RequerimentoService {
    * item da tabela de preços (ver TipoRequerimentoCatalogo). `tipo` (enum
    * antigo) grava OUTRO só pra manter a coluna não-nula; quem quiser saber o
    * tipo de verdade lê `tipoCatalogo`. Chamado por DiscenteService — nunca
-   * recebe alunoId de fora, sempre já vem resolvido do usuário logado. */
-  async abrirPorAluno(alunoId: string, tipoCatalogoId: string, descricao: string | undefined, usuarioId?: string) {
+   * recebe alunoId de fora, sempre já vem resolvido do usuário logado.
+   *
+   * `arquivo` é obrigatório quando o tipo escolhido tem `exigeAnexo` (ex:
+   * Hora Complementar — o aluno precisa anexar o certificado). Validado aqui
+   * no backend também, não só na UI, pra não depender só do front pra isso. */
+  async abrirPorAluno(alunoId: string, tipoCatalogoId: string, descricao: string | undefined, arquivo: ArquivoUpload | undefined, usuarioId?: string) {
     const tipoCatalogo = await this.prisma.tipoRequerimentoCatalogo.findUnique({ where: { id: tipoCatalogoId } });
     if (!tipoCatalogo || !tipoCatalogo.ativo) throw new NotFoundException('Tipo de requerimento não encontrado.');
+    if (tipoCatalogo.exigeAnexo && !arquivo) {
+      throw new BadRequestException('Anexe o certificado (foto ou PDF) pra solicitar este requerimento.');
+    }
 
     const item = await (this.prisma as any).requerimento.create({
-      data: { alunoId, tipo: 'OUTRO', tipoCatalogoId, descricao },
+      data: {
+        alunoId,
+        tipo: 'OUTRO',
+        tipoCatalogoId,
+        descricao,
+        arquivoNome: arquivo?.originalname,
+        arquivoUrl: arquivo ? `/uploads/requerimentos/${arquivo.filename}` : undefined,
+        arquivoTamanho: arquivo?.size,
+      },
       include: { aluno: { select: { id: true, nome: true, ra: true } }, tipoCatalogo: true },
     });
     await this.audit.log({ usuarioId, acao: 'CREATE', entidade: 'Requerimento', entidadeId: item.id, dadosDepois: item });

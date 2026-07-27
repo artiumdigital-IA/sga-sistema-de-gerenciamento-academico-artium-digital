@@ -256,8 +256,8 @@ export class DiscenteService {
     return this.requerimentoService.findAll(alunoId);
   }
 
-  async abrirRequerimento(usuarioId: string, dto: AbrirRequerimentoDto) {
+  async abrirRequerimento(usuarioId: string, dto: AbrirRequerimentoDto, arquivo?: { originalname: string; filename: string; size: number }) {
     const alunoId = await this.meuAlunoId(usuarioId);
-    return this.requerimentoService.abrirPorAluno(alunoId, dto.tipoCatalogoId, dto.descricao, usuarioId);
+    return this.requerimentoService.abrirPorAluno(alunoId, dto.tipoCatalogoId, dto.descricao, arquivo, usuarioId);
   }
 }

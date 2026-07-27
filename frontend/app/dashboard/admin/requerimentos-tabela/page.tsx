@@ -9,6 +9,7 @@ interface TipoRequerimento {
   local: string | null;
   taxa: number | string;
   observacaoTaxa: string | null;
+  exigeAnexo: boolean;
   ativo: boolean;
   ordem: number;
 }
@@ -20,9 +21,10 @@ type FormData = {
   taxa: string;
   observacaoTaxa: string;
   ordem: string;
+  exigeAnexo: boolean;
 };
 
-const EMPTY: FormData = { nome: '', prazoDias: '', local: '', taxa: '', observacaoTaxa: '', ordem: '0' };
+const EMPTY: FormData = { nome: '', prazoDias: '', local: '', taxa: '', observacaoTaxa: '', ordem: '0', exigeAnexo: false };
 
 const INPUT: React.CSSProperties = { padding: '8px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, boxSizing: 'border-box', width: '100%' };
 const LABEL: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 };
@@ -30,6 +32,7 @@ const BTN_P: React.CSSProperties = { padding: '8px 16px', borderRadius: 5, borde
 const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 12, background: 'var(--white)', color: 'var(--gray-700)' };
 
 function formatarTaxa(t: TipoRequerimento): string {
+  if (Number(t.taxa) === 0) return t.observacaoTaxa ? `Gratuito (${t.observacaoTaxa})` : 'Gratuito';
   const valor = Number(t.taxa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return t.observacaoTaxa ? `${valor} (${t.observacaoTaxa})` : valor;
 }
@@ -45,13 +48,14 @@ function ModalForm({ item, onClose, onSaved }: { item: TipoRequerimento | 'novo'
           taxa: String(item.taxa),
           observacaoTaxa: item.observacaoTaxa ?? '',
           ordem: String(item.ordem),
+          exigeAnexo: item.exigeAnexo,
         }
       : EMPTY,
   );
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
-  const set = (k: keyof FormData, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: keyof FormData, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
   async function salvar() {
     if (!form.nome.trim() || !form.taxa.trim()) { setErro('Preencha nome e taxa.'); return; }
@@ -64,6 +68,7 @@ function ModalForm({ item, onClose, onSaved }: { item: TipoRequerimento | 'novo'
       taxa: Number(form.taxa.replace(',', '.')),
       observacaoTaxa: form.observacaoTaxa.trim() || undefined,
       ordem: form.ordem.trim() ? Number(form.ordem) : undefined,
+      exigeAnexo: form.exigeAnexo,
     };
     try {
       if (editando) {
@@ -113,6 +118,10 @@ function ModalForm({ item, onClose, onSaved }: { item: TipoRequerimento | 'novo'
             <label style={LABEL}>Ordem de exibição</label>
             <input style={INPUT} type="number" value={form.ordem} onChange={e => set('ordem', e.target.value)} />
           </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--gray-700)' }}>
+            <input type="checkbox" checked={form.exigeAnexo} onChange={e => set('exigeAnexo', e.target.checked)} />
+            Exige que o aluno anexe um certificado (foto/PDF) ao solicitar
+          </label>
           {erro && <p style={{ color: '#dc2626', fontSize: 12, margin: 0 }}>{erro}</p>}
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 18 }}>
@@ -167,17 +176,18 @@ function ModalTabela({ onClose }: { onClose: () => void }) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: 'var(--gray-50)' }}>
-                  {['Requerimento', 'Prazo (dias)', 'Local', 'Taxa (R$)', 'Status', ''].map(h => <th key={h} style={th}>{h}</th>)}
+                  {['Requerimento', 'Prazo (dias)', 'Local', 'Taxa (R$)', 'Anexo', 'Status', ''].map(h => <th key={h} style={th}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
-                {itens.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum requerimento cadastrado.</td></tr>}
+                {itens.length === 0 && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum requerimento cadastrado.</td></tr>}
                 {itens.map(t => (
                   <tr key={t.id}>
                     <td style={td}>{t.nome}</td>
                     <td style={td}>{t.prazoDias ?? '—'}</td>
                     <td style={td}>{t.local ?? '—'}</td>
                     <td style={td}>{formatarTaxa(t)}</td>
+                    <td style={td}>{t.exigeAnexo ? 'Sim' : '—'}</td>
                     <td style={td}>
                       <button onClick={() => alternarAtivo(t)} style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, border: 'none', cursor: 'pointer', background: t.ativo ? '#d1fae5' : 'var(--gray-100)', color: t.ativo ? '#065f46' : 'var(--gray-500)' }}>
                         {t.ativo ? 'Ativo' : 'Inativo'}

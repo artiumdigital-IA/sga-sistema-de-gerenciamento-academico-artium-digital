@@ -684,6 +684,9 @@ model Requerimento {
   descricao      String?             @db.Text
   status         StatusRequerimento  @default(ABERTO)
   resposta       String?             @db.Text
+  arquivoNome    String?
+  arquivoUrl     String?
+  arquivoTamanho Int?
   criadoEm       DateTime            @default(now())
   atualizadoEm   DateTime            @updatedAt
 
@@ -705,6 +708,7 @@ model TipoRequerimentoCatalogo {
   local          String?
   taxa           Decimal  @db.Decimal(10, 2)
   observacaoTaxa String?
+  exigeAnexo     Boolean  @default(false) // ex: Hora Complementar — aluno precisa anexar o certificado (foto/PDF) ao solicitar
   ativo          Boolean  @default(true)
   ordem          Int      @default(0)
 

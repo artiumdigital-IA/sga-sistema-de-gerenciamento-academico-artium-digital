@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiFileUrl } from '@/lib/api';
 
 const TIPOS: Record<string, string> = {
   DECLARACAO_MATRICULA: 'Declaração de Matrícula',
@@ -32,10 +32,13 @@ type Requerimento = {
   criadoEm: string;
   aluno: { id: string; nome: string; ra: string; curso?: { nome: string } };
   tipoCatalogo?: TipoCatalogo | null;
+  arquivoNome?: string | null;
+  arquivoUrl?: string | null;
 };
 
 function formatarTaxa(t: TipoCatalogo): string {
-  const valor = Number(t.taxa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (Number(t.taxa) === 0) return t.observacaoTaxa ? `Gratuito (${t.observacaoTaxa})` : 'Gratuito';
+  const valor = `R$ ${Number(t.taxa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return t.observacaoTaxa ? `${valor} (${t.observacaoTaxa})` : valor;
 }
 
@@ -124,6 +127,13 @@ function ModalResponder({ req, onClose, onSaved }: { req: Requerimento; onClose:
         <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Responder Requerimento</h3>
         <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--gray-500)' }}>{req.aluno.nome} — {req.tipoCatalogo?.nome ?? TIPOS[req.tipo] ?? req.tipo}</p>
         {req.descricao && <p style={{ margin: '0 0 16px', fontSize: 13, background: 'var(--gray-50)', padding: '8px 12px', borderRadius: 4 }}>{req.descricao}</p>}
+        {req.arquivoUrl && (
+          <p style={{ margin: '0 0 16px', fontSize: 13 }}>
+            <a href={apiFileUrl(req.arquivoUrl) ?? '#'} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-dark)' }}>
+              📎 Ver certificado anexado{req.arquivoNome ? ` (${req.arquivoNome})` : ''}
+            </a>
+          </p>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <select value={status} onChange={e => setStatus(e.target.value)}
             style={{ padding: '6px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }}>
@@ -222,7 +232,7 @@ export default function RequerimentosPage() {
                   <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>RA {r.aluno.ra} · {r.aluno.curso?.nome ?? ''}</div>
                 </td>
                 <td style={td}>{r.tipoCatalogo?.nome ?? TIPOS[r.tipo] ?? r.tipo}</td>
-                <td style={td}>{r.tipoCatalogo ? `R$ ${formatarTaxa(r.tipoCatalogo)}` : '—'}</td>
+                <td style={td}>{r.tipoCatalogo ? formatarTaxa(r.tipoCatalogo) : '—'}</td>
                 <td style={td}>
                   <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: STATUS_COLORS[r.status] + '22', color: STATUS_COLORS[r.status] }}>
                     {r.status.replace('_', ' ')}

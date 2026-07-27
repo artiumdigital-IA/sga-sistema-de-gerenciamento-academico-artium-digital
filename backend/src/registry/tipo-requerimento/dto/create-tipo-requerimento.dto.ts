@@ -36,6 +36,11 @@ export class CreateTipoRequerimentoDto {
   @IsBoolean()
   ativo?: boolean;
 
+  @ApiPropertyOptional({ description: 'Exige que o aluno anexe um certificado (foto/PDF) ao solicitar — ex: Hora Complementar' })
+  @IsOptional()
+  @IsBoolean()
+  exigeAnexo?: boolean;
+
   @ApiPropertyOptional({ example: 0, description: 'Ordem de exibição na tabela' })
   @IsOptional()
   @Type(() => Number)

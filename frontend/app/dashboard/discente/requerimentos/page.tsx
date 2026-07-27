@@ -1,6 +1,6 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiFetch, apiUpload } from '@/lib/api';
 
 interface TipoRequerimento {
   id: string;
@@ -9,6 +9,7 @@ interface TipoRequerimento {
   local: string | null;
   taxa: number | string;
   observacaoTaxa: string | null;
+  exigeAnexo: boolean;
 }
 interface Requerimento {
   id: string;
@@ -27,7 +28,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function formatarTaxa(t: TipoRequerimento): string {
-  const valor = Number(t.taxa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (Number(t.taxa) === 0) return t.observacaoTaxa ? `Gratuito (${t.observacaoTaxa})` : 'Gratuito';
+  const valor = `R$ ${Number(t.taxa).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return t.observacaoTaxa ? `${valor} (${t.observacaoTaxa})` : valor;
 }
 
@@ -73,7 +75,9 @@ export default function RequerimentosDiscentePage() {
   const [mostrarTabela, setMostrarTabela] = useState(false);
   const [tipoCatalogoId, setTipoCatalogoId] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [arquivo, setArquivo] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const arquivoInputRef = useRef<HTMLInputElement>(null);
 
   const carregar = useCallback(() => {
     apiFetch<Requerimento[]>('/discente/requerimentos').then(setRequerimentos).catch(e => setErro(e.message ?? 'Erro ao carregar requerimentos.'));
@@ -84,12 +88,28 @@ export default function RequerimentosDiscentePage() {
     apiFetch<TipoRequerimento[]>('/discente/requerimentos/tipos').then(setTipos).catch(() => setTipos([]));
   }, [carregar]);
 
+  const tipoSelecionado = tipos.find(t => t.id === tipoCatalogoId);
+
   async function abrirRequerimento() {
     if (!tipoCatalogoId) return;
+    if (tipoSelecionado?.exigeAnexo && !arquivo) {
+      setErro('Anexe o certificado (foto ou PDF) pra solicitar este requerimento.');
+      return;
+    }
+    setErro('');
     setEnviando(true);
     try {
-      await apiFetch('/discente/requerimentos', { method: 'POST', body: JSON.stringify({ tipoCatalogoId, descricao: descricao.trim() || undefined }) });
-      setTipoCatalogoId(''); setDescricao(''); setMostrarForm(false);
+      if (arquivo) {
+        const fd = new FormData();
+        fd.append('tipoCatalogoId', tipoCatalogoId);
+        if (descricao.trim()) fd.append('descricao', descricao.trim());
+        fd.append('arquivo', arquivo);
+        await apiUpload('/discente/requerimentos', fd);
+      } else {
+        await apiFetch('/discente/requerimentos', { method: 'POST', body: JSON.stringify({ tipoCatalogoId, descricao: descricao.trim() || undefined }) });
+      }
+      setTipoCatalogoId(''); setDescricao(''); setArquivo(null); setMostrarForm(false);
+      if (arquivoInputRef.current) arquivoInputRef.current.value = '';
       carregar();
     } catch (e: any) {
       setErro(e.message ?? 'Erro ao abrir requerimento.');
@@ -101,8 +121,6 @@ export default function RequerimentosDiscentePage() {
   const th: React.CSSProperties = { padding: '8px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-200)' };
   const td: React.CSSProperties = { padding: '8px 12px', fontSize: 13, borderBottom: '1px solid var(--gray-100)' };
   const input: React.CSSProperties = { width: '100%', padding: '7px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13, boxSizing: 'border-box' };
-
-  const tipoSelecionado = tipos.find(t => t.id === tipoCatalogoId);
 
   return (
     <div style={{ padding: '24px 28px' }}>
@@ -130,22 +148,34 @@ export default function RequerimentosDiscentePage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <label style={{ fontSize: 12, color: 'var(--gray-500)' }}>
               Requerimento
-              <select value={tipoCatalogoId} onChange={e => setTipoCatalogoId(e.target.value)} style={{ ...input, marginTop: 4 }}>
+              <select value={tipoCatalogoId} onChange={e => { setTipoCatalogoId(e.target.value); setArquivo(null); if (arquivoInputRef.current) arquivoInputRef.current.value = ''; }} style={{ ...input, marginTop: 4 }}>
                 <option value="">-- Selecione --</option>
                 {tipos.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
               </select>
             </label>
             {tipoSelecionado && (
               <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)', background: 'var(--gray-50)', padding: '8px 12px', borderRadius: 4 }}>
-                Taxa: R$ {formatarTaxa(tipoSelecionado)}{tipoSelecionado.prazoDias ? ` · Prazo: ${tipoSelecionado.prazoDias} dia(s)` : ''}
+                Taxa: {formatarTaxa(tipoSelecionado)}{tipoSelecionado.prazoDias ? ` · Prazo: ${tipoSelecionado.prazoDias} dia(s)` : ''}
               </p>
+            )}
+            {tipoSelecionado?.exigeAnexo && (
+              <label style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+                Certificado (foto ou PDF) *
+                <input
+                  ref={arquivoInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={e => setArquivo(e.target.files?.[0] ?? null)}
+                  style={{ ...input, marginTop: 4, padding: '6px 0' }}
+                />
+              </label>
             )}
             <label style={{ fontSize: 12, color: 'var(--gray-500)' }}>
               Observações (opcional)
               <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={3} style={{ ...input, marginTop: 4, resize: 'vertical' }} />
             </label>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={abrirRequerimento} disabled={!tipoCatalogoId || enviando} style={{
+              <button onClick={abrirRequerimento} disabled={!tipoCatalogoId || (tipoSelecionado?.exigeAnexo && !arquivo) || enviando} style={{
                 padding: '7px 16px', background: 'var(--blue-dark)', color: '#fff', border: 'none', borderRadius: 4,
                 cursor: !tipoCatalogoId ? 'not-allowed' : 'pointer', fontSize: 13, opacity: enviando ? 0.7 : 1,
               }}>
@@ -170,7 +200,7 @@ export default function RequerimentosDiscentePage() {
               {requerimentos.map(r => (
                 <tr key={r.id}>
                   <td style={td}>{r.tipoCatalogo?.nome ?? r.tipo}</td>
-                  <td style={td}>{r.tipoCatalogo ? `R$ ${formatarTaxa(r.tipoCatalogo)}` : '—'}</td>
+                  <td style={td}>{r.tipoCatalogo ? formatarTaxa(r.tipoCatalogo) : '—'}</td>
                   <td style={td}>
                     <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: (STATUS_COLORS[r.status] ?? '#999') + '22', color: STATUS_COLORS[r.status] ?? '#999' }}>
                       {STATUS_LABEL[r.status] ?? r.status}

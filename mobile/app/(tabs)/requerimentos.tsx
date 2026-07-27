@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
 import { ApiError } from '../../lib/api';
 import {
   abrirRequerimento,
+  abrirRequerimentoComArquivo,
   formatarTaxa,
   getMeusRequerimentos,
   getTiposRequerimento,
@@ -12,6 +15,8 @@ import {
 } from '../../lib/discente';
 import { theme } from '../../lib/theme';
 import { Carregando, MensagemErro } from '../../lib/ui';
+
+type ArquivoSelecionado = { uri: string; name: string; type: string };
 
 const STATUS_LABEL: Record<string, string> = {
   ABERTO: 'Aberto',
@@ -44,6 +49,7 @@ export default function RequerimentosScreen() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [tipoId, setTipoId] = useState<string | null>(null);
   const [descricao, setDescricao] = useState('');
+  const [arquivo, setArquivo] = useState<ArquivoSelecionado | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   const carregarMeus = useCallback(async () => {
@@ -65,14 +71,65 @@ export default function RequerimentosScreen() {
     carregarMeus();
   }, [carregarMeus]);
 
+  async function tirarFoto() {
+    const permissao = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissao.granted) {
+      Alert.alert('Permissão necessária', 'Autorize o acesso à câmera nas configurações do celular pra tirar a foto.');
+      return;
+    }
+    const resultado = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+    aplicarResultado(resultado);
+  }
+
+  async function escolherDaGaleria() {
+    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissao.granted) {
+      Alert.alert('Permissão necessária', 'Autorize o acesso às fotos nas configurações do celular.');
+      return;
+    }
+    const resultado = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+    aplicarResultado(resultado);
+  }
+
+  function aplicarResultado(resultado: ImagePicker.ImagePickerResult) {
+    if (resultado.canceled || resultado.assets.length === 0) return;
+    const asset = resultado.assets[0];
+    setArquivo({
+      uri: asset.uri,
+      name: asset.fileName ?? `certificado-${Date.now()}.jpg`,
+      type: asset.mimeType ?? 'image/jpeg',
+    });
+  }
+
+  async function anexarPdf() {
+    const resultado = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    if (resultado.canceled || resultado.assets.length === 0) return;
+    const asset = resultado.assets[0];
+    setArquivo({
+      uri: asset.uri,
+      name: asset.name ?? `certificado-${Date.now()}.pdf`,
+      type: asset.mimeType ?? 'application/pdf',
+    });
+  }
+
+  function selecionarTipo(id: string) {
+    setTipoId(id);
+    setArquivo(null);
+  }
+
   async function enviar() {
     if (!tipoId) return;
     setEnviando(true);
     setErro(null);
     try {
-      await abrirRequerimento({ tipoCatalogoId: tipoId, descricao: descricao.trim() || undefined });
+      if (arquivo) {
+        await abrirRequerimentoComArquivo({ tipoCatalogoId: tipoId, descricao: descricao.trim() || undefined, arquivo });
+      } else {
+        await abrirRequerimento({ tipoCatalogoId: tipoId, descricao: descricao.trim() || undefined });
+      }
       setTipoId(null);
       setDescricao('');
+      setArquivo(null);
       setMostrarForm(false);
       await carregarMeus();
     } catch (err) {
@@ -83,6 +140,7 @@ export default function RequerimentosScreen() {
   }
 
   const tipoSelecionado = tipos?.find((t) => t.id === tipoId) ?? null;
+  const precisaAnexo = !!tipoSelecionado?.exigeAnexo;
 
   return (
     <ScrollView style={styles.tela} contentContainerStyle={styles.conteudo}>
@@ -110,7 +168,7 @@ export default function RequerimentosScreen() {
               <View key={t.id} style={styles.tabelaLinha}>
                 <Text style={styles.tabelaNome}>{t.nome}</Text>
                 <Text style={styles.tabelaDetalhe}>
-                  {t.prazoDias ? `Prazo: ${t.prazoDias} dia(s) · ` : ''}R$ {formatarTaxa(t)}
+                  {t.prazoDias ? `Prazo: ${t.prazoDias} dia(s) · ` : ''}{formatarTaxa(t)}
                 </Text>
               </View>
             ))}
@@ -128,7 +186,7 @@ export default function RequerimentosScreen() {
                 <TouchableOpacity
                   key={t.id}
                   style={[styles.chip, ativo && styles.chipAtivo]}
-                  onPress={() => setTipoId(t.id)}
+                  onPress={() => selecionarTipo(t.id)}
                 >
                   <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>{t.nome}</Text>
                 </TouchableOpacity>
@@ -137,10 +195,43 @@ export default function RequerimentosScreen() {
           </View>
           {tipoSelecionado ? (
             <Text style={styles.formInfo}>
-              Taxa: R$ {formatarTaxa(tipoSelecionado)}
+              Taxa: {formatarTaxa(tipoSelecionado)}
               {tipoSelecionado.prazoDias ? ` · Prazo: ${tipoSelecionado.prazoDias} dia(s)` : ''}
             </Text>
           ) : null}
+
+          {precisaAnexo ? (
+            <View style={{ gap: 8 }}>
+              <Text style={styles.formLabel}>Certificado (foto ou PDF) *</Text>
+              {arquivo && arquivo.type === 'application/pdf' ? (
+                <View style={styles.previewVazio}>
+                  <Feather name="file-text" size={28} color={theme.corPrimaria} />
+                  <Text style={styles.previewPdfNome} numberOfLines={1}>{arquivo.name}</Text>
+                </View>
+              ) : arquivo ? (
+                <Image source={{ uri: arquivo.uri }} style={styles.preview} resizeMode="cover" />
+              ) : (
+                <View style={styles.previewVazio}>
+                  <Feather name="award" size={28} color={theme.cinza400} />
+                </View>
+              )}
+              <View style={styles.botoesFoto}>
+                <TouchableOpacity style={styles.botaoFoto} onPress={tirarFoto}>
+                  <Feather name="camera" size={16} color={theme.corPrimaria} />
+                  <Text style={styles.botaoFotoTexto}>Tirar foto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.botaoFoto} onPress={escolherDaGaleria}>
+                  <Feather name="image" size={16} color={theme.corPrimaria} />
+                  <Text style={styles.botaoFotoTexto}>Galeria</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.botaoFoto} onPress={anexarPdf}>
+                  <Feather name="file-text" size={16} color={theme.corPrimaria} />
+                  <Text style={styles.botaoFotoTexto}>Anexar PDF</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+
           <TextInput
             style={styles.input}
             placeholder="Observações (opcional)"
@@ -150,9 +241,9 @@ export default function RequerimentosScreen() {
             multiline
           />
           <TouchableOpacity
-            style={[styles.botaoPrimario, (!tipoId || enviando) && { opacity: 0.6 }]}
+            style={[styles.botaoPrimario, (!tipoId || (precisaAnexo && !arquivo) || enviando) && { opacity: 0.6 }]}
             onPress={enviar}
-            disabled={!tipoId || enviando}
+            disabled={!tipoId || (precisaAnexo && !arquivo) || enviando}
           >
             <Text style={styles.botaoPrimarioTexto}>{enviando ? 'Enviando...' : 'Solicitar'}</Text>
           </TouchableOpacity>
@@ -215,6 +306,23 @@ const styles = StyleSheet.create({
   chipTexto: { fontSize: 11, fontWeight: '600', color: theme.cinza700 },
   chipTextoAtivo: { color: theme.branco },
   formInfo: { fontSize: 12, color: theme.cinza500, backgroundColor: theme.cinza50, padding: 8, borderRadius: 6 },
+  preview: { width: '100%', height: 160, borderRadius: 8, backgroundColor: theme.cinza100 },
+  previewVazio: { width: '100%', height: 160, borderRadius: 8, backgroundColor: theme.cinza100, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16 },
+  previewPdfNome: { fontSize: 12, color: theme.cinza700, fontWeight: '600' },
+  botoesFoto: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  botaoFoto: {
+    flexGrow: 1,
+    flexBasis: '30%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: theme.corPrimaria,
+    borderRadius: 8,
+    paddingVertical: 10,
+  },
+  botaoFotoTexto: { color: theme.corPrimaria, fontSize: 12, fontWeight: '700' },
   input: {
     borderWidth: 1,
     borderColor: theme.cinza200,
