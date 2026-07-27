@@ -21,8 +21,10 @@ import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 import { DocenteService } from './docente.service';
 import { CriarCapturaProvaDto } from './dto/criar-captura-prova.dto';
 import { CriarAvisoTurmaDto } from './dto/criar-aviso-turma.dto';
+import { CriarHoraComplementarDto } from './dto/criar-hora-complementar.dto';
 
 const UPLOAD_DIR = './uploads/capturas-prova';
+const UPLOAD_DIR_HORAS = './uploads/horas-complementares';
 const TIPOS_PERMITIDOS = /\/(jpg|jpeg|png|webp|pdf)$/;
 
 interface ArquivoUpload {
@@ -94,6 +96,46 @@ export class DocenteController {
   @ApiOperation({ summary: 'Remover uma captura de prova enviada por mim' })
   removerCaptura(@Param('id') id: string, @Request() req: any) {
     return this.service.removerCaptura(req.user.id, id);
+  }
+
+  @Tela('docente-horas-complementares')
+  @Get('horas-complementares')
+  @ApiOperation({ summary: 'Horas complementares que já lancei' })
+  listarHorasComplementares(@Query('alunoId') alunoId: string | undefined, @Request() req: any) {
+    return this.service.listarHorasComplementares(req.user.id, alunoId);
+  }
+
+  @Tela('docente-horas-complementares')
+  @Post('horas-complementares')
+  @ApiOperation({ summary: 'Lançar horas complementares de um aluno a partir do certificado (foto/PDF)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('arquivo', {
+      storage: multer.diskStorage({
+        destination: UPLOAD_DIR_HORAS,
+        filename: (_req: any, file: ArquivoUpload, cb: (error: Error | null, filename: string) => void) => {
+          cb(null, `${Date.now()}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+      fileFilter: (_req: any, file: ArquivoUpload, cb: (error: Error | null, acceptFile: boolean) => void) => {
+        if (!TIPOS_PERMITIDOS.test(file.mimetype)) {
+          return cb(new BadRequestException('Envie um arquivo PDF, JPG, PNG ou WEBP.'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  criarHoraComplementar(@Body() dto: CriarHoraComplementarDto, @UploadedFile() arquivo: ArquivoUpload, @Request() req: any) {
+    if (!arquivo) throw new BadRequestException('Nenhum arquivo enviado.');
+    return this.service.criarHoraComplementar(req.user.id, dto, arquivo);
+  }
+
+  @Tela('docente-horas-complementares')
+  @Delete('horas-complementares/:id')
+  @ApiOperation({ summary: 'Remover um lançamento de horas complementares feito por mim' })
+  removerHoraComplementar(@Param('id') id: string, @Request() req: any) {
+    return this.service.removerHoraComplementar(req.user.id, id);
   }
 
   @Tela('docente-aviso-turma')

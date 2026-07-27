@@ -198,4 +198,43 @@ export class DiscenteService {
     const alunoId = await this.meuAlunoId(usuarioId);
     return this.contratoService.findAll(alunoId);
   }
+
+  /** Horas Complementares — soma das horas lançadas pelos professores (ver
+   * DocenteService.criarHoraComplementar) contra o total exigido pelo curso
+   * do aluno (Curso.cargaHorariaComplementarObrigatoria). "Feitas" nunca é
+   * recalculado/validado aqui além da soma — o professor já lança direto,
+   * sem fluxo de aprovação separado. */
+  async horasComplementares(usuarioId: string) {
+    const alunoId = await this.meuAlunoId(usuarioId);
+    const aluno = await this.prisma.aluno.findUnique({
+      where: { id: alunoId },
+      select: { curso: { select: { cargaHorariaComplementarObrigatoria: true } } },
+    });
+    if (!aluno) throw new NotFoundException('Aluno não encontrado.');
+
+    const lancamentos = await this.prisma.horaComplementar.findMany({
+      where: { alunoId },
+      include: { professor: { select: { nome: true } } },
+      orderBy: { criadoEm: 'desc' },
+    });
+
+    const total = aluno.curso.cargaHorariaComplementarObrigatoria;
+    const feitas = lancamentos.reduce((soma: number, l: any) => soma + l.horas, 0);
+    const percentual = total > 0 ? Math.min(Math.round((feitas / total) * 1000) / 10, 100) : 0;
+
+    return {
+      feitas,
+      total,
+      percentual,
+      lancamentos: lancamentos.map((l: any) => ({
+        id: l.id,
+        horas: l.horas,
+        nomeArquivo: l.nomeArquivo,
+        url: l.url,
+        observacoes: l.observacoes,
+        criadoEm: l.criadoEm,
+        professor: l.professor.nome,
+      })),
+    };
+  }
 }

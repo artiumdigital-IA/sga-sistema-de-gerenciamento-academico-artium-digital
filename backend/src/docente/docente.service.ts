@@ -6,6 +6,7 @@ import { AuditService } from '../audit/audit.service';
 import { AvisoService } from '../registry/aviso/aviso.service';
 import { PushService } from '../push/push.service';
 import { CriarAvisoTurmaDto } from './dto/criar-aviso-turma.dto';
+import { CriarHoraComplementarDto } from './dto/criar-hora-complementar.dto';
 
 interface ArquivoUpload {
   originalname: string;
@@ -143,6 +144,61 @@ export class DocenteService {
 
     await this.audit.log({ usuarioId, acao: 'DELETE', entidade: 'CapturaProva', entidadeId: id, dadosAntes: captura });
     return { message: 'Captura removida.' };
+  }
+
+  /** Valida que o aluno está matriculado em pelo menos uma turma do professor logado
+   * (não precisa ser uma oferta específica — horas complementares não são por disciplina). */
+  private async validarAlunoDoProfessor(professorId: string, alunoId: string) {
+    const matricula = await this.prisma.matriculaDisciplina.findFirst({
+      where: { alunoId, oferta: { professorId } },
+    });
+    if (!matricula) throw new ForbiddenException('Este aluno não está em nenhuma das suas turmas.');
+  }
+
+  async listarHorasComplementares(usuarioId: string, alunoId?: string) {
+    const professorId = await this.meuProfessorId(usuarioId);
+    return this.prisma.horaComplementar.findMany({
+      where: {
+        professorId,
+        ...(alunoId ? { alunoId } : {}),
+      },
+      include: { aluno: { select: { nome: true, ra: true } } },
+      orderBy: { criadoEm: 'desc' },
+    });
+  }
+
+  async criarHoraComplementar(usuarioId: string, dto: CriarHoraComplementarDto, arquivo: ArquivoUpload) {
+    const professorId = await this.meuProfessorId(usuarioId);
+    await this.validarAlunoDoProfessor(professorId, dto.alunoId);
+
+    const lancamento = await this.prisma.horaComplementar.create({
+      data: {
+        alunoId: dto.alunoId,
+        professorId,
+        horas: dto.horas,
+        nomeArquivo: arquivo.originalname,
+        url: `/uploads/horas-complementares/${arquivo.filename}`,
+        tamanho: arquivo.size,
+        observacoes: dto.observacoes,
+      },
+    });
+    await this.audit.log({ usuarioId, acao: 'CREATE', entidade: 'HoraComplementar', entidadeId: lancamento.id, dadosDepois: lancamento });
+    return lancamento;
+  }
+
+  async removerHoraComplementar(usuarioId: string, id: string) {
+    const professorId = await this.meuProfessorId(usuarioId);
+    const lancamento = await this.prisma.horaComplementar.findUnique({ where: { id } });
+    if (!lancamento || lancamento.professorId !== professorId) throw new NotFoundException('Lançamento não encontrado.');
+
+    await this.prisma.horaComplementar.delete({ where: { id } });
+    try {
+      const nomeArquivo = lancamento.url.split('/').pop();
+      if (nomeArquivo) await unlink(join(process.cwd(), 'uploads', 'horas-complementares', nomeArquivo));
+    } catch { /* arquivo já ausente do disco — segue o fluxo */ }
+
+    await this.audit.log({ usuarioId, acao: 'DELETE', entidade: 'HoraComplementar', entidadeId: id, dadosAntes: lancamento });
+    return { message: 'Lançamento removido.' };
   }
 
   /** Cria o aviso escopado à turma e dispara push pros alunos matriculados nela. */

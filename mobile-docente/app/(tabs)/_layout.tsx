@@ -74,6 +74,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="alunos" options={opcoesTelaDados('Alunos')} />
       <Tabs.Screen name="aviso-turma" options={opcoesTelaDados('Aviso para Turma')} />
       <Tabs.Screen name="chamados" options={opcoesTelaDados('Chamado de Manutenção')} />
+      <Tabs.Screen name="horas-complementares" options={opcoesTelaDados('Horas Complementares')} />
     </Tabs>
   );
 }

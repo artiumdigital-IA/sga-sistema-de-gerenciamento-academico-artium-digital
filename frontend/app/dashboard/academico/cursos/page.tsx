@@ -16,6 +16,7 @@ interface Curso {
   codigoEmec: string;
   cargaHorariaTotal: number;
   prazoIntegralizacaoSemestres: number;
+  cargaHorariaComplementarObrigatoria: number;
   status: CursoStatus;
 }
 
@@ -43,6 +44,7 @@ const EMPTY: FormData = {
   codigoEmec: '',
   cargaHorariaTotal: 3700,
   prazoIntegralizacaoSemestres: 10,
+  cargaHorariaComplementarObrigatoria: 0,
 };
 
 // ── estilos rápidos ────────────────────────────────────────────────────
@@ -71,7 +73,8 @@ function CursoModal({
     curso
       ? { nome: curso.nome, grau: curso.grau, modalidade: curso.modalidade,
           codigoEmec: curso.codigoEmec, cargaHorariaTotal: curso.cargaHorariaTotal,
-          prazoIntegralizacaoSemestres: curso.prazoIntegralizacaoSemestres }
+          prazoIntegralizacaoSemestres: curso.prazoIntegralizacaoSemestres,
+          cargaHorariaComplementarObrigatoria: curso.cargaHorariaComplementarObrigatoria ?? 0 }
       : EMPTY
   );
   const [saving, setSaving] = useState(false);
@@ -155,6 +158,12 @@ function CursoModal({
               <input style={INPUT} type="number" min={1} value={form.prazoIntegralizacaoSemestres} required
                 onChange={e => set('prazoIntegralizacaoSemestres', Number(e.target.value))} />
             </div>
+          </div>
+
+          <div>
+            <label style={LABEL}>Horas complementares exigidas (h)</label>
+            <input style={INPUT} type="number" min={0} value={form.cargaHorariaComplementarObrigatoria}
+              onChange={e => set('cargaHorariaComplementarObrigatoria', Number(e.target.value))} placeholder="Ex: 200" />
           </div>
 
           {error && <p style={{ color: '#e02424', fontSize: 13, margin: 0 }}>{error}</p>}
@@ -244,14 +253,14 @@ export default function CursosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
-                {['Nome', 'Grau', 'Modalidade', 'e-MEC', 'C.H.', 'Prazos', 'Status', ''].map(h => (
+                {['Nome', 'Grau', 'Modalidade', 'e-MEC', 'C.H.', 'H. Compl.', 'Prazos', 'Status', ''].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>
+                <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>
                   {search ? 'Nenhum resultado.' : 'Nenhum curso cadastrado ainda.'}
                 </td></tr>
               )}
@@ -262,6 +271,7 @@ export default function CursosPage() {
                   <td style={{ padding: '10px 14px' }}>{MODALIDADE_LABEL[c.modalidade]}</td>
                   <td style={{ padding: '10px 14px', fontFamily: 'monospace' }}>{c.codigoEmec}</td>
                   <td style={{ padding: '10px 14px' }}>{c.cargaHorariaTotal}h</td>
+                  <td style={{ padding: '10px 14px' }}>{c.cargaHorariaComplementarObrigatoria ?? 0}h</td>
                   <td style={{ padding: '10px 14px' }}>{c.prazoIntegralizacaoSemestres} sem.</td>
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{

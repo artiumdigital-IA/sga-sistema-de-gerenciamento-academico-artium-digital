@@ -33,6 +33,8 @@ async function bootstrap() {
   if (!existsSync(brandingDir)) mkdirSync(brandingDir, { recursive: true });
   const capturasProvaDir = join(process.cwd(), 'uploads', 'capturas-prova');
   if (!existsSync(capturasProvaDir)) mkdirSync(capturasProvaDir, { recursive: true });
+  const horasComplementaresDir = join(process.cwd(), 'uploads', 'horas-complementares');
+  if (!existsSync(horasComplementaresDir)) mkdirSync(horasComplementaresDir, { recursive: true });
   const cnabRemessasDir = join(process.cwd(), 'uploads', 'cnab', 'remessas');
   if (!existsSync(cnabRemessasDir)) mkdirSync(cnabRemessasDir, { recursive: true });
   const cnabRetornosDir = join(process.cwd(), 'uploads', 'cnab', 'retornos');
