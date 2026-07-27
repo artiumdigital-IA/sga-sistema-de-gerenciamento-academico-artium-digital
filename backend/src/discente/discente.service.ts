@@ -4,8 +4,11 @@ import { AlunoService } from '../academic/aluno/aluno.service';
 import { ProtocoloService } from '../registry/protocolo/protocolo.service';
 import { DocumentoAlunoService } from '../registry/documento-aluno/documento-aluno.service';
 import { DocumentoService } from '../registry/documento/documento.service';
+import { RequerimentoService } from '../registry/requerimento/requerimento.service';
+import { TipoRequerimentoService } from '../registry/tipo-requerimento/tipo-requerimento.service';
 import { ContratoService } from '../financial/contrato/contrato.service';
 import { AbrirProtocoloDto } from './dto/abrir-protocolo.dto';
+import { AbrirRequerimentoDto } from './dto/abrir-requerimento.dto';
 
 /**
  * Lista de partida dos tipos de documento que a secretaria costuma exigir na
@@ -40,6 +43,8 @@ export class DiscenteService {
     private readonly protocoloService: ProtocoloService,
     private readonly documentoAlunoService: DocumentoAlunoService,
     private readonly documentoService: DocumentoService,
+    private readonly requerimentoService: RequerimentoService,
+    private readonly tipoRequerimentoService: TipoRequerimentoService,
     private readonly contratoService: ContratoService,
   ) {}
 
@@ -236,5 +241,23 @@ export class DiscenteService {
         professor: l.professor.nome,
       })),
     };
+  }
+
+  /** Tabela de preços dos requerimentos — só os itens ativos (ver
+   * TipoRequerimentoService.findAll). Não precisa resolver alunoId, é
+   * informativo/igual pra qualquer aluno. */
+  tiposRequerimento() {
+    return this.tipoRequerimentoService.findAll(true);
+  }
+
+  /** Meus requerimentos — abertura/consulta, restrito ao próprio aluno. */
+  async meusRequerimentos(usuarioId: string) {
+    const alunoId = await this.meuAlunoId(usuarioId);
+    return this.requerimentoService.findAll(alunoId);
+  }
+
+  async abrirRequerimento(usuarioId: string, dto: AbrirRequerimentoDto) {
+    const alunoId = await this.meuAlunoId(usuarioId);
+    return this.requerimentoService.abrirPorAluno(alunoId, dto.tipoCatalogoId, dto.descricao, usuarioId);
   }
 }

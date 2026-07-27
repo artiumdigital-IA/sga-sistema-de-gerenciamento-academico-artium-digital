@@ -675,17 +675,45 @@ enum StatusInscricao {
 // ── Fase 7: Secretaria / Requerimentos ───────────────────────────────────────
 
 model Requerimento {
-  id           String              @id @default(uuid())
-  alunoId      String
-  aluno        Aluno               @relation(fields: [alunoId], references: [id])
-  tipo         TipoRequerimento
-  descricao    String?             @db.Text
-  status       StatusRequerimento  @default(ABERTO)
-  resposta     String?             @db.Text
-  criadoEm     DateTime            @default(now())
-  atualizadoEm DateTime            @updatedAt
+  id             String              @id @default(uuid())
+  alunoId        String
+  aluno          Aluno               @relation(fields: [alunoId], references: [id])
+  tipo           TipoRequerimento
+  tipoCatalogoId String?
+  tipoCatalogo   TipoRequerimentoCatalogo? @relation(fields: [tipoCatalogoId], references: [id])
+  descricao      String?             @db.Text
+  status         StatusRequerimento  @default(ABERTO)
+  resposta       String?             @db.Text
+  criadoEm       DateTime            @default(now())
+  atualizadoEm   DateTime            @updatedAt
 
   @@map("requerimentos")
+}
+
+// Tabela de preços dos requerimentos (Jul/2026) — catálogo administrável (só
+// ADMIN/MASTER, "Ferramentas Master") com prazo/local/taxa de cada tipo de
+// requerimento (2ª via de documento, declaração, multa de biblioteca etc.).
+// Separado do enum TipoRequerimento (que continua existindo, usado pelo fluxo
+// antigo em que a secretaria abre o requerimento diretamente) — quando o
+// ALUNO abre o próprio requerimento (autoatendimento), ele escolhe um item
+// deste catálogo (tipoCatalogoId) e o enum `tipo` grava OUTRO, só pra manter
+// a coluna antiga não-nula sem quebrar telas que já leem `tipo`.
+model TipoRequerimentoCatalogo {
+  id             String   @id @default(uuid())
+  nome           String
+  prazoDias      Int?
+  local          String?
+  taxa           Decimal  @db.Decimal(10, 2)
+  observacaoTaxa String?
+  ativo          Boolean  @default(true)
+  ordem          Int      @default(0)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  requerimentos Requerimento[]
+
+  @@map("tipos_requerimento_catalogo")
 }
 
 enum TipoRequerimento {

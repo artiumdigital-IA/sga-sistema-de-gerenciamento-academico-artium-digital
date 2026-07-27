@@ -94,6 +94,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'sistema', label: 'Painel do Sistema', grupo: 'Administração', prefixos: ['/dashboard/admin/sistema'] },
   { chave: 'visual', label: 'Identidade Visual', grupo: 'Administração', prefixos: ['/dashboard/admin/visual'] },
   { chave: 'relatorios-master', label: 'Relatórios Master', grupo: 'Administração', prefixos: ['/dashboard/admin/relatorios-master'] },
+  { chave: 'tipos-requerimento', label: 'Tabela de Preços de Requerimentos', grupo: 'Administração', prefixos: ['/dashboard/admin/requerimentos-tabela'] },
   { chave: 'importacao-legado', label: 'Importação de Dados Legados', grupo: 'Administração', prefixos: ['/dashboard/admin/importacao-legado'] },
 
   // ── Utilitários ──────────────────────────────────────────────────────
@@ -121,6 +122,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'discente-horarios', label: 'Quadro de Horários', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/horarios'] },
   { chave: 'discente-documentos', label: 'Pendências de Documentos', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/documentos'] },
   { chave: 'discente-protocolo', label: 'Protocolo (Abertura/Consulta)', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/protocolo'] },
+  { chave: 'discente-requerimentos', label: 'Requerimentos', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/requerimentos'] },
   { chave: 'discente-carteira', label: 'Carteira de Estudante', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/carteira'] },
   { chave: 'discente-disciplinas', label: 'Disciplinas e Avaliações', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/disciplinas'] },
   { chave: 'discente-historico', label: 'Notas e Histórico', grupo: 'Menu Discente', prefixos: ['/dashboard/discente/historico'] },

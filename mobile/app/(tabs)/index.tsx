@@ -21,9 +21,9 @@ import { Cartao, CartaoIcone, Carregando, GradeCartoes, MensagemErro } from '../
  * "Minha renovação") mostram "Em breve" ao tocar -- pedido explícito do
  * usuário pra manter o layout igual à referência mesmo nas partes que a
  * FIURJ ainda não tem pronto. "Disciplinas e avaliações", "Notas e
- * histórico", "Documentos", "Biblioteca" e "Horas Complementares" (antiga
- * "Horas AAC") são reais e levam pras telas próprias (ver
- * app/(tabs)/_layout.tsx).
+ * histórico", "Documentos", "Biblioteca", "Requerimento" e "Horas
+ * Complementares" (antiga "Horas AAC") são reais e levam pras telas próprias
+ * (ver app/(tabs)/_layout.tsx).
  */
 export default function InicioScreen() {
   const router = useRouter();
@@ -132,6 +132,7 @@ export default function InicioScreen() {
           <CartaoIcone icone="calendar" titulo="Calendário acadêmico" aoPressionar={() => emBreve('Calendário acadêmico')} />
           <CartaoIcone icone="bar-chart-2" titulo="Notas e histórico" aoPressionar={() => router.push('/historico')} />
           <CartaoIcone icone="file-text" titulo="Documentos" aoPressionar={() => router.push('/documentos')} />
+          <CartaoIcone icone="file-plus" titulo="Requerimento" aoPressionar={() => router.push('/requerimentos')} />
           <CartaoIcone icone="book-open" titulo="Biblioteca" aoPressionar={() => router.push('/biblioteca')} />
           <CartaoIcone
             icone="star"

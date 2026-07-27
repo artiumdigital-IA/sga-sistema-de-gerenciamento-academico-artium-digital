@@ -84,6 +84,42 @@ export function getHorasComplementares() {
   return apiFetch<HorasComplementares>('/discente/horas-complementares');
 }
 
+export type TipoRequerimento = {
+  id: string;
+  nome: string;
+  prazoDias: number | null;
+  local: string | null;
+  taxa: number;
+  observacaoTaxa: string | null;
+};
+
+export type Requerimento = {
+  id: string;
+  tipo: string;
+  descricao: string | null;
+  status: string;
+  resposta: string | null;
+  criadoEm: string;
+  tipoCatalogo: TipoRequerimento | null;
+};
+
+export function getTiposRequerimento() {
+  return apiFetch<TipoRequerimento[]>('/discente/requerimentos/tipos');
+}
+
+export function getMeusRequerimentos() {
+  return apiFetch<Requerimento[]>('/discente/requerimentos');
+}
+
+export function abrirRequerimento(dto: { tipoCatalogoId: string; descricao?: string }) {
+  return apiFetch<Requerimento>('/discente/requerimentos', { method: 'POST', body: JSON.stringify(dto) });
+}
+
+export function formatarTaxa(t: TipoRequerimento): string {
+  const valor = t.taxa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return t.observacaoTaxa ? `${valor} (${t.observacaoTaxa})` : valor;
+}
+
 export function getCarteira() {
   return apiFetch<Carteira>('/discente/carteira');
 }

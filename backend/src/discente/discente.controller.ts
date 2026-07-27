@@ -5,6 +5,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Tela } from '../permissoes-tela/decorators/tela.decorator';
 import { DiscenteService } from './discente.service';
 import { AbrirProtocoloDto } from './dto/abrir-protocolo.dto';
+import { AbrirRequerimentoDto } from './dto/abrir-requerimento.dto';
 
 /**
  * Autoatendimento do aluno ("Menu Discente" — ver components/dashboard/RightPanel.tsx
@@ -98,5 +99,26 @@ export class DiscenteController {
   @ApiOperation({ summary: 'Minhas horas complementares (feitas/total do curso) + lançamentos' })
   horasComplementares(@Request() req: any) {
     return this.service.horasComplementares(req.user.id);
+  }
+
+  @Tela('discente-requerimentos')
+  @Get('requerimentos/tipos')
+  @ApiOperation({ summary: 'Tabela de preços dos requerimentos (só os ativos)' })
+  tiposRequerimento() {
+    return this.service.tiposRequerimento();
+  }
+
+  @Tela('discente-requerimentos')
+  @Get('requerimentos')
+  @ApiOperation({ summary: 'Meus requerimentos (abertura/consulta)' })
+  meusRequerimentos(@Request() req: any) {
+    return this.service.meusRequerimentos(req.user.id);
+  }
+
+  @Tela('discente-requerimentos')
+  @Post('requerimentos')
+  @ApiOperation({ summary: 'Abrir novo requerimento a partir da tabela de preços' })
+  abrirRequerimento(@Body() dto: AbrirRequerimentoDto, @Request() req: any) {
+    return this.service.abrirRequerimento(req.user.id, dto);
   }
 }

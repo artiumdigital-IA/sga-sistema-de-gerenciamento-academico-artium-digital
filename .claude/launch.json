@@ -10,8 +10,8 @@
     {
       "name": "mobile-docente",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "web", "--prefix", "mobile-docente", "--", "--port", "8082"],
-      "port": 8082
+      "runtimeArgs": ["run", "web", "--prefix", "mobile-docente", "--", "--port", "8085"],
+      "port": 8085
     },
     {
       "name": "mobile-aluno",
