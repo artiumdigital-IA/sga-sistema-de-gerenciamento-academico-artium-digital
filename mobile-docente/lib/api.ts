@@ -51,6 +51,26 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
 }
 
 /**
+ * Converte um uri local (ex.: retorno de expo-image-picker/expo-document-picker)
+ * num Blob de verdade. Necessário porque anexar o objeto clássico
+ * `{ uri, name, type }` direto no FormData.append() dá
+ * "Unsupported FormDataPart implementation" em versões mais novas do React
+ * Native (New Architecture) -- um Blob real funciona em qualquer versão.
+ * XHR (não fetch) é de propósito: é o jeito documentado pela Expo há anos
+ * pra ler um uri local como Blob no React Native.
+ */
+export function uriParaBlob(uri: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response);
+    xhr.onerror = () => reject(new Error('Não foi possível ler o arquivo selecionado.'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', uri, true);
+    xhr.send(null);
+  });
+}
+
+/**
  * Upload multipart (ex.: Captura de Prova). NÃO define Content-Type na mão —
  * o fetch precisa gerar o boundary sozinho a partir do FormData; um
  * Content-Type fixo aqui quebra o parse do multer no backend.

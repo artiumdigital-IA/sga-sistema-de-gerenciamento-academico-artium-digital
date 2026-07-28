@@ -71,6 +71,26 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
   return res.json() as Promise<T>;
 }
 
+/**
+ * Converte um uri local (ex.: retorno de expo-image-picker/expo-document-picker)
+ * num Blob de verdade. Necessário porque anexar o objeto clássico
+ * `{ uri, name, type }` direto no FormData.append() dá
+ * "Unsupported FormDataPart implementation" em versões mais novas do React
+ * Native (New Architecture) -- um Blob real funciona em qualquer versão.
+ * XHR (não fetch) é de propósito: é o jeito documentado pela Expo há anos
+ * pra ler um uri local como Blob no React Native.
+ */
+export function uriParaBlob(uri: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response);
+    xhr.onerror = () => reject(new Error('Não foi possível ler o arquivo selecionado.'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', uri, true);
+    xhr.send(null);
+  });
+}
+
 /** Monta a URL absoluta de uma tela do frontend web (usado pela WebView de
  * documentos — ver ADR no README sobre impressão/PDF no V1). */
 export function webUrl(path: string): string {

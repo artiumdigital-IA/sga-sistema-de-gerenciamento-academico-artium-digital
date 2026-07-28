@@ -10,7 +10,7 @@
  * commit be01ffd) porque não dá pra pedir o painel/carteira de outro aluno
  * trocando um id na URL.
  */
-import { apiFetch, apiUpload } from './api';
+import { apiFetch, apiUpload, uriParaBlob } from './api';
 
 export type Painel = {
   aluno: { id: string; ra: string; nome: string; curso: string; situacaoVinculo: string; fotoUrl: string | null };
@@ -121,7 +121,7 @@ export function abrirRequerimento(dto: { tipoCatalogoId: string; descricao?: str
 /** Igual a abrirRequerimento, mas com anexo (certificado foto/PDF) —
  * obrigatório pra tipos com `exigeAnexo` (ex: Hora Complementar).
  * `arquivo` é o resultado de expo-image-picker/expo-document-picker. */
-export function abrirRequerimentoComArquivo(dto: {
+export async function abrirRequerimentoComArquivo(dto: {
   tipoCatalogoId: string;
   descricao?: string;
   arquivo: { uri: string; name: string; type: string };
@@ -129,7 +129,8 @@ export function abrirRequerimentoComArquivo(dto: {
   const formData = new FormData();
   formData.append('tipoCatalogoId', dto.tipoCatalogoId);
   if (dto.descricao) formData.append('descricao', dto.descricao);
-  formData.append('arquivo', dto.arquivo as unknown as Blob);
+  const blob = await uriParaBlob(dto.arquivo.uri);
+  formData.append('arquivo', blob, dto.arquivo.name);
   return apiUpload<Requerimento>('/discente/requerimentos', formData);
 }
 
