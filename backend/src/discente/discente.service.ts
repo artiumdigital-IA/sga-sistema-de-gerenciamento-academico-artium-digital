@@ -204,11 +204,14 @@ export class DiscenteService {
     return this.contratoService.findAll(alunoId);
   }
 
-  /** Horas Complementares — soma das horas lançadas pelos professores (ver
-   * DocenteService.criarHoraComplementar) contra o total exigido pelo curso
-   * do aluno (Curso.cargaHorariaComplementarObrigatoria). "Feitas" nunca é
-   * recalculado/validado aqui além da soma — o professor já lança direto,
-   * sem fluxo de aprovação separado. */
+  /** Horas Complementares — soma das horas lançadas contra o total exigido
+   * pelo curso do aluno (Curso.cargaHorariaComplementarObrigatoria). Dois
+   * jeitos de gerar um lançamento: o professor lança direto pelo app
+   * (DocenteService.criarHoraComplementar, professorId preenchido) ou o
+   * COORDENADOR defere um Requerimento de "Hora Complementar" aberto pelo
+   * próprio aluno (RequerimentoService.update(), professorId nulo — exibido
+   * como "Coordenação" abaixo). "Feitas" nunca é recalculado/validado aqui
+   * além da soma. */
   async horasComplementares(usuarioId: string) {
     const alunoId = await this.meuAlunoId(usuarioId);
     const aluno = await this.prisma.aluno.findUnique({
@@ -238,7 +241,7 @@ export class DiscenteService {
         url: l.url,
         observacoes: l.observacoes,
         criadoEm: l.criadoEm,
-        professor: l.professor.nome,
+        professor: l.professor?.nome ?? 'Coordenação',
       })),
     };
   }

@@ -38,7 +38,7 @@ export class RequerimentoController {
     return this.service.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar status / resposta' })
   update(@Param('id') id: string, @Body() dto: UpdateRequerimentoDto, @Request() req: any) {

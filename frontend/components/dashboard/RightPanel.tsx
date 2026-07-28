@@ -93,6 +93,13 @@ const MENU_SUPORTE_GROUP: { title: string; items: RpanelItem[] } = {
 // atalho. Pré-requisito não tem tela própria, aponta pra Disciplinas (mesma
 // aproximação já usada pro grupo Coordenação acima). Sem acesso a
 // financeiro/RH de propósito (fora do escopo pedido).
+//
+// "Horas Complementares" (Jul/2026) — reaproveita a tela de Requerimentos já
+// existente (o coordenador ganhou @Roles nela, ver
+// backend/src/registry/requerimento/requerimento.controller.ts), filtrada de
+// cara pro tipo de catálogo "Hora Complementar" via query param. Deferir um
+// requerimento desse tipo por ali já lança o crédito real de horas pro aluno
+// (ver RequerimentoService.update()) — não é só aprovar/indeferir.
 const MENU_COORDENADOR_GROUP: { title: string; items: RpanelItem[] } = {
   title: 'Coordenador',
   items: [
@@ -102,6 +109,7 @@ const MENU_COORDENADOR_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Pré-requisitos', href: '/dashboard/academico/disciplinas' },
     { label: 'Ofertas / Turmas', href: '/dashboard/academico/ofertas' },
     { label: 'Professores', href: '/dashboard/academico/professores' },
+    { label: 'Horas Complementares', href: '/dashboard/secretaria/requerimentos?tipoCatalogoNome=Hora%20Complementar' },
   ],
 };
 
