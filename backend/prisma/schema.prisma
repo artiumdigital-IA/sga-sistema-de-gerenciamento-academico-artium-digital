@@ -691,6 +691,11 @@ model Requerimento {
   criadoEm       DateTime            @default(now())
   atualizadoEm   DateTime            @updatedAt
 
+  // Preenchido quando este requerimento é do catálogo "Hora Complementar" e é
+  // deferido — vira o lançamento real de crédito de horas (ver
+  // RequerimentoService.update()). Um requerimento gera no máximo um lançamento.
+  horaComplementar HoraComplementar?
+
   @@map("requerimentos")
 }
 
@@ -854,16 +859,22 @@ model CapturaProva {
 model HoraComplementar {
   id          String   @id @default(uuid())
   alunoId     String
-  professorId String
-  horas       Int
-  nomeArquivo String
-  url         String
-  tamanho     Int
-  observacoes String?
-  criadoEm    DateTime @default(now())
+  professorId String? // opcional (Jul/2026) — nulo quando o lançamento vem da
+  // aprovação de um Requerimento de "Hora Complementar" pelo COORDENADOR (ver
+  // RequerimentoService.update()), que não é necessariamente um Professor
+  // cadastrado. Nesse caso o app do aluno mostra "Coordenação" no lugar do
+  // nome do professor (ver DiscenteService.horasComplementares()).
+  horas          Int
+  nomeArquivo    String
+  url            String
+  tamanho        Int
+  observacoes    String?
+  criadoEm       DateTime @default(now())
+  requerimentoId String?  @unique // preenchido só quando veio de um Requerimento aprovado (ver acima)
 
-  aluno     Aluno     @relation(fields: [alunoId], references: [id], onDelete: Cascade)
-  professor Professor @relation(fields: [professorId], references: [id])
+  aluno        Aluno         @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  professor    Professor?    @relation(fields: [professorId], references: [id])
+  requerimento Requerimento? @relation(fields: [requerimentoId], references: [id])
 
   @@map("horas_complementares")
 }

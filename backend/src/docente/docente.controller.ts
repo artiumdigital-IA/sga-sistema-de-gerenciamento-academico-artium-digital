@@ -22,6 +22,7 @@ import { DocenteService } from './docente.service';
 import { CriarCapturaProvaDto } from './dto/criar-captura-prova.dto';
 import { CriarAvisoTurmaDto } from './dto/criar-aviso-turma.dto';
 import { CriarHoraComplementarDto } from './dto/criar-hora-complementar.dto';
+import { CriarHoraComplementarDoRequerimentoDto } from './dto/criar-hora-complementar-do-requerimento.dto';
 
 const UPLOAD_DIR = './uploads/capturas-prova';
 const UPLOAD_DIR_HORAS = './uploads/horas-complementares';
@@ -103,6 +104,20 @@ export class DocenteController {
   @ApiOperation({ summary: 'Horas complementares que já lancei' })
   listarHorasComplementares(@Query('alunoId') alunoId: string | undefined, @Request() req: any) {
     return this.service.listarHorasComplementares(req.user.id, alunoId);
+  }
+
+  @Tela('docente-horas-complementares')
+  @Get('horas-complementares/pendente')
+  @ApiOperation({ summary: 'Requerimento de Hora Complementar pendente desse aluno (certificado já anexado, se houver)' })
+  horaComplementarPendente(@Query('alunoId') alunoId: string, @Request() req: any) {
+    return this.service.horaComplementarPendente(req.user.id, alunoId);
+  }
+
+  @Tela('docente-horas-complementares')
+  @Post('horas-complementares/do-requerimento')
+  @ApiOperation({ summary: 'Lançar horas reaproveitando o certificado já anexado a um Requerimento' })
+  criarHoraComplementarDoRequerimento(@Body() dto: CriarHoraComplementarDoRequerimentoDto, @Request() req: any) {
+    return this.service.criarHoraComplementarDoRequerimento(req.user.id, dto);
   }
 
   @Tela('docente-horas-complementares')

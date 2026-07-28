@@ -34,6 +34,7 @@ type Requerimento = {
   tipoCatalogo?: TipoCatalogo | null;
   arquivoNome?: string | null;
   arquivoUrl?: string | null;
+  horaComplementar?: { id: string; horas: number; criadoEm: string } | null;
 };
 
 function formatarTaxa(t: TipoCatalogo): string {
@@ -107,14 +108,29 @@ function ModalNovoRequerimento({ onClose, onSaved }: { onClose: () => void; onSa
 function ModalResponder({ req, onClose, onSaved }: { req: Requerimento; onClose: () => void; onSaved: () => void }) {
   const [status, setStatus] = useState(req.status);
   const [resposta, setResposta] = useState(req.resposta ?? '');
+  const [horas, setHoras] = useState('');
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState('');
+
+  const ehHoraComplementar = req.tipoCatalogo?.nome === 'Hora Complementar';
+  const jaGerouLancamento = !!req.horaComplementar;
+  const precisaInformarHoras = ehHoraComplementar && status === 'DEFERIDO' && !jaGerouLancamento;
 
   async function save() {
+    setErro('');
+    if (precisaInformarHoras && (!horas || Number(horas) < 1)) {
+      setErro('Informe quantas horas conceder pra deferir este requerimento.');
+      return;
+    }
     setLoading(true);
     try {
-      await apiFetch(`/requerimentos/${req.id}`, { method: 'PATCH', body: JSON.stringify({ status, resposta }) });
+      const body: any = { status, resposta };
+      if (precisaInformarHoras) body.horas = Number(horas);
+      await apiFetch(`/requerimentos/${req.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       onSaved();
       onClose();
+    } catch (e: any) {
+      setErro(e?.message ?? 'Erro ao salvar.');
     } finally { setLoading(false); }
   }
 
@@ -134,6 +150,11 @@ function ModalResponder({ req, onClose, onSaved }: { req: Requerimento; onClose:
             </a>
           </p>
         )}
+        {jaGerouLancamento && (
+          <p style={{ margin: '0 0 16px', fontSize: 13, background: '#ecfdf5', color: '#047857', padding: '8px 12px', borderRadius: 4 }}>
+            ✓ {req.horaComplementar!.horas}h já lançadas como crédito em {new Date(req.horaComplementar!.criadoEm).toLocaleDateString('pt-BR')}.
+          </p>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <select value={status} onChange={e => setStatus(e.target.value)}
             style={{ padding: '6px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }}>
@@ -143,8 +164,13 @@ function ModalResponder({ req, onClose, onSaved }: { req: Requerimento; onClose:
             <option value="INDEFERIDO">Indeferido</option>
             <option value="CANCELADO">Cancelado</option>
           </select>
+          {precisaInformarHoras && (
+            <input type="number" min={1} placeholder="Quantas horas conceder?" value={horas} onChange={e => setHoras(e.target.value)}
+              style={{ padding: '6px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }} />
+          )}
           <textarea placeholder="Resposta / despacho..." value={resposta} onChange={e => setResposta(e.target.value)} rows={4}
             style={{ padding: '6px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13, resize: 'vertical' }} />
+          {erro && <p style={{ margin: 0, fontSize: 12, color: 'var(--accent-red-text)' }}>{erro}</p>}
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
           <button onClick={onClose} style={{ padding: '7px 16px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'var(--white)', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
@@ -162,19 +188,35 @@ export default function RequerimentosPage() {
   const [items, setItems] = useState<Requerimento[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterTipo, setFilterTipo] = useState('');
+  const [filterTipoCatalogoId, setFilterTipoCatalogoId] = useState('');
+  const [catalogo, setCatalogo] = useState<TipoCatalogo[]>([]);
   const [showNovo, setShowNovo] = useState(false);
   const [responder, setResponder] = useState<Requerimento | null>(null);
+
+  useEffect(() => {
+    apiFetch<any>('/tipos-requerimento').then((d: any) => setCatalogo(Array.isArray(d) ? d : d.data ?? [])).catch(() => {});
+  }, []);
+
+  // Deep-link de outro lugar da plataforma (ex: subitem "Horas Complementares"
+  // do Menu Coordenador na Barra Rápida) pra já abrir filtrado num tipo do
+  // catálogo, sem precisar saber o id (que varia por ambiente) — só o nome.
+  useEffect(() => {
+    if (catalogo.length === 0) return;
+    const nome = new URLSearchParams(window.location.search).get('tipoCatalogoNome');
+    if (!nome) return;
+    const achado = catalogo.find(t => t.nome === nome);
+    if (achado) setFilterTipoCatalogoId(achado.id);
+  }, [catalogo]);
 
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filterStatus) params.set('status', filterStatus);
-    if (filterTipo) params.set('tipo', filterTipo);
+    if (filterTipoCatalogoId) params.set('tipoCatalogoId', filterTipoCatalogoId);
     const d = await apiFetch<any>(`/requerimentos?${params}`);
     setItems(Array.isArray(d) ? d : (d as any).data ?? []);
     setLoading(false);
-  }, [filterStatus, filterTipo]);
+  }, [filterStatus, filterTipoCatalogoId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -201,10 +243,10 @@ export default function RequerimentosPage() {
           <option value="INDEFERIDO">Indeferido</option>
           <option value="CANCELADO">Cancelado</option>
         </select>
-        <select value={filterTipo} onChange={e => setFilterTipo(e.target.value)}
+        <select value={filterTipoCatalogoId} onChange={e => setFilterTipoCatalogoId(e.target.value)}
           style={{ padding: '5px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }}>
-          <option value="">Todos os tipos</option>
-          {Object.entries(TIPOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          <option value="">Todos os tipos de requerimento</option>
+          {catalogo.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
         </select>
       </div>
 

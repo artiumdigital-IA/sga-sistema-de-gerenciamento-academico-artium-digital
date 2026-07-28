@@ -57,14 +57,19 @@ export class RequerimentoService {
     return item;
   }
 
-  findAll(alunoId?: string, status?: string, tipo?: string) {
+  findAll(alunoId?: string, status?: string, tipo?: string, tipoCatalogoId?: string) {
     return (this.prisma as any).requerimento.findMany({
       where: {
         ...(alunoId ? { alunoId } : {}),
         ...(status ? { status } : {}),
         ...(tipo ? { tipo } : {}),
+        ...(tipoCatalogoId ? { tipoCatalogoId } : {}),
       },
-      include: { aluno: { select: { id: true, nome: true, ra: true, curso: { select: { nome: true } } } }, tipoCatalogo: true },
+      include: {
+        aluno: { select: { id: true, nome: true, ra: true, curso: { select: { nome: true } } } },
+        tipoCatalogo: true,
+        horaComplementar: true,
+      },
       orderBy: { criadoEm: 'desc' },
     });
   }
@@ -72,19 +77,64 @@ export class RequerimentoService {
   async findOne(id: string) {
     const item = await (this.prisma as any).requerimento.findUnique({
       where: { id },
-      include: { aluno: { select: { id: true, nome: true, ra: true, email: true, curso: { select: { nome: true } } } }, tipoCatalogo: true },
+      include: {
+        aluno: { select: { id: true, nome: true, ra: true, email: true, curso: { select: { nome: true } } } },
+        tipoCatalogo: true,
+        horaComplementar: true,
+      },
     });
     if (!item) throw new NotFoundException('Requerimento não encontrado');
     return item;
   }
 
+  /** Deferir um requerimento do catálogo "Hora Complementar" gera na hora o
+   * lançamento real de crédito (HoraComplementar), reaproveitando o
+   * certificado já anexado pelo aluno ao abrir o requerimento — fecha o
+   * buraco que existia entre o aluno pedir e receber o crédito de fato.
+   * `professorId` fica nulo (quem aprova aqui é COORDENADOR/SECRETARIA/ADMIN,
+   * não necessariamente um Professor cadastrado — ver schema.prisma). Só gera
+   * uma vez por requerimento (unique em `requerimentoId`); reenviar DEFERIDO
+   * pra um requerimento que já gerou o lançamento não duplica nada. */
   async update(id: string, dto: UpdateRequerimentoDto, userId?: string) {
     const before = await this.findOne(id);
-    const updated = await (this.prisma as any).requerimento.update({
-      where: { id },
-      data: dto,
-      include: { aluno: { select: { id: true, nome: true, ra: true } }, tipoCatalogo: true },
+    const { horas, ...dadosRequerimento } = dto;
+
+    const ehHoraComplementar = before.tipoCatalogo?.nome === 'Hora Complementar';
+    const vaiDeferir = dadosRequerimento.status === 'DEFERIDO';
+    const jaGerado = !!before.horaComplementar;
+    const vaiGerarLancamento = ehHoraComplementar && vaiDeferir && !jaGerado;
+
+    if (vaiGerarLancamento) {
+      if (!horas) throw new BadRequestException('Informe quantas horas conceder pra deferir este requerimento.');
+      if (!before.arquivoUrl) throw new BadRequestException('Requerimento sem certificado anexado — não é possível lançar horas.');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (vaiGerarLancamento) {
+        await (tx as any).horaComplementar.create({
+          data: {
+            alunoId: before.alunoId,
+            professorId: null,
+            horas,
+            nomeArquivo: before.arquivoNome,
+            url: before.arquivoUrl,
+            tamanho: before.arquivoTamanho ?? 0,
+            observacoes: dadosRequerimento.resposta ?? before.descricao,
+            requerimentoId: id,
+          },
+        });
+      }
+      return (tx as any).requerimento.update({
+        where: { id },
+        data: dadosRequerimento,
+        include: {
+          aluno: { select: { id: true, nome: true, ra: true } },
+          tipoCatalogo: true,
+          horaComplementar: true,
+        },
+      });
     });
+
     await this.audit.log({ usuarioId: userId, acao: 'UPDATE', entidade: 'Requerimento', entidadeId: id, dadosAntes: before, dadosDepois: updated });
     return updated;
   }

@@ -138,6 +138,29 @@ export function removerHoraComplementar(id: string) {
   return apiFetch<{ message: string }>(`/docente/horas-complementares/${id}`, { method: 'DELETE' });
 }
 
+/** Requerimento de Hora Complementar aberto pelo próprio aluno (autoatendimento),
+ * com certificado já anexado, ainda não lançado como crédito real. */
+export type HoraComplementarPendente = {
+  id: string;
+  descricao: string | null;
+  arquivoNome: string | null;
+  arquivoUrl: string | null;
+  criadoEm: string;
+};
+
+export function getHoraComplementarPendente(alunoId: string) {
+  return apiFetch<HoraComplementarPendente | null>(`/docente/horas-complementares/pendente?alunoId=${encodeURIComponent(alunoId)}`);
+}
+
+/** Lança as horas reaproveitando o certificado já anexado ao Requerimento —
+ * sem upload novo — e já defere o requerimento na mesma operação. */
+export function criarHoraComplementarDoRequerimento(dto: { requerimentoId: string; horas: number; observacoes?: string }) {
+  return apiFetch<HoraComplementar>('/docente/horas-complementares/do-requerimento', {
+    method: 'POST',
+    body: JSON.stringify(dto),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Aviso para Turma.
 // ---------------------------------------------------------------------------
