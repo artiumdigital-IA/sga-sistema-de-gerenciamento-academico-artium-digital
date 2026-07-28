@@ -15,7 +15,7 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class ProfessorController {
   constructor(private readonly service: ProfessorService) {}
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Post()
   @ApiOperation({ summary: 'Cadastrar professor' })
   create(@Body() dto: CreateProfessorDto, @Request() req: any) {
@@ -30,14 +30,14 @@ export class ProfessorController {
   @ApiOperation({ summary: 'Buscar professor por ID' })
   findOne(@Param('id') id: string) { return this.service.findOne(id); }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar professor' })
   update(@Param('id') id: string, @Body() dto: UpdateProfessorDto, @Request() req: any) {
     return this.service.update(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Delete(':id')
   @ApiOperation({ summary: 'Remover professor' })
   remove(@Param('id') id: string, @Request() req: any) {

@@ -7,15 +7,15 @@ import { TELAS_SISTEMA } from '@/lib/telas-sistema';
 
 const EMAIL_ADMIN_MASTER = 'admin@fiurj.edu.br';
 
-type Perfil = 'MASTER' | 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO' | 'SUPORTE';
-const PERFIS: Perfil[] = ['MASTER', 'ADMIN', 'SECRETARIA', 'FINANCEIRO', 'PROFESSOR', 'ALUNO', 'SUPORTE'];
+type Perfil = 'MASTER' | 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO' | 'SUPORTE' | 'COORDENADOR';
+const PERFIS: Perfil[] = ['MASTER', 'ADMIN', 'SECRETARIA', 'FINANCEIRO', 'PROFESSOR', 'ALUNO', 'SUPORTE', 'COORDENADOR'];
 const PERFIL_LABEL: Record<Perfil, string> = {
   MASTER: 'Master', ADMIN: 'Admin', SECRETARIA: 'Secretaria', FINANCEIRO: 'Financeiro',
-  PROFESSOR: 'Professor', ALUNO: 'Aluno', SUPORTE: 'Suporte',
+  PROFESSOR: 'Professor', ALUNO: 'Aluno', SUPORTE: 'Suporte', COORDENADOR: 'Coordenador',
 };
 const PERFIL_COLOR: Record<Perfil, string> = {
   MASTER: '#000000', ADMIN: '#dc2626', SECRETARIA: '#2563eb', FINANCEIRO: '#16a34a',
-  PROFESSOR: '#7c3aed', ALUNO: '#d97706', SUPORTE: '#0d9488',
+  PROFESSOR: '#7c3aed', ALUNO: '#d97706', SUPORTE: '#0d9488', COORDENADOR: '#0891b2',
 };
 
 type LinhaMatriz = {

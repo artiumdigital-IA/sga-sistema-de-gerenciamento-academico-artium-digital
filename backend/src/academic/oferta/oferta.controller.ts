@@ -14,7 +14,7 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class OfertaController {
   constructor(private readonly service: OfertaService) {}
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Tela('ofertas')
   @Post()
   @ApiOperation({ summary: 'Criar oferta de disciplina' })
@@ -38,7 +38,7 @@ export class OfertaController {
     return this.service.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Tela('ofertas')
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar oferta' })
@@ -46,7 +46,7 @@ export class OfertaController {
     return this.service.update(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Tela('ofertas')
   @Delete(':id')
   @HttpCode(204)

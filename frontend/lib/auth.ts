@@ -22,7 +22,7 @@ export interface LoginPayload {
 export interface JwtUser {
   sub: string;
   email: string;
-  perfil: 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO' | 'SUPORTE' | 'MASTER';
+  perfil: 'ADMIN' | 'SECRETARIA' | 'FINANCEIRO' | 'PROFESSOR' | 'ALUNO' | 'SUPORTE' | 'MASTER' | 'COORDENADOR';
   iat: number;
   exp: number;
 }

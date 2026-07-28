@@ -584,6 +584,7 @@ enum Perfil {
   PROFESSOR
   ALUNO
   SUPORTE
+  COORDENADOR
 }
 
 enum UsuarioStatus {

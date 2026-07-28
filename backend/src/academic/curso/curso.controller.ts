@@ -29,7 +29,7 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class CursoController {
   constructor(private readonly cursoService: CursoService) {}
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Post()
   @ApiOperation({ summary: 'Criar curso' })
   create(@Body() dto: CreateCursoDto, @Request() req: any) {
@@ -48,7 +48,7 @@ export class CursoController {
     return this.cursoService.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar curso' })
   update(
@@ -59,7 +59,7 @@ export class CursoController {
     return this.cursoService.update(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover curso' })

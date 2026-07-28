@@ -32,7 +32,7 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class DisciplinaController {
   constructor(private readonly disciplinaService: DisciplinaService) {}
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Post()
   @ApiOperation({ summary: 'Criar disciplina' })
   create(@Body() dto: CreateDisciplinaDto, @Request() req: any) {
@@ -52,7 +52,7 @@ export class DisciplinaController {
     return this.disciplinaService.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar disciplina' })
   update(
@@ -63,7 +63,7 @@ export class DisciplinaController {
     return this.disciplinaService.update(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover disciplina' })
@@ -71,7 +71,7 @@ export class DisciplinaController {
     return this.disciplinaService.remove(id, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Post(':id/prerequisitos')
   @ApiOperation({ summary: 'Adicionar pré-requisito a uma disciplina' })
   addPrerequisito(
@@ -86,7 +86,7 @@ export class DisciplinaController {
     );
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Delete(':id/prerequisitos/:prerequisitoId')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover pré-requisito de uma disciplina' })
