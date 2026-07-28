@@ -5,15 +5,23 @@
  * (ou)       npm run seed
  *
  * ── Massa de cursos (Jul/2026) ───────────────────────────────────────────
- * Os cursos cadastrados abaixo são os 9 cursos REAIS oferecidos pela FIURJ
+ * Os cursos cadastrados abaixo são os 10 cursos REAIS oferecidos pela FIURJ
  * e parceiras internacionais (UAL/UPT/USAL), extraídos dos materiais oficiais
- * de cada programa. Substituem os 3 cursos genéricos de teste (Direito,
- * Gestão Pública, Administração) que existiam antes — o bloco `limparCursosDeTesteAntigos()`
- * remove essa estrutura antiga (e tudo que dependia dela: matrizes, disciplinas,
- * ofertas, matrículas) e realoca os alunos de teste que apontavam pra ela.
+ * de cada programa (Direito e Gestão Pública vêm do PDF "GRADE CURRICULAR
+ * DIREITO E GESTÃO PÚBLICA", com carga horária real por disciplina). Substituem
+ * os 3 cursos genéricos de teste (Direito, Gestão Pública, Administração) que
+ * existiam antes — o bloco `limparCursosDeTesteAntigos()` remove essa estrutura
+ * antiga (e tudo que dependia dela: matrizes, disciplinas, ofertas, matrículas).
+ *
+ * ── Limpeza de dados de teste (Jul/2026) ─────────────────────────────────
+ * `limparMassaTesteAtual()` remove, por fingerprint exato, toda a massa
+ * sintética de alunos/professores/ofertas/notas/processos/contratos/avisos/
+ * períodos letivos criada por rodadas anteriores deste próprio script — não
+ * mexe nos cursos reais nem nos logins administrativos.
+ *
  * Script segue idempotente: pode rodar de novo sem duplicar nada.
  */
-import { PrismaClient, Grau, Modalidade, Turno } from '@prisma/client';
+import { PrismaClient, Grau, Modalidade } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -28,36 +36,174 @@ interface CursoConfig {
   modalidade: Modalidade;
   codigoEmec: string;
   cargaHorariaTotal: number;
+  cargaHorariaComplementarObrigatoria?: number;
   prazoIntegralizacaoSemestres: number;
   prefixoCodigo: string;
   cargaHorariaDisciplina: number;
   creditosDisciplina: number;
-  disciplinasPorPeriodo: string[][];
+  // Cada item é o nome da disciplina (usa cargaHorariaDisciplina/creditosDisciplina do curso),
+  // ou um par { nome, ch } quando a disciplina tem carga horária própria — caso de Direito e
+  // Gestão Pública, cujas grades reais têm CH variada por disciplina (ver PDF de grade
+  // curricular oficial "GRADE CURRICULAR DIREITO E GESTÃO PÚBLICA").
+  disciplinasPorPeriodo: (string | { nome: string; ch: number })[][];
 }
 
 const CURSOS_REAIS: CursoConfig[] = [
   {
-    // Fonte: FIURJgraduacaoemdireito.pdf — 10 semestres, 3780h, 100% presencial.
+    // Fonte: PDF oficial "GRADE CURRICULAR DIREITO E GESTÃO PÚBLICA" (trilhas 1-6 + Trilha 5:
+    // Regulação e Direito 4.0, períodos 7-10) — 10 semestres, 3760h (3660h de disciplinas +
+    // 100h de atividade complementar), 100% presencial. CH por disciplina real (não uniforme).
     nome: 'Direito',
     grau: 'BACHARELADO',
     modalidade: 'PRESENCIAL',
     codigoEmec: 'FIURJ-DIR-GRAD',
-    cargaHorariaTotal: 3780,
+    cargaHorariaTotal: 3760,
+    cargaHorariaComplementarObrigatoria: 100,
     prazoIntegralizacaoSemestres: 10,
     prefixoCodigo: 'FIURJ-DIR',
     cargaHorariaDisciplina: 80,
     creditosDisciplina: 4,
     disciplinasPorPeriodo: [
-      ['Comunicação e Expressão', 'Direitos Humanos, Sociedade e Relações Étnico-Raciais', 'Teoria Geral do Direito Civil', 'Pensamento Jurídico Brasileiro', 'Teoria do Estado Democrático', 'Teoria do Direito Constitucional', 'Crime e Sociedade (Direito Penal I)'],
-      ['Economia', 'Metodologia Científica e da Pesquisa', 'Teoria do Direito', 'Penas e Medidas Alternativas (Direito Penal II)', 'Relações e Conflitos Consumeristas', 'Análise Econômica do Direito', 'Organização do Estado e Direitos Fundamentais'],
-      ['Responsabilidade Social, Acessibilidade, Educação Ambiental e Recursos Naturais', 'Empreendedorismo, Inovação e Economia Criativa', 'Obrigações e Contratos', 'Teoria Geral da Empresa', 'Teorias da Justiça', 'Direito Global', 'Teoria Geral do Processo', 'Finanças Públicas'],
-      ['Neurolinguística', 'Relações Interpessoais e Multiprofissionais', 'Optativa I', 'Teoria do Direito Administrativo', 'Sistema Tributário Nacional', 'Tipos Societários', 'Teoria da Decisão', 'Direito da Propriedade', 'Direito Transnacional'],
-      ['Relações de Trabalho', 'Direito da Regulação', 'Processo Civil (Execução e Legislação Especial)', 'Processo do Trabalho', 'Direito Ambiental'],
-      ['Optativa II', 'Direito da Concorrência', 'Compliance e Lei de Garantia e Proteção de Dados (LGPD)', 'Processo Penal', 'Integrador Vivências Jurídicas II', 'Laboratório de Prática Jurídica'],
-      ['Métodos Adequados de Solução de Conflitos', 'Interpretação Jurisprudencial', 'Direito Ambiental II', 'Direito da Regulação II', 'Núcleo de Prática Jurídica I'],
-      ['Direito para Startups', 'Internet e Responsabilidade Civil', 'Concorrência em Mercados Digitais', 'Impacto das Tecnologias no Ordenamento Jurídico', 'Núcleo de Prática Jurídica II'],
-      ['Cybersegurança', 'Trabalho de Conclusão de Curso I', 'Comunicação Ativa', 'Contratos Eletrônicos', 'Núcleo de Prática Jurídica III'],
-      ['Trabalho de Conclusão de Curso II', 'Business Intelligence', 'Visual Law', 'Núcleo de Prática Jurídica IV', 'Atividade Complementar (120h)'],
+      [
+        { nome: 'Comunicação e Expressão', ch: 60 },
+        { nome: 'Direitos Humanos, Sociedade e Relações Étnico-Raciais', ch: 40 },
+        { nome: 'Teoria Geral do Direito Civil', ch: 80 },
+        { nome: 'Pensamento Jurídico Brasileiro', ch: 40 },
+        { nome: 'Teoria do Estado Democrático', ch: 60 },
+        { nome: 'Teoria do Direito Constitucional', ch: 60 },
+        { nome: 'Crime e Sociedade (Direito Penal I)', ch: 80 },
+      ],
+      [
+        { nome: 'Economia', ch: 40 },
+        { nome: 'Metodologia Científica e da Pesquisa', ch: 40 },
+        { nome: 'Teoria do Direito', ch: 60 },
+        { nome: 'Penas e Medidas Alternativas (Direito Penal II)', ch: 80 },
+        { nome: 'Relações e Conflitos Consumeristas', ch: 60 },
+        { nome: 'Análise Econômica do Direito', ch: 40 },
+        { nome: 'Organização do Estado e Direitos Fundamentais', ch: 40 },
+        { nome: 'Sociologia Jurídica', ch: 40 },
+      ],
+      [
+        { nome: 'Responsabilidade Social, Acessibilidade, Educação Ambiental e Recursos Naturais', ch: 40 },
+        { nome: 'Empreendedorismo, Inovação e Economia Criativa', ch: 40 },
+        { nome: 'Obrigações e Contratos', ch: 60 },
+        { nome: 'Teoria Geral da Empresa', ch: 40 },
+        { nome: 'Teorias da Justiça', ch: 40 },
+        { nome: 'Direito Global', ch: 40 },
+        { nome: 'Teoria Geral do Processo', ch: 80 },
+        { nome: 'Finanças Públicas', ch: 40 },
+      ],
+      [
+        { nome: 'Neurolinguística', ch: 40 },
+        { nome: 'Relações Interpessoais e Multiprofissionais', ch: 40 },
+        { nome: 'Teoria do Direito Administrativo', ch: 80 },
+        { nome: 'Sistema Tributário Nacional', ch: 40 },
+        { nome: 'Tipos Societários', ch: 40 },
+        { nome: 'Teoria da Decisão', ch: 60 },
+        { nome: 'Direito da Propriedade', ch: 60 },
+        { nome: 'Direito Transnacional', ch: 40 },
+      ],
+      [
+        { nome: 'Relações de Trabalho', ch: 80 },
+        { nome: 'Direito da Regulação', ch: 40 },
+        { nome: 'Processo Civil (Execução e Legislação Especial)', ch: 80 },
+        { nome: 'Processo do Trabalho', ch: 80 },
+        { nome: 'Direito Ambiental', ch: 40 },
+        { nome: 'Projeto Integrador Vivências Jurídicas I', ch: 80 },
+      ],
+      [
+        { nome: 'Optativa II', ch: 40 },
+        { nome: 'Direito da Concorrência', ch: 40 },
+        { nome: 'Compliance e Lei de Garantia e Proteção de Dados (LGPD)', ch: 40 },
+        { nome: 'Processo Penal', ch: 80 },
+        { nome: 'Projeto Integrador Vivências Jurídicas II', ch: 80 },
+        { nome: 'Laboratório de Prática Jurídica', ch: 80 },
+      ],
+      [
+        { nome: 'Métodos Adequados de Solução de Conflitos', ch: 60 },
+        { nome: 'Interpretação Jurisprudencial', ch: 80 },
+        { nome: 'Direito Ambiental II', ch: 60 },
+        { nome: 'Direito da Regulação II', ch: 80 },
+        { nome: 'Núcleo de Prática Jurídica I', ch: 80 },
+      ],
+      [
+        { nome: 'Direito para Startups', ch: 80 },
+        { nome: 'Internet e Responsabilidade Civil', ch: 60 },
+        { nome: 'Concorrência em Mercados Digitais', ch: 80 },
+        { nome: 'Impacto das Tecnologias no Ordenamento Jurídico', ch: 60 },
+        { nome: 'Núcleo de Prática Jurídica II', ch: 80 },
+      ],
+      [
+        { nome: 'Cybersegurança', ch: 60 },
+        { nome: 'Trabalho de Conclusão de Curso I', ch: 40 },
+        { nome: 'Comunicação Ativa', ch: 60 },
+        { nome: 'Contratos Eletrônicos', ch: 80 },
+        { nome: 'Núcleo de Prática Jurídica III', ch: 80 },
+      ],
+      [
+        { nome: 'Trabalho de Conclusão de Curso II', ch: 40 },
+        { nome: 'Business Intelligence', ch: 80 },
+        { nome: 'Visual Law', ch: 60 },
+        { nome: 'Núcleo de Prática Jurídica IV', ch: 80 },
+      ],
+    ],
+  },
+  {
+    // Fonte: PDF oficial "GRADE CURRICULAR DIREITO E GESTÃO PÚBLICA" — CST (tecnólogo), 4
+    // semestres, 1660h (1620h de disciplinas + 40h de atividades complementares).
+    // codigoEmec é PLACEHOLDER (o PDF não traz o código e-MEC real) — corrigir depois pela
+    // tela de Cursos quando o código oficial estiver disponível.
+    nome: 'Gestão Pública',
+    grau: 'TECNOLOGO',
+    modalidade: 'PRESENCIAL',
+    codigoEmec: 'FIURJ-GESPUB-TEC',
+    cargaHorariaTotal: 1660,
+    cargaHorariaComplementarObrigatoria: 40,
+    prazoIntegralizacaoSemestres: 4,
+    prefixoCodigo: 'FIURJ-GESPUB',
+    cargaHorariaDisciplina: 60,
+    creditosDisciplina: 3,
+    disciplinasPorPeriodo: [
+      [
+        { nome: 'Comunicação e Expressão', ch: 60 },
+        { nome: 'Direitos Humanos, Sociedade e Relações Étnico-Raciais', ch: 40 },
+        { nome: 'Direito Constitucional e Administrativo', ch: 60 },
+        { nome: 'Fundamentos de Contabilidade', ch: 40 },
+        { nome: 'Gestão de Projetos', ch: 60 },
+        { nome: 'Matemática Financeira', ch: 60 },
+        { nome: 'Fundamentos de Administração', ch: 60 },
+        { nome: 'Projeto Integrador - Vivências em Gestão Pública I', ch: 40 },
+      ],
+      [
+        { nome: 'Economia', ch: 40 },
+        { nome: 'Metodologia Científica e da Pesquisa', ch: 40 },
+        { nome: 'Estatística Aplicada', ch: 40 },
+        { nome: 'Qualidade no Serviço Público', ch: 60 },
+        { nome: 'Gestão Financeira e Orçamentária', ch: 60 },
+        { nome: 'Estratégia Empresarial', ch: 60 },
+        { nome: 'Gestão de Processos', ch: 60 },
+        { nome: 'Projeto Integrador - Vivências em Gestão Pública II', ch: 40 },
+      ],
+      [
+        { nome: 'Responsabilidade Social, Acessibilidade, Educação Ambiental e Recursos Naturais', ch: 40 },
+        { nome: 'Empreendedorismo, Inovação e Economia Criativa', ch: 40 },
+        { nome: 'Gestão Pública e Políticas Públicas no Brasil', ch: 60 },
+        { nome: 'Gestão de Pessoas e Relações Humanas no Setor Público', ch: 60 },
+        { nome: 'Ética e Probidade Administrativa', ch: 40 },
+        { nome: 'Licitações, Contratos e Convênios', ch: 60 },
+        { nome: 'Governo Eletrônico, Transparência e Inclusão', ch: 40 },
+        { nome: 'Projeto Integrador - Vivências em Gestão Pública III', ch: 40 },
+      ],
+      [
+        { nome: 'Neurolinguística', ch: 40 },
+        { nome: 'Relações Interpessoais e Multiprofissionais', ch: 40 },
+        { nome: 'Optativa', ch: 40 },
+        { nome: 'Elaboração e Gestão de Projetos e Programas no Setor Público', ch: 60 },
+        { nome: 'Laboratório de Prática Profissional em Gestão Pública', ch: 60 },
+        { nome: 'Controle e Auditoria', ch: 60 },
+        { nome: 'Desafios Contemporâneos e Inovações na Gestão Pública', ch: 60 },
+        { nome: 'Projeto Integrador - Vivências em Gestão Pública IV', ch: 60 },
+      ],
     ],
   },
   {
@@ -197,11 +343,13 @@ async function criarCursoComMatriz(cfg: CursoConfig) {
     update: {
       nome: cfg.nome, grau: cfg.grau, modalidade: cfg.modalidade,
       cargaHorariaTotal: cfg.cargaHorariaTotal, prazoIntegralizacaoSemestres: cfg.prazoIntegralizacaoSemestres,
+      cargaHorariaComplementarObrigatoria: cfg.cargaHorariaComplementarObrigatoria ?? 0,
       status: 'ATIVO',
     },
     create: {
       nome: cfg.nome, grau: cfg.grau, modalidade: cfg.modalidade, codigoEmec: cfg.codigoEmec,
       cargaHorariaTotal: cfg.cargaHorariaTotal, prazoIntegralizacaoSemestres: cfg.prazoIntegralizacaoSemestres,
+      cargaHorariaComplementarObrigatoria: cfg.cargaHorariaComplementarObrigatoria ?? 0,
       status: 'ATIVO',
     },
   });
@@ -214,15 +362,18 @@ async function criarCursoComMatriz(cfg: CursoConfig) {
   const disciplinas: { id: string; codigo: string; nome: string }[] = [];
   let seq = 0;
   for (let periodoIdx = 0; periodoIdx < cfg.disciplinasPorPeriodo.length; periodoIdx++) {
-    for (const nomeDisc of cfg.disciplinasPorPeriodo[periodoIdx]) {
+    for (const item of cfg.disciplinasPorPeriodo[periodoIdx]) {
       seq += 1;
+      const nomeDisc = typeof item === 'string' ? item : item.nome;
+      const chDisc = typeof item === 'string' ? cfg.cargaHorariaDisciplina : item.ch;
+      const creditosDisc = typeof item === 'string' ? cfg.creditosDisciplina : Math.round(item.ch / 20);
       const codigo = `${cfg.prefixoCodigo}-${String(seq).padStart(3, '0')}`;
       const disc = await prisma.disciplina.upsert({
         where: { matrizCurricularId_codigo: { matrizCurricularId: matriz.id, codigo } },
-        update: { nome: nomeDisc, periodoSugerido: periodoIdx + 1 },
+        update: { nome: nomeDisc, periodoSugerido: periodoIdx + 1, cargaHoraria: chDisc, creditos: creditosDisc },
         create: {
           matrizCurricularId: matriz.id, codigo, nome: nomeDisc,
-          cargaHoraria: cfg.cargaHorariaDisciplina, creditos: cfg.creditosDisciplina,
+          cargaHoraria: chDisc, creditos: creditosDisc,
           periodoSugerido: periodoIdx + 1,
         },
       });
@@ -234,6 +385,8 @@ async function criarCursoComMatriz(cfg: CursoConfig) {
 
 async function main() {
   console.log('🌱 Iniciando seed...');
+
+  await limparMassaTesteAtual();
 
   // ── Usuário Admin padrão ────────────────────────────────────
   const senhaHash = await bcrypt.hash('admin123', 12);
@@ -287,85 +440,11 @@ async function main() {
 
   console.log(`✅ Usuário financeiro: ${fin.email}  (senha: fin123)`);
 
-  // ── Períodos letivos de teste (alimenta o card "Calendário Acadêmico" do
-  // Painel, que lista os PeriodoLetivo cadastrados) ───────────────────────
-  const periodos: { ano: number; semestre: 'S1' | 'S2'; dataInicio: string; dataFim: string; status: 'PLANEJADO' | 'EM_ANDAMENTO' | 'ENCERRADO' }[] = [
-    { ano: 2025, semestre: 'S2', dataInicio: '2025-08-04', dataFim: '2025-12-19', status: 'ENCERRADO' },
-    { ano: 2026, semestre: 'S1', dataInicio: '2026-02-02', dataFim: '2026-06-27', status: 'ENCERRADO' },
-    { ano: 2026, semestre: 'S2', dataInicio: '2026-07-06', dataFim: '2026-12-18', status: 'EM_ANDAMENTO' },
-    { ano: 2027, semestre: 'S1', dataInicio: '2027-02-01', dataFim: '2027-06-30', status: 'PLANEJADO' },
-  ];
-
-  for (const p of periodos) {
-    await prisma.periodoLetivo.upsert({
-      where: { ano_semestre: { ano: p.ano, semestre: p.semestre } },
-      update: {},
-      create: {
-        ano: p.ano,
-        semestre: p.semestre,
-        dataInicio: new Date(p.dataInicio),
-        dataFim: new Date(p.dataFim),
-        status: p.status,
-      },
-    });
-  }
-
-  console.log(`✅ ${periodos.length} períodos letivos de teste (calendário acadêmico)`);
-
-  const periodo2026S1 = await prisma.periodoLetivo.findUnique({ where: { ano_semestre: { ano: 2026, semestre: 'S1' } } });
-
-  // ── Itens de teste do Calendário Acadêmico (marcos/eventos) para 2026/S2 ──
-  // Modelado no formato da Deliberação nº 41/2025 (UERJ) trazida como referência:
-  // marco/etapa + data única ou intervalo, com grupos de 2 níveis (ex. Exames Finais).
-  const periodo2026S2 = await prisma.periodoLetivo.findUnique({
-    where: { ano_semestre: { ano: 2026, semestre: 'S2' } },
-  });
-
-  if (periodo2026S2) {
-    await prisma.periodoLetivo.update({
-      where: { id: periodo2026S2.id },
-      data: { semanasLetivas: 18, diasLetivos: 102 },
-    });
-
-    const eventosExistentes = await prisma.eventoCalendario.count({
-      where: { periodoLetivoId: periodo2026S2.id },
-    });
-
-    if (eventosExistentes === 0) {
-      const eventos: { grupo: string | null; titulo: string; dataInicio: string; dataFim: string | null; observacoes: string | null; ordem: number }[] = [
-        { grupo: null, titulo: 'Acertos Curriculares', dataInicio: '2026-06-22', dataFim: '2026-07-03', observacoes: null, ordem: 10 },
-        { grupo: null, titulo: 'Inscrição em Disciplinas', dataInicio: '2026-06-24', dataFim: '2026-07-05', observacoes: null, ordem: 20 },
-        { grupo: null, titulo: 'Preparação do Ambiente Virtual de Aprendizagem (AVA)', dataInicio: '2026-07-01', dataFim: '2026-07-05', observacoes: 'Disciplinas EAD', ordem: 30 },
-        { grupo: null, titulo: 'Início das Aulas', dataInicio: '2026-07-06', dataFim: null, observacoes: null, ordem: 40 },
-        { grupo: null, titulo: 'Cancelamento, Reinscrição e Substituição', dataInicio: '2026-07-13', dataFim: '2026-07-24', observacoes: null, ordem: 50 },
-        { grupo: null, titulo: 'Término das Aulas', dataInicio: '2026-11-27', dataFim: null, observacoes: null, ordem: 60 },
-        { grupo: 'Exames Finais', titulo: 'Regime de Crédito', dataInicio: '2026-11-30', dataFim: '2026-12-04', observacoes: null, ordem: 70 },
-        { grupo: 'Exames Finais', titulo: 'Regime Seriado', dataInicio: '2026-12-07', dataFim: '2026-12-11', observacoes: null, ordem: 71 },
-        { grupo: 'Exames de 2ª Época', titulo: 'Requerimento', dataInicio: '2026-12-14', dataFim: '2026-12-15', observacoes: null, ordem: 80 },
-        { grupo: 'Exames de 2ª Época', titulo: 'Exames', dataInicio: '2026-12-16', dataFim: '2026-12-17', observacoes: null, ordem: 81 },
-        { grupo: null, titulo: 'Término do Semestre', dataInicio: '2026-12-18', dataFim: null, observacoes: null, ordem: 90 },
-        { grupo: null, titulo: 'Recesso Natalino', dataInicio: '2026-12-21', dataFim: '2027-01-31', observacoes: null, ordem: 100 },
-      ];
-
-      for (const ev of eventos) {
-        await prisma.eventoCalendario.create({
-          data: {
-            periodoLetivoId: periodo2026S2.id,
-            grupo: ev.grupo,
-            titulo: ev.titulo,
-            dataInicio: new Date(ev.dataInicio),
-            dataFim: ev.dataFim ? new Date(ev.dataFim) : undefined,
-            observacoes: ev.observacoes,
-            ordem: ev.ordem,
-          },
-        });
-      }
-
-      console.log(`✅ ${eventos.length} itens de teste do calendário acadêmico (período 2026/S2)`);
-    } else {
-      console.log('↷ Itens do calendário acadêmico de 2026/S2 já existem, seed não duplicou.');
-    }
-  }
+  // Períodos letivos e calendário acadêmico deixaram de ser seedados como
+  // massa de teste (Jul/2026, limpeza de dados de teste) — passam a vir da
+  // importação de dados reais (turmas/matrículas), ainda não implementada.
+  // `limparMassaTesteAtual()` (chamada no topo desta função) já apaga os 4
+  // períodos de teste (2025/S2..2027/S1) e o calendário que dependia deles.
 
   // =========================================================================
   // MASSA DE TESTE — estrutura acadêmica, pessoas, ofertas, financeiro,
@@ -399,27 +478,36 @@ async function main() {
     { curso: cursoUptTransnacional, matriz: matrizUptTransnacional, disciplinas: discUptTransnacional },
     { curso: cursoUsalDoutorado, matriz: matrizUsalDoutorado, disciplinas: discUsalDoutorado },
     { curso: cursoUsalPosDoc, matriz: matrizUsalPosDoc, disciplinas: discUsalPosDoc },
+    { curso: cursoFiurjGestaoPublica, matriz: matrizFiurjGestaoPublica, disciplinas: discFiurjGestaoPublica },
   ] = await Promise.all(CURSOS_REAIS.map(criarCursoComMatriz));
 
-  console.log(`✅ ${CURSOS_REAIS.length} cursos reais cadastrados (FIURJ Graduação/Pós, UAL x2, UPT x3, USAL x2)`);
+  console.log(`✅ ${CURSOS_REAIS.length} cursos reais cadastrados (FIURJ Direito/Gestão Pública/Pós, UAL x2, UPT x3, USAL x2)`);
 
   // ── Limpeza dos 3 cursos de teste genéricos antigos (Direito/Gestão
   // Pública/Administração) e de toda a estrutura que dependia deles. Roda só
   // uma vez: se os códigos antigos não existirem mais, é um no-op. ────────
   await limparCursosDeTesteAntigos(cursoFiurjDireito.id, matrizFiurjDireito.id);
 
-  // ── Professores ───────────────────────────────────────────────
+  // ── Professores reais (Pasta1.xlsx) — Direito + Gestão Pública ─────────
+  // Titulação/regime de trabalho/e-mail não constam no arquivo de origem —
+  // placeholder (Especialista/Horista/nome.sobrenome@fiurj.edu.br), editável
+  // depois pela tela de Professores. Associação de curso — Rogério da Silva
+  // Rocha e Elson Gomes: Gestão Pública; Gilberto Jorge F. de Freitas: Gestão
+  // Pública e também Direito; os demais 8 (incl. Simão Dolezel Aznar):
+  // Direito — é só informativa aqui: o schema não tem FK Professor→Curso,
+  // só via Oferta (fase futura de turmas reais).
   const professoresData = [
-    { nome: 'Carlos Eduardo Ramos', cpf: '11122233344', titulacao: 'DOUTOR' as const, regime: 'INTEGRAL' as const, email: 'carlos.ramos@fiurj.edu.br' },
-    { nome: 'Fernanda Souza Lima', cpf: '22233344455', titulacao: 'MESTRE' as const, regime: 'PARCIAL' as const, email: 'fernanda.lima@fiurj.edu.br' },
-    { nome: 'Ricardo Almeida Santos', cpf: '33344455566', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'ricardo.santos@fiurj.edu.br' },
-    { nome: 'Juliana Costa Pereira', cpf: '44455566677', titulacao: 'DOUTOR' as const, regime: 'INTEGRAL' as const, email: 'juliana.pereira@fiurj.edu.br' },
-    { nome: 'António Cardoso Guedes', cpf: '55511122233', titulacao: 'DOUTOR' as const, regime: 'PARCIAL' as const, email: 'antonio.guedes@ual.fiurj.edu.br' },
-    { nome: 'Inês Salgado Matos', cpf: '55522233344', titulacao: 'DOUTOR' as const, regime: 'PARCIAL' as const, email: 'ines.matos@upt.fiurj.edu.br' },
-    { nome: 'Rui Manuel Pinto Duarte', cpf: '55533344455', titulacao: 'DOUTOR' as const, regime: 'PARCIAL' as const, email: 'rui.duarte@upt.fiurj.edu.br' },
-    { nome: 'Javier Fernández Ruiz', cpf: '55544455566', titulacao: 'DOUTOR' as const, regime: 'PARCIAL' as const, email: 'javier.fernandez@usal.fiurj.edu.br' },
-    { nome: 'Lourenço Bastos Vidal', cpf: '55555566677', titulacao: 'POS_DOUTOR' as const, regime: 'HORISTA' as const, email: 'lourenco.vidal@usal.fiurj.edu.br' },
-    { nome: 'Esperanza Martín Quintela', cpf: '55566677788', titulacao: 'POS_DOUTOR' as const, regime: 'HORISTA' as const, email: 'esperanza.quintela@usal.fiurj.edu.br' },
+    { nome: 'Armstrong Cosme de Oliveira', cpf: '94434387715', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'armstrong.oliveira@fiurj.edu.br' },
+    { nome: 'Carlos Eugênio Pereira', cpf: '01954047770', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'carlos.pereira@fiurj.edu.br' },
+    { nome: 'Elson Gomes', cpf: '05189505731', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'elson.gomes@fiurj.edu.br' },
+    { nome: 'Fabiano Guimarães da Rocha', cpf: '08049407705', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'fabiano.rocha@fiurj.edu.br' },
+    { nome: 'Gilberto Jorge F. de Freitas', cpf: '20679858768', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'gilberto.freitas@fiurj.edu.br' },
+    { nome: 'Lier Pires Ferreira Junior', cpf: '03130723706', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'lier.ferreira@fiurj.edu.br' },
+    { nome: 'Mariana Marun', cpf: '04320982754', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'mariana.marun@fiurj.edu.br' },
+    { nome: 'Marilza Pereira da Silva Roco', cpf: '00259696765', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'marilza.roco@fiurj.edu.br' },
+    { nome: 'Ricardo Basílio Weber', cpf: '03533393771', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'ricardo.weber@fiurj.edu.br' },
+    { nome: 'Rogério da Silva Rocha', cpf: '01326370731', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'rogerio.rocha@fiurj.edu.br' },
+    { nome: 'Simão Dolezel Aznar', cpf: '12194567720', titulacao: 'ESPECIALISTA' as const, regime: 'HORISTA' as const, email: 'simao.aznar@fiurj.edu.br' },
   ];
   const professores: Record<string, { id: string }> = {};
   for (const p of professoresData) {
@@ -433,366 +521,23 @@ async function main() {
     });
     professores[p.email] = prof;
   }
-  console.log(`✅ ${professoresData.length} professores de teste`);
+  console.log(`✅ ${professoresData.length} professores reais (Direito/Gestão Pública)`);
 
-  // Usuário de login pro perfil PROFESSOR (Carlos Eduardo Ramos)
-  const senhaProfHash = await bcrypt.hash('prof123', 12);
-  const professorLogin = professores['carlos.ramos@fiurj.edu.br'];
-  await prisma.usuario.upsert({
-    where: { email: 'professor@fiurj.edu.br' },
-    update: {},
-    create: {
-      email: 'professor@fiurj.edu.br', senhaHash: senhaProfHash, perfil: 'PROFESSOR',
-      mfaAtivo: false, status: 'ATIVO', nome: 'Carlos Eduardo Ramos',
-      professorId: professorLogin.id,
-    },
-  });
-  console.log('✅ Usuário professor: professor@fiurj.edu.br  (senha: prof123)');
+  // Alunos, ofertas, matrículas, notas e frequência de teste foram removidos
+  // (Jul/2026, limpeza de dados de teste) — `limparMassaTesteAtual()` (topo
+  // desta função) já apaga qualquer resquício. A importação de alunos/turmas
+  // reais de Direito/Gestão Pública fica para uma fase futura (depende de
+  // mapear qual turma numérica da Kirsch — 251/252/261/262/271/2 — é Direito
+  // e qual é Gestão Pública, confirmação pendente com o usuário).
 
-  // ── Alunos — 8 já existentes (RAs 2024001-2024008) realocados pros cursos
-  // reais + 2 novos (2024009/2024010) pra cobrir Doutorado e Pós-Doutorado
-  // da USAL, que não tinham nenhum aluno de teste correspondente. ────────
-  const alunosData: {
-    ra: string; nome: string; cpf: string; email: string; cursoId: string; matrizId: string;
-    sexo: 'MASCULINO' | 'FEMININO'; corRaca: 'BRANCA' | 'PRETA' | 'PARDA' | 'AMARELA' | 'INDIGENA';
-    formaIngresso: 'VESTIBULAR' | 'ENEM' | 'TRANSFERENCIA_EXTERNA' | 'CONVENIO'; situacao: 'CURSANDO' | 'TRANCADO' | 'EVADIDO';
-    codigoValidacaoCarteirinha?: string;
-  }[] = [
-    { ra: '2024001', nome: 'Mariana Alves Ferreira', cpf: '55566677788', email: 'mariana.ferreira@aluno.fiurj.edu.br', cursoId: cursoFiurjDireito.id, matrizId: matrizFiurjDireito.id, sexo: 'FEMININO', corRaca: 'PARDA', formaIngresso: 'ENEM', situacao: 'CURSANDO', codigoValidacaoCarteirinha: 'FIURJ-2026-000001' },
-    { ra: '2024002', nome: 'Pedro Henrique Souza', cpf: '66677788899', email: 'pedro.souza@aluno.fiurj.edu.br', cursoId: cursoFiurjDireito.id, matrizId: matrizFiurjDireito.id, sexo: 'MASCULINO', corRaca: 'BRANCA', formaIngresso: 'VESTIBULAR', situacao: 'CURSANDO' },
-    { ra: '2024003', nome: 'Beatriz Lima Rodrigues', cpf: '77788899900', email: 'beatriz.rodrigues@aluno.fiurj.edu.br', cursoId: cursoFiurjCriminais.id, matrizId: matrizFiurjCriminais.id, sexo: 'FEMININO', corRaca: 'PRETA', formaIngresso: 'ENEM', situacao: 'CURSANDO' },
-    { ra: '2024004', nome: 'Lucas Gabriel Martins', cpf: '88899900011', email: 'lucas.martins@aluno.fiurj.edu.br', cursoId: cursoUalPoliciais.id, matrizId: matrizUalPoliciais.id, sexo: 'MASCULINO', corRaca: 'PARDA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
-    { ra: '2024005', nome: 'Camila Santos Oliveira', cpf: '99900011122', email: 'camila.oliveira@aluno.fiurj.edu.br', cursoId: cursoUalPoliticas.id, matrizId: matrizUalPoliticas.id, sexo: 'FEMININO', corRaca: 'BRANCA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
-    { ra: '2024006', nome: 'Rafael Costa Silva', cpf: '00011122233', email: 'rafael.silva@aluno.fiurj.edu.br', cursoId: cursoUptAdmTrib.id, matrizId: matrizUptAdmTrib.id, sexo: 'MASCULINO', corRaca: 'AMARELA', formaIngresso: 'CONVENIO', situacao: 'TRANCADO' },
-    { ra: '2024007', nome: 'Amanda Pereira Gomes', cpf: '11223344556', email: 'amanda.gomes@aluno.fiurj.edu.br', cursoId: cursoUptPoliticas.id, matrizId: matrizUptPoliticas.id, sexo: 'FEMININO', corRaca: 'INDIGENA', formaIngresso: 'CONVENIO', situacao: 'EVADIDO' },
-    { ra: '2024008', nome: 'Gabriel Rocha Barbosa', cpf: '22334455667', email: 'gabriel.barbosa@aluno.fiurj.edu.br', cursoId: cursoUptTransnacional.id, matrizId: matrizUptTransnacional.id, sexo: 'MASCULINO', corRaca: 'PARDA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
-    { ra: '2024009', nome: 'Rodrigo Nunes Carvalho', cpf: '33445566779', email: 'rodrigo.carvalho@aluno.fiurj.edu.br', cursoId: cursoUsalDoutorado.id, matrizId: matrizUsalDoutorado.id, sexo: 'MASCULINO', corRaca: 'BRANCA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
-    { ra: '2024010', nome: 'Patrícia Menezes Duarte', cpf: '44556677890', email: 'patricia.duarte@aluno.fiurj.edu.br', cursoId: cursoUsalPosDoc.id, matrizId: matrizUsalPosDoc.id, sexo: 'FEMININO', corRaca: 'PARDA', formaIngresso: 'CONVENIO', situacao: 'CURSANDO' },
-  ];
-  const alunos: Record<string, { id: string }> = {};
-  for (const a of alunosData) {
-    const aluno = await prisma.aluno.upsert({
-      where: { ra: a.ra },
-      update: {
-        cursoId: a.cursoId, matrizCurricularId: a.matrizId, situacaoVinculo: a.situacao,
-      },
-      create: {
-        ra: a.ra, nome: a.nome, cpf: a.cpf, email: a.email,
-        cursoId: a.cursoId, matrizCurricularId: a.matrizId,
-        dataNascimento: new Date('2003-05-14'), sexo: a.sexo, corRaca: a.corRaca,
-        nacionalidade: 'BRASILEIRA', formaIngresso: a.formaIngresso,
-        dataIngresso: new Date('2024-02-05'), situacaoVinculo: a.situacao,
-        codigoValidacaoCarteirinha: a.codigoValidacaoCarteirinha,
-        carteirinhaValidaAte: a.codigoValidacaoCarteirinha ? new Date('2027-12-31') : undefined,
-      },
-    });
-    alunos[a.ra] = aluno;
-  }
-  console.log(`✅ ${alunosData.length} alunos de teste (realocados pros 9 cursos reais)`);
-
-  // Usuário de login pro perfil ALUNO (Mariana Alves Ferreira, RA 2024001 — agora em Direito/FIURJ)
-  const senhaAlunoHash = await bcrypt.hash('aluno123', 12);
-  await prisma.usuario.upsert({
-    where: { email: 'aluno@fiurj.edu.br' },
-    update: {},
-    create: {
-      email: 'aluno@fiurj.edu.br', senhaHash: senhaAlunoHash, perfil: 'ALUNO',
-      mfaAtivo: false, status: 'ATIVO', alunoId: alunos['2024001'].id,
-    },
-  });
-  console.log('✅ Usuário aluno: aluno@fiurj.edu.br  (senha: aluno123)');
-
-  // ── Ofertas (turmas) + matrículas nos 9 cursos reais, período 2026/S2 ──
-  // Protegido por checagem de idempotência própria (existência de uma oferta
-  // da primeira disciplina de Direito/FIURJ), independente do bloco legado
-  // de avisos/financeiro/etc. logo abaixo.
-  const jaTemOfertasReais = periodo2026S2
-    ? await prisma.oferta.findFirst({ where: { disciplina: { codigo: discFiurjDireito[0].codigo } } })
-    : true;
-
-  if (!jaTemOfertasReais && periodo2026S2) {
-    type CursoTurma = { disciplinas: { id: string; codigo: string; nome: string }[]; profEmail: string; profEmail2?: string; turno: Turno; sala: string; horario: string };
-    const turmasPorCurso: CursoTurma[] = [
-      { disciplinas: discFiurjDireito, profEmail: 'carlos.ramos@fiurj.edu.br', turno: 'NOITE', sala: '101', horario: '19h-22h30' },
-      { disciplinas: discFiurjCriminais, profEmail: 'fernanda.lima@fiurj.edu.br', turno: 'MANHA', sala: '201', horario: 'Sábados 09h-13h' },
-      { disciplinas: discUalPoliciais, profEmail: 'antonio.guedes@ual.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Lisboa 18h-19h' },
-      { disciplinas: discUalPoliticas, profEmail: 'antonio.guedes@ual.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Lisboa 18h-19h' },
-      { disciplinas: discUptAdmTrib, profEmail: 'ines.matos@upt.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Porto 18h-19h' },
-      { disciplinas: discUptPoliticas, profEmail: 'ines.matos@upt.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Porto 18h-19h' },
-      { disciplinas: discUptTransnacional, profEmail: 'rui.duarte@upt.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 14h-15h / Porto 18h-19h' },
-      { disciplinas: discUsalDoutorado, profEmail: 'juliana.pereira@fiurj.edu.br', profEmail2: 'javier.fernandez@usal.fiurj.edu.br', turno: 'TARDE', sala: 'Online', horario: 'Brasil 12h30-16h30' },
-      { disciplinas: discUsalPosDoc, profEmail: 'lourenco.vidal@usal.fiurj.edu.br', profEmail2: 'esperanza.quintela@usal.fiurj.edu.br', turno: 'MANHA', sala: 'Presencial — Salamanca', horario: 'Espanha 10h-14h30' },
-    ];
-
-    const ofertasPorCurso: { id: string; disciplinaCodigo: string }[][] = [];
-    for (const t of turmasPorCurso) {
-      const ofertasDoCurso: { id: string; disciplinaCodigo: string }[] = [];
-      const disciplinasParaOferta = t.disciplinas.slice(0, 2); // 2 primeiras disciplinas de cada curso viram turma
-      for (let i = 0; i < disciplinasParaOferta.length; i++) {
-        const profEmail = i === 0 ? t.profEmail : (t.profEmail2 ?? t.profEmail);
-        const oferta = await prisma.oferta.create({
-          data: {
-            disciplinaId: disciplinasParaOferta[i].id,
-            periodoLetivoId: periodo2026S2.id,
-            professorId: professores[profEmail].id,
-            vagas: 30, turno: t.turno, sala: t.sala, horario: t.horario,
-          },
-        });
-        ofertasDoCurso.push({ id: oferta.id, disciplinaCodigo: disciplinasParaOferta[i].codigo });
-      }
-      ofertasPorCurso.push(ofertasDoCurso);
-    }
-    console.log(`✅ ${ofertasPorCurso.flat().length} ofertas (turmas) de teste, 2 por curso real, em 2026/2`);
-
-    // Matrículas — 1 aluno de cada curso (o 1º cadastrado nele) nas 2 ofertas do curso
-    const matriculaPorCursoIdx: { ra: string; cursoIdx: number; status: 'MATRICULADO' | 'TRANCADO' | 'CANCELADO' }[] = [
-      { ra: '2024001', cursoIdx: 0, status: 'MATRICULADO' },
-      { ra: '2024002', cursoIdx: 0, status: 'MATRICULADO' },
-      { ra: '2024003', cursoIdx: 1, status: 'MATRICULADO' },
-      { ra: '2024004', cursoIdx: 2, status: 'MATRICULADO' },
-      { ra: '2024005', cursoIdx: 3, status: 'MATRICULADO' },
-      { ra: '2024006', cursoIdx: 4, status: 'TRANCADO' },
-      { ra: '2024007', cursoIdx: 5, status: 'CANCELADO' },
-      { ra: '2024008', cursoIdx: 6, status: 'MATRICULADO' },
-      { ra: '2024009', cursoIdx: 7, status: 'MATRICULADO' },
-      { ra: '2024010', cursoIdx: 8, status: 'MATRICULADO' },
-    ];
-    let totalMatriculas = 0;
-    const matriculaMarianaPorDisciplina: Record<string, string> = {};
-    for (const m of matriculaPorCursoIdx) {
-      for (const oferta of ofertasPorCurso[m.cursoIdx]) {
-        const matricula = await prisma.matriculaDisciplina.create({
-          data: { alunoId: alunos[m.ra].id, ofertaId: oferta.id, status: m.status },
-        });
-        totalMatriculas += 1;
-        if (m.ra === '2024001') matriculaMarianaPorDisciplina[oferta.disciplinaCodigo] = matricula.id;
-      }
-    }
-    console.log(`✅ ${totalMatriculas} matrículas de teste nos cursos reais (2026/2)`);
-
-    // Notas (pauta), frequência e avaliação avulsa pra Mariana na 1ª disciplina
-    // de Direito/FIURJ — dá pra ver Lançamento de Notas, Frequência, Pauta e
-    // Mapão populados.
-    const matriculaMarianaDir1 = matriculaMarianaPorDisciplina[discFiurjDireito[0].codigo];
-    if (matriculaMarianaDir1) {
-      await prisma.notaPauta.create({
-        data: {
-          matriculaDisciplinaId: matriculaMarianaDir1,
-          av1: 8.0, av2: 7.5, av3: 9.0, av4: 8.5, faltas: 2,
-        },
-      });
-      await prisma.registroFrequencia.create({
-        data: {
-          matriculaDisciplinaId: matriculaMarianaDir1,
-          data: new Date('2026-07-06'), quantidadeAulas: 4, faltas: 0,
-        },
-      });
-      await prisma.registroFrequencia.create({
-        data: {
-          matriculaDisciplinaId: matriculaMarianaDir1,
-          data: new Date('2026-07-13'), quantidadeAulas: 4, faltas: 2, observacao: 'Atestado médico',
-        },
-      });
-      await prisma.avaliacao.create({
-        data: { matriculaDisciplinaId: matriculaMarianaDir1, tipo: 'PROVA', nota: 8.0, peso: 1 },
-      });
-      console.log(`✅ Notas/frequência/avaliação de teste (Mariana em ${discFiurjDireito[0].nome})`);
-    }
-
-    // Disciplina já concluída por Mariana em 2026/1 (período ENCERRADO) — pra
-    // Notas e Histórico / CR / Integralização terem o que mostrar além do
-    // período em andamento.
-    if (periodo2026S1 && discFiurjDireito[2]) {
-      const ofertaConcluida = await prisma.oferta.create({
-        data: {
-          disciplinaId: discFiurjDireito[2].id, periodoLetivoId: periodo2026S1.id,
-          professorId: professores['carlos.ramos@fiurj.edu.br'].id,
-          vagas: 40, turno: 'NOITE', sala: '101', horario: '19h-22h30',
-        },
-      });
-      const matriculaConcluida = await prisma.matriculaDisciplina.create({
-        data: { alunoId: alunos['2024001'].id, ofertaId: ofertaConcluida.id, status: 'APROVADO' },
-      });
-      await prisma.resultadoDisciplina.create({
-        data: { matriculaDisciplinaId: matriculaConcluida.id, mediaFinal: 8.2, faltas: 3, frequenciaPercentual: 92.5, situacao: 'APROVADO' },
-      });
-      console.log(`✅ 1 disciplina concluída de teste (Mariana, ${discFiurjDireito[2].nome}, 2026/1 — APROVADO)`);
-    }
-  } else {
-    console.log('↷ Ofertas/matrículas de teste dos cursos reais já existem, seed não duplicou.');
-  }
-
-  // ── Bloco legado — avisos, financeiro, secretaria, ingresso etc.
-  // Protegido por checagem de idempotência própria (não depende mais dos
-  // cursos/disciplinas de teste antigos, que foram removidos). ───────────
-  const jaTemMassaTesteLegada = await prisma.aviso.findFirst({ where: { titulo: 'Bem-vindos ao 2º semestre de 2026' } });
-
-  if (!jaTemMassaTesteLegada && periodo2026S2) {
-    // ── Avisos (mural do Painel inicial) ──────────────────────────
-    await prisma.aviso.createMany({
-      data: [
-        { titulo: 'Bem-vindos ao 2º semestre de 2026', texto: 'As aulas do período 2026/2 começam em 06/07. Confiram o calendário acadêmico.', tag: 'GERAL', autorNome: 'Secretaria Acadêmica', autorId: sec.id },
-        { titulo: 'Manutenção programada no sistema', texto: 'No sábado, das 22h às 23h, o sistema ficará indisponível para manutenção.', tag: 'IMPORTANTE', autorNome: 'TI FIURJ', autorId: admin.id },
-        { titulo: 'Reunião de coordenação', texto: 'Reunião de coordenadores na sexta-feira às 14h, sala de reuniões.', tag: 'APENAS_EQUIPE', autorNome: 'Direção Acadêmica', autorId: admin.id },
-      ],
-    });
-    console.log('✅ 3 avisos de teste');
-
-    // ── Ficha de saúde (Mariana) ───────────────────────────────────
-    await prisma.fichaSaude.create({
-      data: {
-        alunoId: alunos['2024001'].id, tipoSanguineo: 'O+', alergias: 'Nenhuma conhecida',
-        contatoEmergenciaNome: 'Roberto Ferreira', contatoEmergenciaTelefone: '(22) 99999-0001',
-      },
-    });
-    console.log('✅ 1 ficha de saúde de teste');
-
-    // ── Contas bancárias ────────────────────────────────────────────
-    await prisma.contaBancaria.createMany({
-      data: [
-        { banco: 'Banco do Brasil', agencia: '1234-5', numeroConta: '98765-4', tipoConta: 'CORRENTE', titular: 'FIURJ Faculdade', cnpjCpfTitular: '12.345.678/0001-90' },
-        { banco: 'Caixa Econômica Federal', agencia: '0001', numeroConta: '11223-4', tipoConta: 'POUPANCA', titular: 'FIURJ Faculdade', cnpjCpfTitular: '12.345.678/0001-90' },
-      ],
-    });
-    console.log('✅ 2 contas bancárias de teste');
-
-    // ── Categorias de receita ────────────────────────────────────────
-    await prisma.categoriaReceita.createMany({
-      data: [
-        { nome: 'Mensalidade', descricao: 'Mensalidade de graduação/pós-graduação' },
-        { nome: 'Taxa de Matrícula', descricao: 'Taxa cobrada no ato da matrícula' },
-        { nome: 'Segunda Via de Documentos', descricao: 'Emissão de segunda via de documentos' },
-      ],
-    });
-    console.log('✅ 3 categorias de receita de teste');
-
-    // ── Documentos digitalizados do aluno ────────────────────────────
-    await prisma.documentoAluno.createMany({
-      data: [
-        { alunoId: alunos['2024001'].id, tipo: 'RG', nomeArquivo: 'rg-mariana.pdf', url: '/uploads/documentos-aluno/rg-mariana-teste.pdf', tamanho: 204800 },
-        { alunoId: alunos['2024001'].id, tipo: 'Histórico Escolar', nomeArquivo: 'historico-mariana.pdf', url: '/uploads/documentos-aluno/historico-mariana-teste.pdf', tamanho: 512000 },
-      ],
-    });
-    console.log('✅ 2 documentos de aluno de teste');
-
-    // ── Motivos de ocorrência + ocorrências ──────────────────────────
-    const motivoAtraso = await prisma.motivoOcorrencia.create({ data: { nome: 'Atraso' } });
-    await prisma.motivoOcorrencia.createMany({ data: [{ nome: 'Falta de material' }, { nome: 'Conduta inadequada' }] });
-    await prisma.ocorrencia.create({
-      data: { alunoId: alunos['2024002'].id, motivoId: motivoAtraso.id, descricao: 'Chegou atrasado à prova.', data: new Date('2026-07-08'), usuarioId: sec.id },
-    });
-    console.log('✅ 3 motivos de ocorrência + 1 ocorrência de teste');
-
-    // ── Mensagens (chat 1-a-1) ────────────────────────────────────────
-    await prisma.mensagem.create({
-      data: { remetenteId: admin.id, destinatarioId: sec.id, assunto: 'Boas-vindas', corpo: 'Olá! Qualquer dúvida sobre o novo sistema, me chama por aqui.' },
-    });
-    await prisma.mensagem.create({
-      data: { remetenteId: sec.id, destinatarioId: admin.id, assunto: 'Re: Boas-vindas', corpo: 'Combinado, obrigada!', lida: true },
-    });
-    console.log('✅ 2 mensagens de teste');
-
-    // ── Observações financeiras ─────────────────────────────────────
-    await prisma.observacaoFinanceira.create({
-      data: { alunoId: alunos['2024001'].id, observacao: 'Aluna solicitou parcelamento diferenciado — aprovado pela coordenação financeira.', usuarioId: fin.id },
-    });
-    console.log('✅ 1 observação financeira de teste');
-
-    // ── Ramais ────────────────────────────────────────────────────────
-    await prisma.ramal.createMany({
-      data: [
-        { nome: 'Secretaria Geral', setor: 'Secretaria', numero: '2000' },
-        { nome: 'Financeiro', setor: 'Financeiro', numero: '2001' },
-        { nome: 'Coordenação de Direito', setor: 'Coordenação', numero: '2002' },
-        { nome: 'Coordenação de Pós-Graduação e Convênios Internacionais', setor: 'Coordenação', numero: '2003' },
-        { nome: 'TI / Suporte', setor: 'TI', numero: '2004' },
-      ],
-    });
-    console.log('✅ 5 ramais de teste');
-
-    // ── Motivos de transferência/cancelamento ────────────────────────
-    await prisma.motivoTransferenciaCancelamento.createMany({
-      data: [{ nome: 'Mudança de turno' }, { nome: 'Conflito de horário' }, { nome: 'Solicitação do aluno' }],
-    });
-    console.log('✅ 3 motivos de transferência/cancelamento de teste');
-
-    // ── Bolsista ──────────────────────────────────────────────────────
-    await prisma.bolsista.create({
-      data: { alunoId: alunos['2024003'].id, tipoBolsa: 'Convênio Institucional', percentual: 10, dataInicio: new Date('2024-02-05'), ativo: true },
-    });
-    console.log('✅ 1 bolsista de teste');
-
-    // ── Tipos de protocolo + protocolos ──────────────────────────────
-    const tipoProtocoloDoc = await prisma.tipoProtocolo.create({ data: { nome: 'Solicitação de Documento' } });
-    await prisma.tipoProtocolo.createMany({ data: [{ nome: 'Reclamação' }, { nome: 'Recurso Administrativo' }] });
-    // upsert (não create) — `numero` é @unique; evita P2002 se sobrar um
-    // Protocolo de uma rodada de seed anterior que não chegou a criar o
-    // Aviso-marcador (guarda `jaTemMassaTesteLegada` lá em cima), o que faria
-    // esse bloco inteiro re-rodar e colidir num `numero` já existente.
-    await prisma.protocolo.upsert({
-      where: { numero: '2026/000001' },
-      update: {},
-      create: {
-        numero: '2026/000001', tipoId: tipoProtocoloDoc.id, alunoId: alunos['2024001'].id,
-        assunto: 'Solicitação de declaração de matrícula', status: 'ABERTO', usuarioAberturaId: sec.id,
-      },
-    });
-    console.log('✅ 3 tipos de protocolo + 1 protocolo de teste');
-
-    // ── Contrato de matrícula + parcelas (pra Relatório Financeiro /
-    // Inadimplência ter o que mostrar: uma paga, uma pendente, uma vencida) ──
-    const contrato = await prisma.contratoMatricula.create({
-      data: {
-        alunoId: alunos['2024001'].id, periodoLetivoId: periodo2026S2.id,
-        valorTotal: 6000, numeroParcelas: 6, diaVencimento: 10, status: 'ATIVO',
-      },
-    });
-    await prisma.parcela.createMany({
-      data: [
-        { contratoId: contrato.id, numero: 1, valor: 1000, dataVencimento: new Date('2026-07-10'), dataPagamento: new Date('2026-07-08'), valorPago: 1000, status: 'PAGO', formaPagamento: 'PIX' },
-        { contratoId: contrato.id, numero: 2, valor: 1000, dataVencimento: new Date('2026-08-10'), status: 'PENDENTE' },
-        { contratoId: contrato.id, numero: 3, valor: 1000, dataVencimento: new Date('2026-06-10'), status: 'VENCIDO' },
-      ],
-    });
-    console.log('✅ 1 contrato + 3 parcelas de teste');
-
-    // ── Processo seletivo + candidatos + inscrições (Ingresso) ────────
-    const processoSeletivo = await prisma.processoSeletivo.create({
-      data: {
-        nome: 'Vestibular 2026/2 — Direito', tipo: 'VESTIBULAR', cursoId: cursoFiurjDireito.id,
-        periodoLetivoId: periodo2026S2.id, vagas: 60,
-        dataAbertura: new Date('2026-05-01'), dataEncerramento: new Date('2026-06-15'), status: 'ENCERRADO',
-      },
-    });
-    const candidato1 = await prisma.candidato.upsert({
-      where: { cpf: '33445566778' },
-      update: {},
-      create: { nome: 'Vitor Hugo Nascimento', cpf: '33445566778', email: 'vitor.nascimento@example.com', dataNascimento: new Date('2005-03-20'), sexo: 'MASCULINO', nacionalidade: 'BRASILEIRA' },
-    });
-    const candidato2 = await prisma.candidato.upsert({
-      where: { cpf: '44556677889' },
-      update: {},
-      create: { nome: 'Isabela Cristina Rocha', cpf: '44556677889', email: 'isabela.rocha@example.com', dataNascimento: new Date('2005-09-11'), sexo: 'FEMININO', nacionalidade: 'BRASILEIRA' },
-    });
-    await prisma.inscricao.create({
-      data: { candidatoId: candidato1.id, processoSeletivoId: processoSeletivo.id, status: 'APROVADO', notaEnem: 720.5, documentosOk: true },
-    });
-    await prisma.inscricao.create({
-      data: { candidatoId: candidato2.id, processoSeletivoId: processoSeletivo.id, status: 'EM_ANALISE', notaEnem: 680.0, documentosOk: false },
-    });
-    console.log('✅ 1 processo seletivo + 2 candidatos + 2 inscrições de teste');
-
-    // ── Requerimentos ─────────────────────────────────────────────────
-    await prisma.requerimento.create({
-      data: { alunoId: alunos['2024001'].id, tipo: 'DECLARACAO_MATRICULA', descricao: 'Preciso da declaração para o estágio.', status: 'ABERTO' },
-    });
-    await prisma.requerimento.create({
-      data: { alunoId: alunos['2024002'].id, tipo: 'HISTORICO_OFICIAL', status: 'DEFERIDO', resposta: 'Histórico emitido e enviado por e-mail.' },
-    });
-    console.log('✅ 2 requerimentos de teste');
-  } else {
-    console.log('↷ Massa de teste legada (avisos/financeiro/ingresso/secretaria/etc.) já existe, seed não duplicou.');
-  }
+  // Bloco legado (avisos/ficha de saúde/contas bancárias/documentos/
+  // ocorrências/mensagens/observações financeiras/ramais/bolsista/protocolo/
+  // contrato+parcelas/processo seletivo+candidatos/requerimentos) de teste
+  // foi removido (Jul/2026, limpeza de dados de teste) — `limparMassaTesteAtual()`
+  // (topo desta função) já apaga qualquer resquício pelos fingerprints exatos
+  // (RA/CPF/título). Ramais, categorias de receita, contas bancárias, tipos de
+  // protocolo e motivos de ocorrência/transferência (catálogos pequenos, sem
+  // dado sensível) não foram recriados nem apagados — seguem como estavam.
 
   // ── Perfil Master (Jul/2026) — ferramentas de sistema (Painel do Sistema,
   // Identidade Visual, Ramais, Log de Auditoria), acima do ADMIN comum. ────
@@ -840,10 +585,7 @@ async function main() {
       ),
     );
     const tipoPorNome = Object.fromEntries(tiposChamado.map(t => [t.nome, t]));
-    const solicitante = alunos['2024001']
-      ? await prisma.usuario.findFirst({ where: { alunoId: alunos['2024001'].id } })
-      : null;
-    const solicitanteId = solicitante?.id ?? suporte.id;
+    const solicitanteId = suporte.id;
 
     await prisma.chamadoManutencao.create({
       data: {
@@ -924,14 +666,86 @@ async function main() {
 }
 
 /**
+ * Remove toda a massa de teste sintética herdada de rodadas anteriores do
+ * seed: alunos fake (RAs 2024001-2024010), professores fake, ofertas/
+ * matrículas/notas/frequência, processo seletivo + candidatos + inscrições,
+ * contratos + parcelas, requerimentos/documentos de aluno, ficha de saúde/
+ * bolsista/ocorrência/observação financeira/protocolo presos aos alunos
+ * fake, avisos de teste, e os 4 períodos letivos de teste + calendário
+ * acadêmico que dependia deles. NÃO mexe nos 10 cursos reais (Direito/
+ * Gestão Pública/Pós-Graduação/UAL/UPT/USAL), nem nos usuários de login
+ * (admin/secretaria/financeiro/master/suporte), nem nos catálogos pequenos
+ * (ramais, categorias de receita, contas bancárias, tipos de protocolo,
+ * motivos de ocorrência/transferência).
+ *
+ * Usa fingerprints exatos (RA/e-mail/CPF/título literal) desta mesma seed —
+ * não é um DELETE genérico. Idempotente: numa 2ª execução os filtros não
+ * encontram mais nada e é um no-op.
+ */
+async function limparMassaTesteAtual() {
+  const RAS_TESTE = ['2024001', '2024002', '2024003', '2024004', '2024005', '2024006', '2024007', '2024008', '2024009', '2024010'];
+  const EMAILS_PROF_TESTE = [
+    'carlos.ramos@fiurj.edu.br', 'fernanda.lima@fiurj.edu.br', 'ricardo.santos@fiurj.edu.br',
+    'juliana.pereira@fiurj.edu.br', 'antonio.guedes@ual.fiurj.edu.br', 'ines.matos@upt.fiurj.edu.br',
+    'rui.duarte@upt.fiurj.edu.br', 'javier.fernandez@usal.fiurj.edu.br', 'lourenco.vidal@usal.fiurj.edu.br',
+    'esperanza.quintela@usal.fiurj.edu.br',
+  ];
+  const TITULOS_AVISO_TESTE = ['Bem-vindos ao 2º semestre de 2026', 'Manutenção programada no sistema', 'Reunião de coordenação'];
+  const CPFS_CANDIDATO_TESTE = ['33445566778', '44556677889'];
+  const NOME_PROCESSO_TESTE = 'Vestibular 2026/2 — Direito';
+
+  const alunosTeste = await prisma.aluno.findMany({ where: { ra: { in: RAS_TESTE } } });
+  const alunoIds = alunosTeste.map(a => a.id);
+
+  await prisma.$transaction([
+    // 1. Notas/frequência/resultado — só existem presas a MatriculaDisciplina,
+    //    e nenhuma matrícula real foi criada ainda (import de turma real fica
+    //    pra outra fase) — seguro sem filtro.
+    prisma.avaliacao.deleteMany({}),
+    prisma.registroFrequencia.deleteMany({}),
+    prisma.notaPauta.deleteMany({}),
+    prisma.resultadoDisciplina.deleteMany({}),
+    // 2. Matrículas e ofertas de teste (mesmo raciocínio).
+    prisma.matriculaDisciplina.deleteMany({}),
+    prisma.oferta.deleteMany({}),
+    // 3. Financeiro de teste — só existe preso a um dos alunos fake.
+    prisma.parcela.deleteMany({}),
+    prisma.contratoMatricula.deleteMany({}),
+    // 4. Ingresso de teste — fingerprintado (Candidato/ProcessoSeletivo não
+    //    dependem de Aluno, então não dá pra assumir que só existe fake).
+    prisma.inscricao.deleteMany({ where: { candidato: { cpf: { in: CPFS_CANDIDATO_TESTE } } } }),
+    prisma.candidato.deleteMany({ where: { cpf: { in: CPFS_CANDIDATO_TESTE } } }),
+    prisma.processoSeletivo.deleteMany({ where: { nome: NOME_PROCESSO_TESTE } }),
+    // 5. Auxiliares presos aos alunos fake — necessário limpar antes de
+    //    poder apagar Aluno (todos RESTRICT).
+    prisma.fichaSaude.deleteMany({ where: { alunoId: { in: alunoIds } } }),
+    prisma.bolsista.deleteMany({ where: { alunoId: { in: alunoIds } } }),
+    prisma.ocorrencia.deleteMany({ where: { alunoId: { in: alunoIds } } }),
+    prisma.observacaoFinanceira.deleteMany({ where: { alunoId: { in: alunoIds } } }),
+    prisma.documentoAluno.deleteMany({ where: { alunoId: { in: alunoIds } } }),
+    prisma.requerimento.deleteMany({ where: { alunoId: { in: alunoIds } } }),
+    prisma.protocolo.deleteMany({ where: { alunoId: { in: alunoIds } } }),
+    // 6. Avisos de teste — fingerprintado (Aviso não depende de Aluno, só
+    //    opcionalmente de Usuario, que continua existindo).
+    prisma.aviso.deleteMany({ where: { titulo: { in: TITULOS_AVISO_TESTE } } }),
+    // 7. Alunos e professores fake.
+    prisma.aluno.deleteMany({ where: { ra: { in: RAS_TESTE } } }),
+    prisma.professor.deleteMany({ where: { email: { in: EMAILS_PROF_TESTE } } }),
+    // 8. Períodos letivos de teste (EventoCalendario é Cascade, some junto).
+    prisma.periodoLetivo.deleteMany({ where: { ano: { in: [2025, 2026, 2027] } } }),
+  ]);
+
+  console.log('🧹 Massa de teste sintética removida (alunos/professores/ofertas/notas/processos/documentos/contratos/avisos/períodos de teste).');
+}
+
+/**
  * Remove os 3 cursos de teste genéricos antigos (Direito/Gestão Pública/
  * Administração — códigos DIR2024/GESPUB2024/ADM2024) e toda a estrutura
  * que dependia deles (matrizes, disciplinas, ofertas, matrículas e o que
  * penduricava nelas). Antes de apagar, realoca qualquer Aluno/ProcessoSeletivo
- * que ainda aponte pra eles pro curso real de Direito da FIURJ (os alunos já
- * são realocados de forma definitiva no upsert de `alunosData` logo depois —
- * isso aqui é só a rede de segurança que libera a FK pra podermos apagar os
- * cursos antigos com segurança, mesmo se a ordem do script mudar no futuro).
+ * que ainda aponte pra eles pro curso real de Direito da FIURJ — rede de
+ * segurança que libera a FK pra podermos apagar os cursos antigos com
+ * segurança, mesmo que não sobre nenhum aluno de teste pra realocar.
  * Idempotente: se os códigos antigos não existirem (2ª execução em diante),
  * é um no-op.
  */
