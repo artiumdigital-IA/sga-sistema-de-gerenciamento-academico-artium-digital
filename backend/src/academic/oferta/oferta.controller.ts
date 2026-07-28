@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Request, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { OfertaService } from './oferta.service';
 import { CreateOfertaDto } from './dto/create-oferta.dto';
 import { UpdateOfertaDto } from './dto/update-oferta.dto';
@@ -29,6 +30,24 @@ export class OfertaController {
   @ApiQuery({ name: 'periodoLetivoId', required: false })
   findAll(@Query('periodoLetivoId') periodoLetivoId?: string) {
     return this.service.findAll(periodoLetivoId);
+  }
+
+  @Tela('listagem-alunos-turma')
+  @Get('com-alunos')
+  @ApiOperation({ summary: 'Listagem de Alunos por Turma — ofertas com alunos matriculados' })
+  @ApiQuery({ name: 'periodoLetivoId', required: false })
+  listarComAlunos(@Query('periodoLetivoId') periodoLetivoId?: string) {
+    return this.service.listarComAlunos(periodoLetivoId);
+  }
+
+  @Tela('listagem-alunos-turma')
+  @Get('com-alunos/xlsx')
+  @ApiOperation({ summary: 'Listagem de Alunos por Turma em XLSX' })
+  @ApiQuery({ name: 'periodoLetivoId', required: false })
+  async listarComAlunosXlsx(@Query('periodoLetivoId') periodoLetivoId: string | undefined, @Res() res: Response) {
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="listagem-alunos-por-turma.xlsx"');
+    await this.service.streamXlsxAlunosPorTurma(periodoLetivoId, res);
   }
 
   @Tela('ofertas')

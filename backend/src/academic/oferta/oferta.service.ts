@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import * as ExcelJS from 'exceljs';
+import type { Response } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateOfertaDto } from './dto/create-oferta.dto';
@@ -9,6 +11,15 @@ const include = {
   periodoLetivo: true,
   professor: true,
   _count: { select: { matriculas: true } },
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  MATRICULADO: 'Matriculado',
+  PENDENTE_EXAME: 'Aguardando exame final',
+  APROVADO: 'Aprovado',
+  REPROVADO: 'Reprovado',
+  DEPENDENCIA: 'Dependência',
+  TRANCADO: 'Trancado',
 };
 
 @Injectable()
@@ -48,6 +59,62 @@ export class OfertaService {
       include,
       orderBy: { criadoEm: 'desc' },
     });
+  }
+
+  /** Listagem de Alunos por Turma — cada oferta (turma) com os alunos
+   * matriculados (exclui CANCELADO), pra tela de accordion da secretaria e
+   * pra exportação em Excel. */
+  listarComAlunos(periodoLetivoId?: string) {
+    return this.prisma.oferta.findMany({
+      where: periodoLetivoId ? { periodoLetivoId } : undefined,
+      include: {
+        disciplina: true,
+        periodoLetivo: true,
+        professor: true,
+        matriculas: {
+          where: { status: { not: 'CANCELADO' } },
+          include: { aluno: { select: { id: true, ra: true, nome: true, situacaoVinculo: true } } },
+          orderBy: { aluno: { nome: 'asc' } },
+        },
+      },
+      orderBy: [{ disciplina: { nome: 'asc' } }, { turno: 'asc' }],
+    });
+  }
+
+  /** XLSX da Listagem de Alunos por Turma — 1 linha por aluno matriculado,
+   * agrupado por turma (mesma fonte de dados da tela de accordion). */
+  async streamXlsxAlunosPorTurma(periodoLetivoId: string | undefined, res: Response): Promise<void> {
+    const ofertas = await this.listarComAlunos(periodoLetivoId);
+
+    const workbook = new (ExcelJS as any).stream.xlsx.WorkbookWriter({ stream: res });
+    const sheet = workbook.addWorksheet('Alunos por Turma');
+    sheet.columns = [
+      { header: 'Turma (Disciplina)', key: 'disciplina', width: 34 },
+      { header: 'Turno', key: 'turno', width: 10 },
+      { header: 'Período Letivo', key: 'periodo', width: 16 },
+      { header: 'Professor', key: 'professor', width: 28 },
+      { header: 'RA', key: 'ra', width: 14 },
+      { header: 'Aluno', key: 'aluno', width: 32 },
+      { header: 'Situação', key: 'situacao', width: 16 },
+    ];
+
+    for (const oferta of ofertas) {
+      const base = {
+        disciplina: `${oferta.disciplina.codigo} - ${oferta.disciplina.nome}`,
+        turno: oferta.turno,
+        periodo: `${oferta.periodoLetivo.ano}/${oferta.periodoLetivo.semestre}`,
+        professor: oferta.professor.nome,
+      };
+      if (oferta.matriculas.length === 0) {
+        sheet.addRow({ ...base, ra: '', aluno: '(sem alunos matriculados)', situacao: '' }).commit();
+        continue;
+      }
+      for (const m of oferta.matriculas) {
+        sheet.addRow({ ...base, ra: m.aluno.ra, aluno: m.aluno.nome, situacao: STATUS_LABEL[m.status] ?? m.status }).commit();
+      }
+    }
+    sheet.commit();
+    await workbook.commit();
   }
 
   async findOne(id: string) {

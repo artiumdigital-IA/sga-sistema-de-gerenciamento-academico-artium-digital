@@ -66,6 +66,7 @@ export const TELAS_SISTEMA: TelaSistema[] = [
   { chave: 'motivos-ocorrencia', label: 'Motivos de Ocorrência', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/motivos-ocorrencia'] },
   { chave: 'motivos-transferencia', label: 'Motivos de Transferência', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/motivos-transferencia'] },
   { chave: 'provas-geradas', label: 'Provas Geradas', grupo: 'Secretaria', prefixos: ['/dashboard/secretaria/provas-geradas', '/dashboard/provas-geradas'] },
+  { chave: 'listagem-alunos-turma', label: 'Listagem de Alunos por Turma', grupo: 'Secretaria', prefixos: ['/dashboard/academico/listagem-turmas'] },
 
   // ── Financeiro ───────────────────────────────────────────────────────
   { chave: 'contratos', label: 'Contratos / Mensalidades', grupo: 'Financeiro', prefixos: ['/dashboard/financeiro/contratos'] },

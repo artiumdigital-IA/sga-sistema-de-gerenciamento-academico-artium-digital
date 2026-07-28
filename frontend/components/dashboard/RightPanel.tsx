@@ -180,6 +180,7 @@ const RPANEL_GROUPS: { title: string; items: RpanelItem[] }[] = [
     { label: 'Requerimentos', href: '/dashboard/secretaria/requerimentos' },
     { label: 'Consulta Log de Inscrições', href: '/dashboard/admin/log' },
     { label: 'Ordenação Turmas', href: '/dashboard/academico/ofertas' },
+    { label: 'Listagem de Alunos por Turma', href: '/dashboard/academico/listagem-turmas' },
     { label: 'Manutenção de Frequência', href: '/dashboard/academico/frequencia' },
     { label: 'Listagem de Alunos em Atraso', href: '/dashboard/academico/frequencia?tab=resumo' },
     { label: 'Diário de Classe', href: '/dashboard/academico/notas' },
