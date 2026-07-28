@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,6 +7,7 @@ import { AvisoService } from '../registry/aviso/aviso.service';
 import { PushService } from '../push/push.service';
 import { CriarAvisoTurmaDto } from './dto/criar-aviso-turma.dto';
 import { CriarHoraComplementarDto } from './dto/criar-hora-complementar.dto';
+import { CriarHoraComplementarDoRequerimentoDto } from './dto/criar-hora-complementar-do-requerimento.dto';
 
 interface ArquivoUpload {
   originalname: string;
@@ -182,6 +183,74 @@ export class DocenteService {
         observacoes: dto.observacoes,
       },
     });
+    await this.audit.log({ usuarioId, acao: 'CREATE', entidade: 'HoraComplementar', entidadeId: lancamento.id, dadosDepois: lancamento });
+    return lancamento;
+  }
+
+  /** Requerimento de Hora Complementar aberto pelo próprio aluno (autoatendimento,
+   * ver RequerimentoService.abrirPorAluno()) que ainda não virou crédito real —
+   * permite ao professor reaproveitar o certificado já anexado pelo aluno em vez
+   * de pedir uma nova foto. `null` se não houver nenhum pendente pra esse aluno. */
+  async horaComplementarPendente(usuarioId: string, alunoId: string) {
+    const professorId = await this.meuProfessorId(usuarioId);
+    await this.validarAlunoDoProfessor(professorId, alunoId);
+    return this.prisma.requerimento.findFirst({
+      where: {
+        alunoId,
+        tipoCatalogo: { nome: 'Hora Complementar' },
+        status: { in: ['ABERTO', 'EM_ANALISE'] },
+        arquivoUrl: { not: null },
+        horaComplementar: null,
+      },
+      select: { id: true, descricao: true, arquivoNome: true, arquivoUrl: true, criadoEm: true },
+      orderBy: { criadoEm: 'desc' },
+    });
+  }
+
+  /** Lança as horas reaproveitando o certificado já anexado ao Requerimento (em
+   * vez de um novo upload) e já defere o requerimento na mesma operação — mesmo
+   * efeito líquido do fluxo do COORDENADOR (RequerimentoService.update()), só
+   * que aqui quem lança é o professor via app, então `professorId` fica
+   * preenchido (ver schema.prisma — HoraComplementar.professorId é opcional
+   * justamente pra cobrir os dois casos). */
+  async criarHoraComplementarDoRequerimento(usuarioId: string, dto: CriarHoraComplementarDoRequerimentoDto) {
+    const professorId = await this.meuProfessorId(usuarioId);
+    const requerimento = await this.prisma.requerimento.findUnique({
+      where: { id: dto.requerimentoId },
+      include: { tipoCatalogo: true, horaComplementar: true },
+    });
+    if (!requerimento) throw new NotFoundException('Requerimento não encontrado.');
+    if (requerimento.tipoCatalogo?.nome !== 'Hora Complementar') {
+      throw new BadRequestException('Este requerimento não é de Hora Complementar.');
+    }
+    if (requerimento.horaComplementar) {
+      throw new BadRequestException('Este requerimento já foi lançado.');
+    }
+    if (!requerimento.arquivoUrl) {
+      throw new BadRequestException('Requerimento sem certificado anexado.');
+    }
+    await this.validarAlunoDoProfessor(professorId, requerimento.alunoId);
+
+    const [lancamento] = await this.prisma.$transaction([
+      this.prisma.horaComplementar.create({
+        data: {
+          alunoId: requerimento.alunoId,
+          professorId,
+          horas: dto.horas,
+          nomeArquivo: requerimento.arquivoNome!,
+          url: requerimento.arquivoUrl!,
+          tamanho: requerimento.arquivoTamanho ?? 0,
+          observacoes: dto.observacoes,
+          requerimentoId: requerimento.id,
+        },
+        include: { aluno: { select: { nome: true, ra: true } } },
+      }),
+      this.prisma.requerimento.update({
+        where: { id: requerimento.id },
+        data: { status: 'DEFERIDO', resposta: dto.observacoes ?? 'Horas lançadas pelo professor a partir do requerimento.' },
+      }),
+    ]);
+
     await this.audit.log({ usuarioId, acao: 'CREATE', entidade: 'HoraComplementar', entidadeId: lancamento.id, dadosDepois: lancamento });
     return lancamento;
   }

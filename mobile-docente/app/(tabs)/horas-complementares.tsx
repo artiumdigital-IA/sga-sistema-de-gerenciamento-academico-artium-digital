@@ -7,10 +7,13 @@ import { ApiError, apiFileUrl } from '../../lib/api';
 import {
   AlunoDocente,
   criarHoraComplementar,
+  criarHoraComplementarDoRequerimento,
   formatarDataHora,
   getAlunos,
+  getHoraComplementarPendente,
   getHorasComplementares,
   HoraComplementar,
+  HoraComplementarPendente,
   removerHoraComplementar,
 } from '../../lib/docente';
 import { theme } from '../../lib/theme';
@@ -33,6 +36,11 @@ export default function HorasComplementaresScreen() {
   const [arquivo, setArquivo] = useState<ArquivoSelecionado | null>(null);
   const [horas, setHoras] = useState('');
   const [observacoes, setObservacoes] = useState('');
+
+  // Requerimento de Hora Complementar que o próprio aluno abriu (autoatendimento,
+  // certificado já anexado) e ainda não virou crédito real — quando existe, a
+  // gente reaproveita o certificado dele em vez de pedir foto/PDF de novo.
+  const [pendente, setPendente] = useState<HoraComplementarPendente | null>(null);
 
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
@@ -60,9 +68,26 @@ export default function HorasComplementaresScreen() {
     }
   }, []);
 
+  const carregarPendente = useCallback(async (aluno: string) => {
+    try {
+      setPendente(await getHoraComplementarPendente(aluno));
+    } catch {
+      setPendente(null); // requerimento pendente é só um atalho — se falhar, cai no fluxo manual normal
+    }
+  }, []);
+
   useEffect(() => {
-    if (alunoId) carregarLancamentos(alunoId);
-  }, [alunoId, carregarLancamentos]);
+    setArquivo(null);
+    setHoras('');
+    setObservacoes('');
+    setPendente(null);
+    if (alunoId) {
+      carregarLancamentos(alunoId);
+      carregarPendente(alunoId);
+    }
+  }, [alunoId, carregarLancamentos, carregarPendente]);
+
+  const certificadoPendenteEhPdf = pendente?.arquivoNome?.toLowerCase().endsWith('.pdf') ?? false;
 
   async function tirarFoto() {
     const permissao = await ImagePicker.requestCameraPermissionsAsync();
@@ -107,7 +132,7 @@ export default function HorasComplementaresScreen() {
 
   async function lancar() {
     const horasNum = Number(horas.trim());
-    if (!alunoId || !arquivo) {
+    if (!alunoId || (!pendente && !arquivo)) {
       setErro('Selecione o aluno e o certificado (foto ou PDF).');
       return;
     }
@@ -118,7 +143,12 @@ export default function HorasComplementaresScreen() {
     setErro(null);
     setEnviando(true);
     try {
-      await criarHoraComplementar({ alunoId, horas: horasNum, observacoes: observacoes.trim() || undefined, arquivo });
+      if (pendente) {
+        await criarHoraComplementarDoRequerimento({ requerimentoId: pendente.id, horas: horasNum, observacoes: observacoes.trim() || undefined });
+        await carregarPendente(alunoId); // pode haver outro certificado do aluno ainda pendente
+      } else if (arquivo) {
+        await criarHoraComplementar({ alunoId, horas: horasNum, observacoes: observacoes.trim() || undefined, arquivo });
+      }
       setArquivo(null);
       setHoras('');
       setObservacoes('');
@@ -177,7 +207,23 @@ export default function HorasComplementaresScreen() {
           <>
             <Text style={styles.secaoTitulo}>Novo lançamento</Text>
             <View style={styles.novoLancamento}>
-              {arquivo && arquivo.type === 'application/pdf' ? (
+              {pendente ? (
+                <>
+                  <View style={styles.pendenteAviso}>
+                    <Feather name="check-circle" size={14} color={theme.corPrimaria} />
+                    <Text style={styles.pendenteAvisoTexto}>Certificado enviado pelo aluno no pedido de Hora Complementar</Text>
+                  </View>
+                  {certificadoPendenteEhPdf ? (
+                    <View style={styles.previewVazio}>
+                      <Feather name="file-text" size={28} color={theme.corPrimaria} />
+                      <Text style={styles.previewPdfNome} numberOfLines={1}>{pendente.arquivoNome}</Text>
+                    </View>
+                  ) : (
+                    <Image source={{ uri: apiFileUrl(pendente.arquivoUrl) ?? undefined }} style={styles.preview} resizeMode="cover" />
+                  )}
+                  {pendente.descricao ? <Text style={styles.pendenteDescricao}>{pendente.descricao}</Text> : null}
+                </>
+              ) : arquivo && arquivo.type === 'application/pdf' ? (
                 <View style={styles.previewVazio}>
                   <Feather name="file-text" size={28} color={theme.corPrimaria} />
                   <Text style={styles.previewPdfNome} numberOfLines={1}>{arquivo.name}</Text>
@@ -189,20 +235,22 @@ export default function HorasComplementaresScreen() {
                   <Feather name="award" size={28} color={theme.cinza400} />
                 </View>
               )}
-              <View style={styles.botoesFoto}>
-                <TouchableOpacity style={styles.botaoFoto} onPress={tirarFoto}>
-                  <Feather name="camera" size={16} color={theme.corPrimaria} />
-                  <Text style={styles.botaoFotoTexto}>Tirar foto</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.botaoFoto} onPress={escolherDaGaleria}>
-                  <Feather name="image" size={16} color={theme.corPrimaria} />
-                  <Text style={styles.botaoFotoTexto}>Galeria</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.botaoFoto} onPress={anexarPdf}>
-                  <Feather name="file-text" size={16} color={theme.corPrimaria} />
-                  <Text style={styles.botaoFotoTexto}>Anexar PDF</Text>
-                </TouchableOpacity>
-              </View>
+              {!pendente && (
+                <View style={styles.botoesFoto}>
+                  <TouchableOpacity style={styles.botaoFoto} onPress={tirarFoto}>
+                    <Feather name="camera" size={16} color={theme.corPrimaria} />
+                    <Text style={styles.botaoFotoTexto}>Tirar foto</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.botaoFoto} onPress={escolherDaGaleria}>
+                    <Feather name="image" size={16} color={theme.corPrimaria} />
+                    <Text style={styles.botaoFotoTexto}>Galeria</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.botaoFoto} onPress={anexarPdf}>
+                    <Feather name="file-text" size={16} color={theme.corPrimaria} />
+                    <Text style={styles.botaoFotoTexto}>Anexar PDF</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
               <TextInput
                 style={styles.input}
                 placeholder="Quantidade de horas"
@@ -220,9 +268,9 @@ export default function HorasComplementaresScreen() {
                 multiline
               />
               <TouchableOpacity
-                style={[styles.botaoEnviar, (enviando || !arquivo || !horas) && { opacity: 0.6 }]}
+                style={[styles.botaoEnviar, (enviando || (!pendente && !arquivo) || !horas) && { opacity: 0.6 }]}
                 onPress={lancar}
-                disabled={enviando || !arquivo || !horas}
+                disabled={enviando || (!pendente && !arquivo) || !horas}
               >
                 <Text style={styles.botaoEnviarTexto}>{enviando ? 'Lançando...' : 'Lançar horas'}</Text>
               </TouchableOpacity>
@@ -273,6 +321,9 @@ const styles = StyleSheet.create({
   preview: { width: '100%', height: 180, borderRadius: 8, backgroundColor: theme.cinza100 },
   previewVazio: { width: '100%', height: 180, borderRadius: 8, backgroundColor: theme.cinza100, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16 },
   previewPdfNome: { fontSize: 12, color: theme.cinza700, fontWeight: '600' },
+  pendenteAviso: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  pendenteAvisoTexto: { fontSize: 11, color: theme.corPrimaria, fontWeight: '600', flexShrink: 1 },
+  pendenteDescricao: { fontSize: 12, color: theme.cinza500 },
   botoesFoto: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   botaoFoto: {
     flexGrow: 1,
