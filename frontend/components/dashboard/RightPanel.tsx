@@ -85,6 +85,26 @@ const MENU_SUPORTE_GROUP: { title: string; items: RpanelItem[] } = {
   ],
 };
 
+// "Menu Coordenador" — autoatendimento do coordenador acadêmico (Jul/2026).
+// Mesmo princípio de Menu Discente/Docente/Suporte: SUBSTITUI todos os
+// outros grupos. Reaproveita as telas já existentes de Cursos/Matrizes/
+// Disciplinas/Ofertas/Professores (o coordenador já tem @Roles de escrita
+// nelas, ver backend/src/academic/*/*.controller.ts) — sem tela nova, só o
+// atalho. Pré-requisito não tem tela própria, aponta pra Disciplinas (mesma
+// aproximação já usada pro grupo Coordenação acima). Sem acesso a
+// financeiro/RH de propósito (fora do escopo pedido).
+const MENU_COORDENADOR_GROUP: { title: string; items: RpanelItem[] } = {
+  title: 'Coordenador',
+  items: [
+    { label: 'Cursos', href: '/dashboard/academico/cursos' },
+    { label: 'Matrizes Curriculares', href: '/dashboard/academico/matrizes' },
+    { label: 'Disciplinas', href: '/dashboard/academico/disciplinas' },
+    { label: 'Pré-requisitos', href: '/dashboard/academico/disciplinas' },
+    { label: 'Ofertas / Turmas', href: '/dashboard/academico/ofertas' },
+    { label: 'Professores', href: '/dashboard/academico/professores' },
+  ],
+};
+
 // "Ferramentas Master" — atalhos extras do perfil MASTER (Jul/2026), acima
 // do ADMIN comum. Diferente de Menu Discente/Docente/Suporte, NÃO
 // substitui os outros grupos — MASTER acessa TUDO sem restrição (ver
@@ -274,9 +294,10 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
    * diferente da sidebar, aqui não há risco de vazar uma tela sensível
    * porque são só rótulos/atalhos, o bloqueio de fato é o guard de rota). */
   chavesHabilitadas: Set<string> | null;
-  /** Perfil do usuário logado — ALUNO, PROFESSOR e SUPORTE veem SÓ o
-   * respectivo menu exclusivo (Menu Discente/Docente/Suporte) na Barra
-   * Rápida, nada dos menus de secretaria/financeiro/admin. MASTER é a
+  /** Perfil do usuário logado — ALUNO, PROFESSOR, SUPORTE e COORDENADOR veem
+   * SÓ o respectivo menu exclusivo (Menu Discente/Docente/Suporte/
+   * Coordenador) na Barra Rápida, nada dos menus de secretaria/financeiro/
+   * admin. MASTER é a
    * exceção: vê os grupos de sempre (igual ADMIN) MAIS o grupo exclusivo
    * "Ferramentas Master" em cima — MASTER não tem restrição nenhuma.
    * undefined/null = ainda carregando o JWT, trata como perfil administrativo até
@@ -290,6 +311,8 @@ export function RightPanel({ width = 220, tab, onTabChange, chavesHabilitadas, p
       ? [MENU_DOCENTE_GROUP]
       : perfil === 'SUPORTE'
         ? [MENU_SUPORTE_GROUP]
+        : perfil === 'COORDENADOR'
+        ? [MENU_COORDENADOR_GROUP]
         : perfil === 'MASTER'
           // MASTER acessa TUDO sem restrição (Jul/2026) — painel inteiro de
           // ADMIN (RPANEL_GROUPS) mais as ferramentas exclusivas dele em

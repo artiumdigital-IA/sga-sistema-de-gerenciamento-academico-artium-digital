@@ -133,6 +133,9 @@ export default function RequerimentosScreen() {
       setMostrarForm(false);
       await carregarMeus();
     } catch (err) {
+      // DIAGNOSTICO TEMPORARIO — tirar depois de descobrir a causa do "não
+      // foi possível enviar" em produção com anexo real de celular.
+      console.error('[requerimentos] erro ao enviar (detalhe):', err, arquivo ? { nome: arquivo.name, tipo: arquivo.type, uri: arquivo.uri } : null);
       setErro(err instanceof ApiError ? err.message : 'Não foi possível enviar o requerimento.');
     } finally {
       setEnviando(false);

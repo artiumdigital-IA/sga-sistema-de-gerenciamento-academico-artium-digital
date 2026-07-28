@@ -6,7 +6,7 @@
  * valida que a oferta/aluno pertence às turmas desse professor — o app não
  * precisa (nem consegue) escolher outro professor.
  */
-import { apiFetch, apiUpload } from './api';
+import { apiFetch, apiUpload, uriParaBlob } from './api';
 
 // ---------------------------------------------------------------------------
 // Ofertas (minhas turmas) — alimenta o seletor de todas as outras telas.
@@ -78,7 +78,7 @@ export function getCapturas(filtro: { ofertaId?: string; alunoId?: string }) {
 }
 
 /** `arquivo` é o resultado de expo-image-picker: { uri, name, type }. */
-export function criarCaptura(dados: {
+export async function criarCaptura(dados: {
   alunoId: string;
   ofertaId: string;
   observacoes?: string;
@@ -88,8 +88,8 @@ export function criarCaptura(dados: {
   formData.append('alunoId', dados.alunoId);
   formData.append('ofertaId', dados.ofertaId);
   if (dados.observacoes) formData.append('observacoes', dados.observacoes);
-  // React Native aceita esse formato de objeto no FormData (não é o tipo File do browser).
-  formData.append('arquivo', dados.arquivo as unknown as Blob);
+  const blob = await uriParaBlob(dados.arquivo.uri);
+  formData.append('arquivo', blob, dados.arquivo.name);
   return apiUpload<CapturaProva>('/docente/captura-prova', formData);
 }
 
@@ -119,7 +119,7 @@ export function getHorasComplementares(filtro: { alunoId?: string }) {
 }
 
 /** `arquivo` é o resultado de expo-image-picker/expo-document-picker: { uri, name, type }. */
-export function criarHoraComplementar(dados: {
+export async function criarHoraComplementar(dados: {
   alunoId: string;
   horas: number;
   observacoes?: string;
@@ -129,7 +129,8 @@ export function criarHoraComplementar(dados: {
   formData.append('alunoId', dados.alunoId);
   formData.append('horas', String(dados.horas));
   if (dados.observacoes) formData.append('observacoes', dados.observacoes);
-  formData.append('arquivo', dados.arquivo as unknown as Blob);
+  const blob = await uriParaBlob(dados.arquivo.uri);
+  formData.append('arquivo', blob, dados.arquivo.name);
   return apiUpload<HoraComplementar>('/docente/horas-complementares', formData);
 }
 

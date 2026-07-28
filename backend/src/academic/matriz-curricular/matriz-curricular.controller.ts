@@ -26,7 +26,7 @@ import { Tela } from '../../permissoes-tela/decorators/tela.decorator';
 export class MatrizCurricularController {
   constructor(private readonly matrizService: MatrizCurricularService) {}
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Post()
   @ApiOperation({ summary: 'Criar matriz curricular' })
   create(@Body() dto: CreateMatrizDto, @Request() req: any) {
@@ -46,7 +46,7 @@ export class MatrizCurricularController {
     return this.matrizService.findOne(id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar matriz curricular' })
   update(
@@ -57,7 +57,7 @@ export class MatrizCurricularController {
     return this.matrizService.update(id, dto, req.user?.id);
   }
 
-  @Roles(Perfil.ADMIN, Perfil.SECRETARIA)
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.COORDENADOR)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Remover matriz curricular' })

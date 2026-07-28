@@ -64,6 +64,7 @@ function formatUptime(segundos: number): string {
 const PASTA_LABEL: Record<string, string> = { avatars: 'Fotos de perfil', documentos: 'Documentos de alunos' };
 const PERFIL_LABEL: Record<string, string> = {
   ADMIN: 'Admin', SECRETARIA: 'Secretaria', FINANCEIRO: 'Financeiro', PROFESSOR: 'Professor', ALUNO: 'Aluno',
+  COORDENADOR: 'Coordenador',
 };
 const LOGIN_MOTIVO_LABEL: Record<string, string> = {
   usuario_nao_encontrado: 'e-mail não cadastrado', usuario_inativo_ou_bloqueado: 'usuário inativo/bloqueado',

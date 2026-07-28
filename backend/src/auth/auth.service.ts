@@ -54,7 +54,7 @@ export class AuthService {
     userAgent?: string | null,
   ) {
     // Perfis que exigem MFA
-    const mfaObrigatorio = ['ADMIN', 'SECRETARIA', 'FINANCEIRO', 'MASTER'];
+    const mfaObrigatorio = ['ADMIN', 'SECRETARIA', 'FINANCEIRO', 'MASTER', 'COORDENADOR'];
 
     if (mfaObrigatorio.includes(usuario.perfil) && usuario.mfaAtivo) {
       if (!totpToken) {
