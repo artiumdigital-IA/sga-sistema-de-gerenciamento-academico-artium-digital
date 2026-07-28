@@ -163,18 +163,25 @@ export default function RequerimentosPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterTipo, setFilterTipo] = useState('');
+  const [filterTipoCatalogoId, setFilterTipoCatalogoId] = useState('');
+  const [catalogo, setCatalogo] = useState<TipoCatalogo[]>([]);
   const [showNovo, setShowNovo] = useState(false);
   const [responder, setResponder] = useState<Requerimento | null>(null);
+
+  useEffect(() => {
+    apiFetch<any>('/tipos-requerimento').then((d: any) => setCatalogo(Array.isArray(d) ? d : d.data ?? [])).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filterStatus) params.set('status', filterStatus);
     if (filterTipo) params.set('tipo', filterTipo);
+    if (filterTipoCatalogoId) params.set('tipoCatalogoId', filterTipoCatalogoId);
     const d = await apiFetch<any>(`/requerimentos?${params}`);
     setItems(Array.isArray(d) ? d : (d as any).data ?? []);
     setLoading(false);
-  }, [filterStatus, filterTipo]);
+  }, [filterStatus, filterTipo, filterTipoCatalogoId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -205,6 +212,11 @@ export default function RequerimentosPage() {
           style={{ padding: '5px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }}>
           <option value="">Todos os tipos</option>
           {Object.entries(TIPOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <select value={filterTipoCatalogoId} onChange={e => setFilterTipoCatalogoId(e.target.value)}
+          style={{ padding: '5px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, fontSize: 13 }}>
+          <option value="">Tipo (tabela de preços) — todos</option>
+          {catalogo.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
         </select>
       </div>
 

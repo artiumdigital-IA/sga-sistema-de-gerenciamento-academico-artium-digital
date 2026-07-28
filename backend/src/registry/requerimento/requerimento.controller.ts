@@ -27,8 +27,9 @@ export class RequerimentoController {
     @Query('alunoId') alunoId?: string,
     @Query('status') status?: string,
     @Query('tipo') tipo?: string,
+    @Query('tipoCatalogoId') tipoCatalogoId?: string,
   ) {
-    return this.service.findAll(alunoId, status, tipo);
+    return this.service.findAll(alunoId, status, tipo, tipoCatalogoId);
   }
 
   @Get(':id')

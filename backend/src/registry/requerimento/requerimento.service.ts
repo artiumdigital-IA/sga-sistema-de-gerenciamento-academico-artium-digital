@@ -57,12 +57,13 @@ export class RequerimentoService {
     return item;
   }
 
-  findAll(alunoId?: string, status?: string, tipo?: string) {
+  findAll(alunoId?: string, status?: string, tipo?: string, tipoCatalogoId?: string) {
     return (this.prisma as any).requerimento.findMany({
       where: {
         ...(alunoId ? { alunoId } : {}),
         ...(status ? { status } : {}),
         ...(tipo ? { tipo } : {}),
+        ...(tipoCatalogoId ? { tipoCatalogoId } : {}),
       },
       include: { aluno: { select: { id: true, nome: true, ra: true, curso: { select: { nome: true } } } }, tipoCatalogo: true },
       orderBy: { criadoEm: 'desc' },

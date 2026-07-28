@@ -27,6 +27,9 @@ export class TipoRequerimentoController {
     return this.service.create(dto, req.user?.id);
   }
 
+  // SECRETARIA só precisa ler a lista (pra filtrar requerimentos por tipo do
+  // catálogo, ex: Hora Complementar) — criar/editar/excluir continua ADMIN/MASTER.
+  @Roles(Perfil.ADMIN, Perfil.MASTER, Perfil.SECRETARIA)
   @Get()
   @ApiOperation({ summary: 'Listar tipos de requerimento (tabela de preços completa)' })
   findAll(@Query('somenteAtivos') somenteAtivos?: string) {
