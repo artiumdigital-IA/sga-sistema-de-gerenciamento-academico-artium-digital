@@ -173,6 +173,7 @@ model Aluno {
   cursoId            String
   matrizCurricularId String
   ra                 String          @unique  // registro acadêmico
+  codigoLegado       String?         @unique  // código do aluno no Kirsch (planilha financeira legada), preservado à parte do RA pra rastreabilidade
   nome               String
   cpf                String          @unique
   dataNascimento     DateTime        @db.Date

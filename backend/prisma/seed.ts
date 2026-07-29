@@ -23,6 +23,8 @@
  */
 import { PrismaClient, Grau, Modalidade } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -387,6 +389,7 @@ async function main() {
   console.log('🌱 Iniciando seed...');
 
   await limparMassaTesteAtual();
+  await importarAlunosLegadosParcela();
 
   // ── Usuário Admin padrão ────────────────────────────────────
   const senhaHash = await bcrypt.hash('admin123', 12);
@@ -663,6 +666,120 @@ async function main() {
 
   console.log('\n⚠️  ATENÇÃO: Altere as senhas em produção!');
   console.log('🏁 Seed concluído.');
+}
+
+/**
+ * Importa os alunos da planilha financeira legada (Kirsch, "BASE DE DADOS
+ * PARCELA DE 2000 A 2030.xlsx") como um primeiro cadastro provisório —
+ * identificados pelo código do aluno na planilha (`codigoLegado`), já que
+ * ainda não sabemos o curso real de cada um (Direito x Gestão Pública x
+ * outros programas — mapeamento de turma pendente de confirmação).
+ *
+ * Fonte dos dados: `prisma/data/alunos-legado-parcela.json` (gerado a partir
+ * da planilha, já sem os registros de teste do próprio Kirsch — "ALUNO
+ * TESTE", "TESTE BOLETO" etc. — e sem o 1 código em branco encontrado).
+ *
+ * Todos entram num curso/matriz placeholder "A Classificar" (status
+ * ENCERRADO/ENCERRADA, pra não aparecer em dropdowns de curso ativo) até
+ * serem reclassificados manualmente pro curso real.
+ *
+ * Campos que a planilha não tem (nascimento, sexo, forma de ingresso, e-mail)
+ * recebem um placeholder claro (sexo/cor-raça "Não Declarado", forma de
+ * ingresso "Outro", nascimento 01/01/1900, e-mail
+ * aluno{codigoLegado}@pendente.fiurj.edu.br) — tudo editável depois pela tela
+ * de Alunos. CPF: usa o da planilha quando válido (11 dígitos); senão, gera
+ * um placeholder óbvio (999 + código com 8 dígitos) só pra satisfazer a
+ * coluna única — real chega depois, por fora.
+ *
+ * RA gerado no padrão do sistema (AAAA0001), agrupado pelo ano da 1ª parcela
+ * conhecida do aluno (proxy de quando ele começou a aparecer na base
+ * financeira — não é a data de ingresso real, mas é o melhor sinal
+ * disponível nesta planilha). O código original do Kirsch fica preservado
+ * à parte em `codigoLegado`.
+ *
+ * Idempotente: cada aluno é único por `codigoLegado` — rodar de novo não
+ * duplica nem sobrescreve alunos já importados (mesmo que já tenham sido
+ * corrigidos manualmente depois).
+ */
+async function importarAlunosLegadosParcela() {
+  const jsonPath = path.join(__dirname, 'data', 'alunos-legado-parcela.json');
+  if (!fs.existsSync(jsonPath)) {
+    console.log('↷ prisma/data/alunos-legado-parcela.json não encontrado — pulando importação legada.');
+    return;
+  }
+  const dados: { codigoLegado: string; nome: string; cpf: string | null; dataIngresso: string | null }[] =
+    JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+  const cursoClassificar = await prisma.curso.upsert({
+    where: { codigoEmec: 'PENDENTE-CLASSIFICACAO' },
+    update: {},
+    create: {
+      nome: 'A Classificar (importação legada)',
+      grau: 'BACHARELADO',
+      modalidade: 'PRESENCIAL',
+      codigoEmec: 'PENDENTE-CLASSIFICACAO',
+      cargaHorariaTotal: 0,
+      prazoIntegralizacaoSemestres: 0,
+      status: 'ENCERRADO',
+    },
+  });
+  const matrizClassificar = await prisma.matrizCurricular.upsert({
+    where: { cursoId_versao: { cursoId: cursoClassificar.id, versao: 'PENDENTE' } },
+    update: {},
+    create: { cursoId: cursoClassificar.id, versao: 'PENDENTE', anoVigencia: 2026, status: 'ENCERRADA' },
+  });
+
+  const jaImportados = new Set(
+    (await prisma.aluno.findMany({ where: { codigoLegado: { not: null } }, select: { codigoLegado: true } }))
+      .map(a => a.codigoLegado as string),
+  );
+
+  const contadoresPorAno = new Map<number, number>();
+  async function proximoRa(ano: number): Promise<string> {
+    if (!contadoresPorAno.has(ano)) {
+      const prefixo = String(ano);
+      const existente = await prisma.aluno.findFirst({
+        where: { ra: { startsWith: prefixo } },
+        orderBy: { ra: 'desc' },
+      });
+      let max = 0;
+      if (existente && existente.ra.length === prefixo.length + 4) {
+        max = parseInt(existente.ra.slice(prefixo.length), 10) || 0;
+      }
+      contadoresPorAno.set(ano, max);
+    }
+    const proximo = (contadoresPorAno.get(ano) as number) + 1;
+    contadoresPorAno.set(ano, proximo);
+    return `${ano}${String(proximo).padStart(4, '0')}`;
+  }
+
+  let criados = 0;
+  for (const d of dados) {
+    if (jaImportados.has(d.codigoLegado)) continue;
+    const ano = d.dataIngresso ? new Date(d.dataIngresso).getUTCFullYear() : 2018;
+    const ra = await proximoRa(ano);
+    const cpf = d.cpf ?? `999${d.codigoLegado.padStart(8, '0')}`;
+    await prisma.aluno.create({
+      data: {
+        ra,
+        codigoLegado: d.codigoLegado,
+        nome: d.nome,
+        cpf,
+        cursoId: cursoClassificar.id,
+        matrizCurricularId: matrizClassificar.id,
+        dataNascimento: new Date('1900-01-01'),
+        sexo: 'NAO_DECLARADO',
+        corRaca: 'NAO_DECLARADO',
+        nacionalidade: 'BRASILEIRA',
+        formaIngresso: 'OUTRO',
+        dataIngresso: d.dataIngresso ? new Date(d.dataIngresso) : new Date(`${ano}-01-01`),
+        situacaoVinculo: 'CURSANDO',
+        email: `aluno${d.codigoLegado}@pendente.fiurj.edu.br`,
+      },
+    });
+    criados += 1;
+  }
+  console.log(`✅ Importação legada: ${criados} alunos criados (curso placeholder "A Classificar"), ${dados.length - criados} já existiam.`);
 }
 
 /**
