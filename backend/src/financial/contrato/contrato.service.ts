@@ -5,11 +5,14 @@ import { CreateContratoDto } from './contrato.dto';
 import { calcularMora } from '../mora.util';
 
 /** Anexa multa/juros/mora calculados (não armazenados) em cada parcela de um contrato. */
-function comMora<T extends { parcelas: { valor: any; dataVencimento: Date; status: string }[] }>(contrato: T): T {
+function comMora<T extends { parcelas: { valor: any; dataVencimento: Date; status: string; dataPagamento: Date | null }[] }>(contrato: T): T {
   const hoje = new Date();
   return {
     ...contrato,
-    parcelas: contrato.parcelas.map(p => ({ ...p, ...calcularMora(Number(p.valor), new Date(p.dataVencimento), p.status, hoje) })),
+    parcelas: contrato.parcelas.map(p => ({
+      ...p,
+      ...calcularMora(Number(p.valor), new Date(p.dataVencimento), p.status, hoje, p.dataPagamento ? new Date(p.dataPagamento) : null),
+    })),
   };
 }
 

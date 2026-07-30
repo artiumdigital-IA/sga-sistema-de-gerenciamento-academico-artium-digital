@@ -7,8 +7,11 @@
  * da consulta (mesmo padrão de CR/Integralização já usado no projeto:
  * evita ficar desatualizado).
  *
- * Ajuste em relação à versão anterior: a contagem era só em dias úteis
- * (segunda a sexta); agora conta todo dia corrido, incluindo fim de semana.
+ * Data de referência pro cálculo (Jul/2026, ajustada de novo — mora
+ * retroativa): parcela ainda em aberto (VENCIDO/PENDENTE) usa "hoje";
+ * parcela já PAGA ou SUBSTITUÍDA (por Acordo) usa a própria data de
+ * pagamento/resolução — mostra quanto de multa/juros acumulou até ali,
+ * mesmo já estando quitada. CANCELADO nunca tem mora (dívida anulada).
  */
 
 const MULTA_PERCENTUAL = 0.02;
@@ -35,12 +38,25 @@ export interface CalculoMora {
   valorAtualizado: number; // valor original + mora
 }
 
-/** Só há mora se a parcela estiver vencida (não paga/cancelada/substituída) e o vencimento já passou. */
-export function calcularMora(valor: number, dataVencimento: Date, status: string, hoje: Date = new Date()): CalculoMora {
+export function calcularMora(
+  valor: number,
+  dataVencimento: Date,
+  status: string,
+  hoje: Date = new Date(),
+  dataPagamento: Date | null = null,
+): CalculoMora {
   const zero: CalculoMora = { diasAtraso: 0, multa: 0, juros: 0, mora: 0, valorAtualizado: valor };
-  if (status !== 'VENCIDO' && status !== 'PENDENTE') return zero;
 
-  const diasAtraso = contarDiasCorridos(dataVencimento, hoje);
+  let dataReferencia: Date;
+  if (status === 'VENCIDO' || status === 'PENDENTE') {
+    dataReferencia = hoje;
+  } else if ((status === 'PAGO' || status === 'SUBSTITUIDA') && dataPagamento) {
+    dataReferencia = dataPagamento; // mora retroativa até a quitação/resolução
+  } else {
+    return zero; // CANCELADO, ou PAGO/SUBSTITUIDA sem data de pagamento registrada
+  }
+
+  const diasAtraso = contarDiasCorridos(dataVencimento, dataReferencia);
   if (diasAtraso <= 0) return zero;
 
   const multa = Number((valor * MULTA_PERCENTUAL).toFixed(2));
