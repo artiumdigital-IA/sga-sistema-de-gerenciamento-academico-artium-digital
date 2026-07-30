@@ -182,8 +182,11 @@ export default function ContratosPage() {
     c.aluno.ra.includes(search)
   );
 
-  const totalPago = (c: Contrato) => c.parcelas.filter(p => p.status === 'PAGO').reduce((s, p) => s + (p.valorPago ?? 0), 0);
-  const totalVencido = (c: Contrato) => c.parcelas.filter(p => p.status === 'VENCIDO').reduce((s, p) => s + p.valor, 0);
+  // Number(...) é essencial aqui: valorPago/valor vêm do backend como string
+  // (Decimal do Prisma serializado em JSON) -- sem converter, "+" concatena
+  // texto em vez de somar (ex.: 3 parcelas de 399 viravam "399399399").
+  const totalPago = (c: Contrato) => c.parcelas.filter(p => p.status === 'PAGO').reduce((s, p) => s + Number(p.valorPago ?? 0), 0);
+  const totalVencido = (c: Contrato) => c.parcelas.filter(p => p.status === 'VENCIDO').reduce((s, p) => s + Number(p.valor), 0);
 
   return (
     <div style={{ padding: '24px 28px' }}>
