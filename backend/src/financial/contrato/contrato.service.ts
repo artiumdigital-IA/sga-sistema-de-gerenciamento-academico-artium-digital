@@ -2,6 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateContratoDto } from './contrato.dto';
+import { calcularMora } from '../mora.util';
+
+/** Anexa multa/juros/mora calculados (não armazenados) em cada parcela de um contrato. */
+function comMora<T extends { parcelas: { valor: any; dataVencimento: Date; status: string }[] }>(contrato: T): T {
+  const hoje = new Date();
+  return {
+    ...contrato,
+    parcelas: contrato.parcelas.map(p => ({ ...p, ...calcularMora(Number(p.valor), new Date(p.dataVencimento), p.status, hoje) })),
+  };
+}
 
 function nextVencimento(base: Date, monthsAhead: number, diaVencimento: number): Date {
   const d = new Date(base);
@@ -48,11 +58,11 @@ export class ContratoService {
     });
 
     await this.audit.log({ usuarioId: userId, acao: 'CREATE', entidade: 'ContratoMatricula', entidadeId: contrato.id, dadosDepois: contrato });
-    return contrato;
+    return comMora(contrato);
   }
 
   async findAll(alunoId?: string, periodoLetivoId?: string) {
-    return (this.prisma as any).contratoMatricula.findMany({
+    const contratos = await (this.prisma as any).contratoMatricula.findMany({
       where: {
         ...(alunoId ? { alunoId } : {}),
         ...(periodoLetivoId ? { periodoLetivoId } : {}),
@@ -64,6 +74,7 @@ export class ContratoService {
       },
       orderBy: { criadoEm: 'desc' },
     });
+    return contratos.map(comMora);
   }
 
   async findOne(id: string) {
@@ -72,7 +83,7 @@ export class ContratoService {
       include: { aluno: true, periodoLetivo: true, parcelas: { orderBy: { numero: 'asc' }, include: { boleto: { select: { id: true, status: true } } } } },
     });
     if (!c) throw new NotFoundException('Contrato não encontrado');
-    return c;
+    return comMora(c);
   }
 
   async updateStatus(id: string, status: string, userId: string) {

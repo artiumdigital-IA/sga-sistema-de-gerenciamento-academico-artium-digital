@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { calcularMora } from '../financial/mora.util';
 
 @Injectable()
 export class FinanceiroRelatoriosService {
@@ -27,19 +28,29 @@ export class FinanceiroRelatoriosService {
       orderBy: { dataVencimento: 'asc' },
     });
 
-    const linhas = parcelas.map(p => ({
-      parcelaId: p.id,
-      numero: p.numero,
-      valor: p.valor,
-      dataVencimento: p.dataVencimento,
-      diasAtraso: Math.floor((hoje.getTime() - new Date(p.dataVencimento).getTime()) / 86400000),
-      aluno: p.contrato.aluno,
-      periodo: p.contrato.periodoLetivo,
-    }));
+    const linhas = parcelas.map(p => {
+      const mora = calcularMora(Number(p.valor), new Date(p.dataVencimento), p.status, hoje);
+      return {
+        parcelaId: p.id,
+        numero: p.numero,
+        valor: p.valor,
+        dataVencimento: p.dataVencimento,
+        diasAtraso: Math.floor((hoje.getTime() - new Date(p.dataVencimento).getTime()) / 86400000),
+        diasUteisAtraso: mora.diasUteisAtraso,
+        multa: mora.multa,
+        juros: mora.juros,
+        mora: mora.mora,
+        valorAtualizado: mora.valorAtualizado,
+        aluno: p.contrato.aluno,
+        periodo: p.contrato.periodoLetivo,
+      };
+    });
 
     return {
       total: linhas.length,
       valorTotalEmAtraso: linhas.reduce((s, l) => s + Number(l.valor), 0),
+      valorTotalMora: Number(linhas.reduce((s, l) => s + l.mora, 0).toFixed(2)),
+      valorTotalAtualizado: Number(linhas.reduce((s, l) => s + l.valorAtualizado, 0).toFixed(2)),
       linhas,
     };
   }
