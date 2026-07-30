@@ -393,7 +393,21 @@ async function main() {
   } catch (e) {
     console.error('⚠️  limparMassaTesteAtual() falhou (não deveria impedir o resto do seed):', e);
   }
-  await importarAlunosLegadosParcela();
+  try {
+    await importarAlunosLegadosParcela();
+  } catch (e) {
+    console.error('⚠️  importarAlunosLegadosParcela() falhou (não deveria impedir o resto do seed):', e);
+  }
+  try {
+    await importarContratosEParcelasLegado();
+  } catch (e) {
+    console.error('⚠️  importarContratosEParcelasLegado() falhou (não deveria impedir o resto do seed):', e);
+  }
+  try {
+    await corrigirParcelasQuitadoZeroLegado();
+  } catch (e) {
+    console.error('⚠️  corrigirParcelasQuitadoZeroLegado() falhou (não deveria impedir o resto do seed):', e);
+  }
 
   // ── Usuário Admin padrão ────────────────────────────────────
   const senhaHash = await bcrypt.hash('admin123', 12);
@@ -799,6 +813,184 @@ async function importarAlunosLegadosParcela() {
   if (colisoes.length) {
     console.log('⚠️  Colisões (código legado + nome, não importados -- provável mesma pessoa já cadastrada sob outro registro):');
     console.log(colisoes.join(' | '));
+  }
+}
+
+/**
+ * Importa contratos de matrícula + parcelas da planilha financeira legada
+ * (mesma fonte de `importarAlunosLegadosParcela`) — `ContratoMatricula`
+ * agrupado por (aluno, ano/semestre da data de vencimento) e `Parcela`
+ * linha a linha. Cria os `PeriodoLetivo` que faltarem (a planilha cobre
+ * 2013-2030, bem além dos períodos já cadastrados). Só processa aluno que
+ * já tenha sido importado com `codigoLegado` (ver `importarAlunosLegadosParcela`,
+ * precisa rodar antes) e que ainda não tenha nenhum `ContratoMatricula` —
+ * idempotente por aluno (não por linha, dado o volume).
+ *
+ * Fonte: `prisma/data/contratos-parcelas-legado.json` (pré-computado —
+ * agrupamento por período e sequência de parcela já feitos fora do seed).
+ */
+async function importarContratosEParcelasLegado() {
+  const jsonPath = path.join(__dirname, 'data', 'contratos-parcelas-legado.json');
+  if (!fs.existsSync(jsonPath)) {
+    console.log('↷ prisma/data/contratos-parcelas-legado.json não encontrado — pulando importação de contratos/parcelas.');
+    return;
+  }
+  const dados: {
+    codigoLegado: string;
+    contratos: {
+      ano: number; semestre: 'S1' | 'S2'; diaVencimento: number; valorTotal: number;
+      parcelas: { numero: number; dataVencimento: string; valor: number; dataPagamento: string | null; valorPago: number | null; status: 'PAGO' | 'EM_ABERTO' }[];
+    }[];
+  }[] = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+  const hoje = new Date();
+
+  // 1. Períodos letivos necessários — cria os que faltarem.
+  const periodosNecessarios = new Set<string>();
+  for (const a of dados) for (const c of a.contratos) periodosNecessarios.add(`${c.ano}-${c.semestre}`);
+
+  const periodosExistentes = await prisma.periodoLetivo.findMany({
+    where: {
+      OR: [...periodosNecessarios].map(chave => {
+        const [anoStr, semestre] = chave.split('-');
+        return { ano: Number(anoStr), semestre: semestre as 'S1' | 'S2' };
+      }),
+    },
+  });
+  const periodoMap = new Map<string, string>();
+  for (const p of periodosExistentes) periodoMap.set(`${p.ano}-${p.semestre}`, p.id);
+
+  const periodosParaCriar = [...periodosNecessarios].filter(chave => !periodoMap.has(chave));
+  for (const chave of periodosParaCriar) {
+    const [anoStr, semestre] = chave.split('-') as [string, 'S1' | 'S2'];
+    const ano = Number(anoStr);
+    const dataInicio = new Date(semestre === 'S1' ? `${ano}-01-01` : `${ano}-07-01`);
+    const dataFim = new Date(semestre === 'S1' ? `${ano}-06-30` : `${ano}-12-31`);
+    const status: 'PLANEJADO' | 'EM_ANDAMENTO' | 'ENCERRADO' =
+      dataFim < hoje ? 'ENCERRADO' : dataInicio > hoje ? 'PLANEJADO' : 'EM_ANDAMENTO';
+    const periodo = await prisma.periodoLetivo.upsert({
+      where: { ano_semestre: { ano, semestre } },
+      update: {},
+      create: { ano, semestre, dataInicio, dataFim, status },
+    });
+    periodoMap.set(chave, periodo.id);
+  }
+  if (periodosParaCriar.length) {
+    const ordenados = [...periodosNecessarios].sort();
+    console.log(`✅ ${periodosParaCriar.length} períodos letivos criados pra cobrir o histórico financeiro legado (${ordenados[0]}..${ordenados[ordenados.length - 1]}).`);
+  }
+
+  // 2. Alunos: casa por codigoLegado.
+  const codigosLegados = dados.map(a => a.codigoLegado);
+  const alunosEncontrados = await prisma.aluno.findMany({ where: { codigoLegado: { in: codigosLegados } }, select: { id: true, codigoLegado: true } });
+  const alunoMap = new Map(alunosEncontrados.map(a => [a.codigoLegado as string, a.id]));
+
+  // 3. Idempotência por aluno: pula quem já tem qualquer ContratoMatricula.
+  const alunoIdsRelevantes = [...alunoMap.values()];
+  const comContrato = await prisma.contratoMatricula.findMany({
+    where: { alunoId: { in: alunoIdsRelevantes } },
+    select: { alunoId: true },
+    distinct: ['alunoId'],
+  });
+  const alunoIdsComContrato = new Set(comContrato.map(c => c.alunoId));
+
+  // 4. Monta a lista de contratos a criar (só alunos casados e ainda não processados).
+  type ContratoParaCriar = {
+    alunoId: string; periodoLetivoId: string; valorTotal: number; numeroParcelas: number;
+    diaVencimento: number; status: 'ATIVO' | 'ENCERRADO';
+    parcelas: { numero: number; dataVencimento: string; valor: number; dataPagamento: string | null; valorPago: number | null; status: 'PAGO' | 'EM_ABERTO' }[];
+  };
+  const contratosParaCriar: ContratoParaCriar[] = [];
+  const semAlunoCorrespondente: string[] = [];
+  let pulosPorJaTerContrato = 0;
+
+  for (const a of dados) {
+    const alunoId = alunoMap.get(a.codigoLegado);
+    if (!alunoId) { semAlunoCorrespondente.push(a.codigoLegado); continue; }
+    if (alunoIdsComContrato.has(alunoId)) { pulosPorJaTerContrato += 1; continue; }
+    for (const c of a.contratos) {
+      const periodoLetivoId = periodoMap.get(`${c.ano}-${c.semestre}`) as string;
+      const dataFimPeriodo = c.semestre === 'S1' ? new Date(`${c.ano}-06-30`) : new Date(`${c.ano}-12-31`);
+      contratosParaCriar.push({
+        alunoId, periodoLetivoId, valorTotal: c.valorTotal, numeroParcelas: c.parcelas.length,
+        diaVencimento: c.diaVencimento, status: dataFimPeriodo < hoje ? 'ENCERRADO' : 'ATIVO',
+        parcelas: c.parcelas,
+      });
+    }
+  }
+
+  // 5. Cria os contratos em lotes (createMany não retorna id -- refaz um
+  //    findMany depois casando por (alunoId, periodoLetivoId), única dentro
+  //    deste lote já que cada aluno só tem 1 contrato por período aqui).
+  const TAMANHO_LOTE = 2000;
+  for (let i = 0; i < contratosParaCriar.length; i += TAMANHO_LOTE) {
+    const lote = contratosParaCriar.slice(i, i + TAMANHO_LOTE);
+    await prisma.contratoMatricula.createMany({
+      data: lote.map(c => ({
+        alunoId: c.alunoId, periodoLetivoId: c.periodoLetivoId, valorTotal: c.valorTotal,
+        numeroParcelas: c.numeroParcelas, diaVencimento: c.diaVencimento, status: c.status,
+      })),
+    });
+  }
+
+  const contratosCriados = contratosParaCriar.length
+    ? await prisma.contratoMatricula.findMany({
+        where: { alunoId: { in: [...new Set(contratosParaCriar.map(c => c.alunoId))] } },
+        select: { id: true, alunoId: true, periodoLetivoId: true },
+      })
+    : [];
+  const contratoIdMap = new Map(contratosCriados.map(c => [`${c.alunoId}|${c.periodoLetivoId}`, c.id]));
+
+  // 6. Monta e cria as parcelas em lotes.
+  const parcelasParaCriar: { contratoId: string; numero: number; valor: number; dataVencimento: Date; dataPagamento: Date | null; valorPago: number | null; status: 'PAGO' | 'PENDENTE' | 'VENCIDO' | 'SUBSTITUIDA' }[] = [];
+  for (const c of contratosParaCriar) {
+    const contratoId = contratoIdMap.get(`${c.alunoId}|${c.periodoLetivoId}`);
+    if (!contratoId) continue; // não deveria acontecer -- defensivo
+    for (const p of c.parcelas) {
+      const dataVencimento = new Date(p.dataVencimento);
+      // "Quitado" com Valor Recebido = 0 na planilha legada não é pago de
+      // verdade -- é uma parcela substituída por outra via Acordo/
+      // renegociação entre as partes (achado confirmado pelo usuário).
+      const status: 'PAGO' | 'PENDENTE' | 'VENCIDO' | 'SUBSTITUIDA' =
+        p.status === 'PAGO'
+          ? (p.valorPago === 0 ? 'SUBSTITUIDA' : 'PAGO')
+          : dataVencimento < hoje ? 'VENCIDO' : 'PENDENTE';
+      parcelasParaCriar.push({
+        contratoId, numero: p.numero, valor: p.valor, dataVencimento,
+        dataPagamento: p.dataPagamento ? new Date(p.dataPagamento) : null,
+        valorPago: p.valorPago, status,
+      });
+    }
+  }
+  for (let i = 0; i < parcelasParaCriar.length; i += TAMANHO_LOTE) {
+    const lote = parcelasParaCriar.slice(i, i + TAMANHO_LOTE);
+    await prisma.parcela.createMany({ data: lote });
+  }
+
+  console.log(`✅ Contratos/parcelas legados: ${contratosParaCriar.length} contratos e ${parcelasParaCriar.length} parcelas criados para ${new Set(contratosParaCriar.map(c => c.alunoId)).size} alunos.`);
+  console.log(`↷ ${pulosPorJaTerContrato} alunos pulados (já tinham contrato de uma execução anterior).`);
+  if (semAlunoCorrespondente.length) {
+    console.log(`⚠️  ${semAlunoCorrespondente.length} códigos legados da planilha financeira sem Aluno correspondente (não importados como aluno, provável colisão de CPF): ${semAlunoCorrespondente.slice(0, 30).join(', ')}${semAlunoCorrespondente.length > 30 ? '...' : ''}`);
+  }
+}
+
+/**
+ * Correção pontual (Jul/2026): `importarContratosEParcelasLegado()` já tinha
+ * rodado em produção antes do enum `StatusParcela` ganhar `SUBSTITUIDA` —
+ * o mapeamento antigo tratava toda parcela "Quitado" da planilha como PAGO,
+ * mesmo quando o Valor Recebido era 0 (achado confirmado pelo usuário: essas
+ * são parcelas substituídas por outra via Acordo/renegociação, não pagas de
+ * verdade). Corrige retroativamente os registros que já foram criados.
+ * Idempotente: a condição `status = PAGO` deixa de bater assim que corrigido
+ * uma vez, então rodar de novo não repete nem desfaz nada.
+ */
+async function corrigirParcelasQuitadoZeroLegado() {
+  const { count } = await prisma.parcela.updateMany({
+    where: { status: 'PAGO', valorPago: 0 },
+    data: { status: 'SUBSTITUIDA' },
+  });
+  if (count > 0) {
+    console.log(`✅ ${count} parcelas corrigidas de PAGO para SUBSTITUIDA (Valor Recebido = 0 na planilha legada — substituída via Acordo).`);
   }
 }
 

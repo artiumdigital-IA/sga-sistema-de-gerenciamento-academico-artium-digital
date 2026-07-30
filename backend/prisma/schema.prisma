@@ -799,6 +799,7 @@ enum StatusParcela {
   PAGO
   VENCIDO
   CANCELADO
+  SUBSTITUIDA // parcela substituída por outra via Acordo/renegociação (Valor Recebido = 0, mas constava "Quitado" na base legada)
 }
 
 // ── Avisos ──────────────────────────────────────────────────────
