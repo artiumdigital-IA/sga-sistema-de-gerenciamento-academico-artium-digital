@@ -388,7 +388,11 @@ async function criarCursoComMatriz(cfg: CursoConfig) {
 async function main() {
   console.log('🌱 Iniciando seed...');
 
-  await limparMassaTesteAtual();
+  try {
+    await limparMassaTesteAtual();
+  } catch (e) {
+    console.error('⚠️  limparMassaTesteAtual() falhou (não deveria impedir o resto do seed):', e);
+  }
   await importarAlunosLegadosParcela();
 
   // ── Usuário Admin padrão ────────────────────────────────────
@@ -754,32 +758,48 @@ async function importarAlunosLegadosParcela() {
   }
 
   let criados = 0;
+  const colisoes: string[] = [];
   for (const d of dados) {
     if (jaImportados.has(d.codigoLegado)) continue;
     const ano = d.dataIngresso ? new Date(d.dataIngresso).getUTCFullYear() : 2018;
     const ra = await proximoRa(ano);
     const cpf = d.cpf ?? `999${d.codigoLegado.padStart(8, '0')}`;
-    await prisma.aluno.create({
-      data: {
-        ra,
-        codigoLegado: d.codigoLegado,
-        nome: d.nome,
-        cpf,
-        cursoId: cursoClassificar.id,
-        matrizCurricularId: matrizClassificar.id,
-        dataNascimento: new Date('1900-01-01'),
-        sexo: 'NAO_DECLARADO',
-        corRaca: 'NAO_DECLARADO',
-        nacionalidade: 'BRASILEIRA',
-        formaIngresso: 'OUTRO',
-        dataIngresso: d.dataIngresso ? new Date(d.dataIngresso) : new Date(`${ano}-01-01`),
-        situacaoVinculo: 'CURSANDO',
-        email: `aluno${d.codigoLegado}@pendente.fiurj.edu.br`,
-      },
-    });
-    criados += 1;
+    try {
+      await prisma.aluno.create({
+        data: {
+          ra,
+          codigoLegado: d.codigoLegado,
+          nome: d.nome,
+          cpf,
+          cursoId: cursoClassificar.id,
+          matrizCurricularId: matrizClassificar.id,
+          dataNascimento: new Date('1900-01-01'),
+          sexo: 'NAO_DECLARADO',
+          corRaca: 'NAO_DECLARADO',
+          nacionalidade: 'BRASILEIRA',
+          formaIngresso: 'OUTRO',
+          dataIngresso: d.dataIngresso ? new Date(d.dataIngresso) : new Date(`${ano}-01-01`),
+          situacaoVinculo: 'CURSANDO',
+          email: `aluno${d.codigoLegado}@pendente.fiurj.edu.br`,
+        },
+      });
+      criados += 1;
+    } catch (err) {
+      // P2002 = unique constraint (cpf/email/ra já usados por outro aluno --
+      // provavelmente a mesma pessoa já cadastrada sob outro registro). Não
+      // aborta o lote inteiro por causa de 1 colisão; loga e segue pro próximo.
+      if ((err as { code?: string })?.code === 'P2002') {
+        colisoes.push(`${d.codigoLegado} (${d.nome})`);
+      } else {
+        throw err;
+      }
+    }
   }
-  console.log(`✅ Importação legada: ${criados} alunos criados (curso placeholder "A Classificar"), ${dados.length - criados} já existiam.`);
+  console.log(`✅ Importação legada: ${criados} alunos criados (curso placeholder "A Classificar"), ${dados.length - criados - colisoes.length} já existiam, ${colisoes.length} pulados por colisão de CPF/e-mail/RA com aluno já existente.`);
+  if (colisoes.length) {
+    console.log('⚠️  Colisões (código legado + nome, não importados -- provável mesma pessoa já cadastrada sob outro registro):');
+    console.log(colisoes.join(' | '));
+  }
 }
 
 /**
@@ -813,44 +833,64 @@ async function limparMassaTesteAtual() {
 
   const alunosTeste = await prisma.aluno.findMany({ where: { ra: { in: RAS_TESTE } } });
   const alunoIds = alunosTeste.map(a => a.id);
+  const professoresTeste = await prisma.professor.findMany({ where: { email: { in: EMAILS_PROF_TESTE } } });
+  const professorIds = professoresTeste.map(p => p.id);
+  const dadosFolhaTeste = await prisma.dadosFolhaProfessor.findMany({ where: { professorId: { in: professorIds } } });
+  const dadosFolhaIds = dadosFolhaTeste.map(d => d.id);
+  const itensFolhaTeste = await prisma.itemFolha.findMany({ where: { professorId: { in: dadosFolhaIds } } });
+  const itensFolhaIds = itensFolhaTeste.map(i => i.id);
 
-  await prisma.$transaction([
-    // 1. Notas/frequência/resultado — só existem presas a MatriculaDisciplina,
-    //    e nenhuma matrícula real foi criada ainda (import de turma real fica
-    //    pra outra fase) — seguro sem filtro.
-    prisma.avaliacao.deleteMany({}),
-    prisma.registroFrequencia.deleteMany({}),
-    prisma.notaPauta.deleteMany({}),
-    prisma.resultadoDisciplina.deleteMany({}),
-    // 2. Matrículas e ofertas de teste (mesmo raciocínio).
-    prisma.matriculaDisciplina.deleteMany({}),
-    prisma.oferta.deleteMany({}),
-    // 3. Financeiro de teste — só existe preso a um dos alunos fake.
-    prisma.parcela.deleteMany({}),
-    prisma.contratoMatricula.deleteMany({}),
-    // 4. Ingresso de teste — fingerprintado (Candidato/ProcessoSeletivo não
-    //    dependem de Aluno, então não dá pra assumir que só existe fake).
-    prisma.inscricao.deleteMany({ where: { candidato: { cpf: { in: CPFS_CANDIDATO_TESTE } } } }),
-    prisma.candidato.deleteMany({ where: { cpf: { in: CPFS_CANDIDATO_TESTE } } }),
-    prisma.processoSeletivo.deleteMany({ where: { nome: NOME_PROCESSO_TESTE } }),
-    // 5. Auxiliares presos aos alunos fake — necessário limpar antes de
-    //    poder apagar Aluno (todos RESTRICT).
-    prisma.fichaSaude.deleteMany({ where: { alunoId: { in: alunoIds } } }),
-    prisma.bolsista.deleteMany({ where: { alunoId: { in: alunoIds } } }),
-    prisma.ocorrencia.deleteMany({ where: { alunoId: { in: alunoIds } } }),
-    prisma.observacaoFinanceira.deleteMany({ where: { alunoId: { in: alunoIds } } }),
-    prisma.documentoAluno.deleteMany({ where: { alunoId: { in: alunoIds } } }),
-    prisma.requerimento.deleteMany({ where: { alunoId: { in: alunoIds } } }),
-    prisma.protocolo.deleteMany({ where: { alunoId: { in: alunoIds } } }),
-    // 6. Avisos de teste — fingerprintado (Aviso não depende de Aluno, só
-    //    opcionalmente de Usuario, que continua existindo).
-    prisma.aviso.deleteMany({ where: { titulo: { in: TITULOS_AVISO_TESTE } } }),
-    // 7. Alunos e professores fake.
-    prisma.aluno.deleteMany({ where: { ra: { in: RAS_TESTE } } }),
-    prisma.professor.deleteMany({ where: { email: { in: EMAILS_PROF_TESTE } } }),
-    // 8. Períodos letivos de teste (EventoCalendario é Cascade, some junto).
-    prisma.periodoLetivo.deleteMany({ where: { ano: { in: [2025, 2026, 2027] } } }),
-  ]);
+  // Sequencial (não $transaction) de propósito: cada passo já é seguro de
+  // rodar de novo sozinho (filtros por fingerprint/id específico), então se
+  // um passo inesperado falhar, os anteriores não precisam ser desfeitos —
+  // ao contrário de uma transação única, onde qualquer erro reverte TUDO
+  // (foi exatamente isso que aconteceu antes de cobrir ProvaGerada aqui).
+
+  // 1. Notas/frequência/resultado — só existem presas a MatriculaDisciplina,
+  //    e nenhuma matrícula real foi criada ainda (import de turma real fica
+  //    pra outra fase) — seguro sem filtro.
+  await prisma.avaliacao.deleteMany({});
+  await prisma.registroFrequencia.deleteMany({});
+  await prisma.notaPauta.deleteMany({});
+  await prisma.resultadoDisciplina.deleteMany({});
+  // 2. Matrículas e ofertas de teste (mesmo raciocínio).
+  await prisma.matriculaDisciplina.deleteMany({});
+  await prisma.oferta.deleteMany({});
+  // 3. Financeiro de teste — só existe preso a um dos alunos fake.
+  await prisma.parcela.deleteMany({});
+  await prisma.contratoMatricula.deleteMany({});
+  // 4. Ingresso de teste — fingerprintado (Candidato/ProcessoSeletivo não
+  //    dependem de Aluno, então não dá pra assumir que só existe fake).
+  await prisma.inscricao.deleteMany({ where: { candidato: { cpf: { in: CPFS_CANDIDATO_TESTE } } } });
+  await prisma.candidato.deleteMany({ where: { cpf: { in: CPFS_CANDIDATO_TESTE } } });
+  await prisma.processoSeletivo.deleteMany({ where: { nome: NOME_PROCESSO_TESTE } });
+  // 5. Auxiliares presos aos alunos fake — necessário limpar antes de
+  //    poder apagar Aluno (todos RESTRICT).
+  await prisma.fichaSaude.deleteMany({ where: { alunoId: { in: alunoIds } } });
+  await prisma.bolsista.deleteMany({ where: { alunoId: { in: alunoIds } } });
+  await prisma.ocorrencia.deleteMany({ where: { alunoId: { in: alunoIds } } });
+  await prisma.observacaoFinanceira.deleteMany({ where: { alunoId: { in: alunoIds } } });
+  await prisma.documentoAluno.deleteMany({ where: { alunoId: { in: alunoIds } } });
+  await prisma.requerimento.deleteMany({ where: { alunoId: { in: alunoIds } } });
+  await prisma.protocolo.deleteMany({ where: { alunoId: { in: alunoIds } } });
+  // 5b. Auxiliares presos aos professores fake — necessário limpar antes de
+  //     poder apagar Professor (CapturaProva/ProvaGerada/HoraComplementar são
+  //     RESTRICT direto; DadosFolhaProfessor é RESTRICT e tem sua própria
+  //     cadeia via ItemFolha → ItemFolhaLancamento).
+  await prisma.capturaProva.deleteMany({ where: { professorId: { in: professorIds } } });
+  await prisma.provaGerada.deleteMany({ where: { professorId: { in: professorIds } } });
+  await prisma.horaComplementar.deleteMany({ where: { professorId: { in: professorIds } } });
+  await prisma.itemFolhaLancamento.deleteMany({ where: { itemFolhaId: { in: itensFolhaIds } } });
+  await prisma.itemFolha.deleteMany({ where: { id: { in: itensFolhaIds } } });
+  await prisma.dadosFolhaProfessor.deleteMany({ where: { id: { in: dadosFolhaIds } } });
+  // 6. Avisos de teste — fingerprintado (Aviso não depende de Aluno, só
+  //    opcionalmente de Usuario, que continua existindo).
+  await prisma.aviso.deleteMany({ where: { titulo: { in: TITULOS_AVISO_TESTE } } });
+  // 7. Alunos e professores fake.
+  await prisma.aluno.deleteMany({ where: { ra: { in: RAS_TESTE } } });
+  await prisma.professor.deleteMany({ where: { email: { in: EMAILS_PROF_TESTE } } });
+  // 8. Períodos letivos de teste (EventoCalendario é Cascade, some junto).
+  await prisma.periodoLetivo.deleteMany({ where: { ano: { in: [2025, 2026, 2027] } } });
 
   console.log('🧹 Massa de teste sintética removida (alunos/professores/ofertas/notas/processos/documentos/contratos/avisos/períodos de teste).');
 }
