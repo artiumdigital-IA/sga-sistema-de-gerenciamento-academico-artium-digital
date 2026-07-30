@@ -5,10 +5,11 @@ import { formatarData } from '@/lib/format';
 
 interface LinhaInadimplencia {
   parcelaId: string; numero: number; valor: string; dataVencimento: string; diasAtraso: number;
+  diasUteisAtraso: number; multa: number; juros: number; mora: number; valorAtualizado: number;
   aluno: { id: string; ra: string; nome: string; email: string; telefone: string | null };
   periodo: { ano: number; semestre: string };
 }
-interface Inadimplencia { total: number; valorTotalEmAtraso: number; linhas: LinhaInadimplencia[]; }
+interface Inadimplencia { total: number; valorTotalEmAtraso: number; valorTotalMora: number; valorTotalAtualizado: number; linhas: LinhaInadimplencia[]; }
 interface LinhaTurma { curso: string; periodo: string; contratos: number; valorTotal: number; valorPago: number; valorPendente: number; }
 interface LinhaContabil { curso: string; competencia: string; quantidade: number; valorRecebido: number; }
 
@@ -63,16 +64,22 @@ export default function RelatoriosFinanceirosPage() {
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 16px', fontSize: 13 }}>
               Total em atraso: <strong>{money(inadimplencia.valorTotalEmAtraso)}</strong>
             </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 16px', fontSize: 13 }}>
+              Multa + juros: <strong>{money(inadimplencia.valorTotalMora)}</strong>
+            </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 16px', fontSize: 13 }}>
+              Total atualizado: <strong>{money(inadimplencia.valorTotalAtualizado)}</strong>
+            </div>
           </div>
           <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
-                  {['RA', 'Aluno', 'Período', 'Parcela', 'Valor', 'Vencimento', 'Dias em Atraso'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>)}
+                  {['RA', 'Aluno', 'Período', 'Parcela', 'Valor', 'Vencimento', 'Dias Úteis Atraso', 'Multa', 'Juros', 'Mora', 'Valor Atualizado'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
-                {inadimplencia.linhas.length === 0 && <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhuma parcela em atraso.</td></tr>}
+                {inadimplencia.linhas.length === 0 && <tr><td colSpan={11} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhuma parcela em atraso.</td></tr>}
                 {inadimplencia.linhas.map(l => (
                   <tr key={l.parcelaId} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                     <td style={{ padding: '8px 14px', fontWeight: 600 }}>{l.aluno.ra}</td>
@@ -81,7 +88,11 @@ export default function RelatoriosFinanceirosPage() {
                     <td style={{ padding: '8px 14px' }}>{l.numero}</td>
                     <td style={{ padding: '8px 14px' }}>{money(Number(l.valor))}</td>
                     <td style={{ padding: '8px 14px' }}>{formatarData(l.dataVencimento)}</td>
-                    <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>{l.diasAtraso}</td>
+                    <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>{l.diasUteisAtraso}</td>
+                    <td style={{ padding: '8px 14px' }}>{money(l.multa)}</td>
+                    <td style={{ padding: '8px 14px' }}>{money(l.juros)}</td>
+                    <td style={{ padding: '8px 14px', fontWeight: 600 }}>{money(l.mora)}</td>
+                    <td style={{ padding: '8px 14px', fontWeight: 600 }}>{money(l.valorAtualizado)}</td>
                   </tr>
                 ))}
               </tbody>

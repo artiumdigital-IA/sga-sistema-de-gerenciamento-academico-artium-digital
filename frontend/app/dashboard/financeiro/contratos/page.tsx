@@ -7,6 +7,7 @@ type Parcela = {
   id: string; numero: number; valor: number; dataVencimento: string;
   dataPagamento: string | null; valorPago: number | null;
   status: 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO' | 'SUBSTITUIDA'; formaPagamento: string | null;
+  diasUteisAtraso?: number; multa?: number; juros?: number; mora?: number; valorAtualizado?: number;
 };
 type Contrato = {
   id: string; valorTotal: number; numeroParcelas: number; diaVencimento: number;
@@ -230,7 +231,7 @@ export default function ContratosPage() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
                       <thead>
                         <tr>
-                          {['Nº', 'Vencimento', 'Valor', 'Status', 'Pagamento', 'Forma', 'Ação'].map(h => (
+                          {['Nº', 'Vencimento', 'Valor', 'Status', 'Mora', 'Pagamento', 'Forma', 'Ação'].map(h => (
                             <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontSize: 11, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-100)' }}>{h}</th>
                           ))}
                         </tr>
@@ -242,6 +243,14 @@ export default function ContratosPage() {
                             <td style={{ padding: '6px 8px', fontSize: 13 }}>{fmtDate(p.dataVencimento)}</td>
                             <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600 }}>{fmt(p.valor)}</td>
                             <td style={{ padding: '6px 8px' }}><Badge s={p.status} /></td>
+                            <td style={{ padding: '6px 8px', fontSize: 12 }}>
+                              {p.mora ? (
+                                <span title={`Multa: ${fmt(p.multa ?? 0)} · Juros: ${fmt(p.juros ?? 0)} · ${p.diasUteisAtraso} dia(s) útil(is) de atraso · Valor atualizado: ${fmt(p.valorAtualizado ?? p.valor)}`}
+                                  style={{ color: '#ef4444', fontWeight: 600, cursor: 'help', borderBottom: '1px dashed #ef4444' }}>
+                                  {fmt(p.mora)}
+                                </span>
+                              ) : '—'}
+                            </td>
                             <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--gray-500)' }}>{p.dataPagamento ? fmtDate(p.dataPagamento) : '—'}</td>
                             <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--gray-500)' }}>{p.formaPagamento ?? '—'}</td>
                             <td style={{ padding: '6px 8px' }}>
