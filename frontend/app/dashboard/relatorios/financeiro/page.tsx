@@ -4,8 +4,8 @@ import { apiFetch } from '@/lib/api';
 import { formatarData } from '@/lib/format';
 
 interface LinhaInadimplencia {
-  parcelaId: string; numero: number; valor: string; dataVencimento: string; diasAtraso: number;
-  diasUteisAtraso: number; multa: number; juros: number; mora: number; valorAtualizado: number;
+  parcelaId: string; numero: number; valor: string; dataVencimento: string;
+  diasAtraso: number; multa: number; juros: number; mora: number; valorAtualizado: number;
   aluno: { id: string; ra: string; nome: string; email: string; telefone: string | null };
   periodo: { ano: number; semestre: string };
 }
@@ -75,7 +75,7 @@ export default function RelatoriosFinanceirosPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
-                  {['RA', 'Aluno', 'Período', 'Parcela', 'Valor', 'Vencimento', 'Dias Úteis Atraso', 'Multa', 'Juros', 'Mora', 'Valor Atualizado'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>)}
+                  {['RA', 'Aluno', 'Período', 'Parcela', 'Valor', 'Vencimento', 'Dias em Atraso', 'Multa', 'Juros', 'Mora', 'Valor Atualizado'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -88,7 +88,7 @@ export default function RelatoriosFinanceirosPage() {
                     <td style={{ padding: '8px 14px' }}>{l.numero}</td>
                     <td style={{ padding: '8px 14px' }}>{money(Number(l.valor))}</td>
                     <td style={{ padding: '8px 14px' }}>{formatarData(l.dataVencimento)}</td>
-                    <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>{l.diasUteisAtraso}</td>
+                    <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>{l.diasAtraso}</td>
                     <td style={{ padding: '8px 14px' }}>{money(l.multa)}</td>
                     <td style={{ padding: '8px 14px' }}>{money(l.juros)}</td>
                     <td style={{ padding: '8px 14px', fontWeight: 600 }}>{money(l.mora)}</td>
