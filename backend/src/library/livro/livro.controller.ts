@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Request, Res } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { LivroService } from './livro.service';
 import { CreateLivroDto } from './dto/create-livro.dto';
 import { UpdateLivroDto } from './dto/update-livro.dto';
@@ -39,6 +40,13 @@ export class LivroController {
   @ApiOperation({ summary: 'Detalhar exemplar + dados do livro (usado pela etiqueta imprimível)' })
   findExemplar(@Param('exemplarId') exemplarId: string) {
     return this.service.findExemplar(exemplarId);
+  }
+
+  @Roles(Perfil.MASTER)
+  @Get('exportar/excel')
+  @ApiOperation({ summary: 'Baixar acervo em XLSX, na mesma ordem de colunas da importação em lote' })
+  exportarExcel(@Res() res: Response) {
+    return this.service.exportarExcelImportacao(res);
   }
 
   @Get(':id')

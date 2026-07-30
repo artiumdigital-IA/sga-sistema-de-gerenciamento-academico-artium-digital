@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiDownload } from '@/lib/api';
 import { getToken, parseJwt } from '@/lib/auth';
 
 interface Exemplar { id: string; codigoTombamento: string; localizacao: string | null; status: StatusItem; numeroExemplar: number | null; }
@@ -193,9 +193,18 @@ export default function LivrosPage() {
   const [modal, setModal] = useState<'new' | Livro | null>(null);
   const [exemplaresDe, setExemplaresDe] = useState<Livro | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [baixandoExcel, setBaixandoExcel] = useState(false);
   const token = getToken();
   const perfil = token ? parseJwt(token)?.perfil : null;
   const podeEditar = perfil === 'ADMIN' || perfil === 'SECRETARIA' || perfil === 'MASTER';
+  const isMaster = perfil === 'MASTER';
+
+  async function baixarExcel() {
+    setBaixandoExcel(true);
+    try { await apiDownload('/biblioteca/livros/exportar/excel', 'acervo-biblioteca-importacao.xlsx'); }
+    catch (err: unknown) { alert(err instanceof Error ? err.message : 'Erro ao gerar o arquivo.'); }
+    finally { setBaixandoExcel(false); }
+  }
 
   const load = useCallback(async (termo?: string) => {
     setLoading(true); setError('');
@@ -236,6 +245,16 @@ export default function LivrosPage() {
             onKeyDown={e => { if (e.key === 'Enter') load(busca); }}
           />
           <button style={BTN('ghost')} onClick={() => load(busca)}>Buscar</button>
+          {isMaster && (
+            <>
+              <button style={BTN('ghost')} onClick={() => window.open('/dashboard/biblioteca/livros/imprimir', '_blank')}>
+                🖨️ Baixar Acervo (PDF)
+              </button>
+              <button style={BTN('ghost')} disabled={baixandoExcel} onClick={baixarExcel}>
+                {baixandoExcel ? 'Gerando...' : '⭳ Baixar Acervo (Excel)'}
+              </button>
+            </>
+          )}
           {podeEditar && <button style={BTN('primary')} onClick={() => setModal('new')}>+ Novo Livro</button>}
         </div>
       </div>
