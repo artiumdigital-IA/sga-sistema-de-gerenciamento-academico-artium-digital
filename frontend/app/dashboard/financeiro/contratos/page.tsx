@@ -7,7 +7,7 @@ type Parcela = {
   id: string; numero: number; valor: number; dataVencimento: string;
   dataPagamento: string | null; valorPago: number | null;
   status: 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO' | 'SUBSTITUIDA'; formaPagamento: string | null;
-  diasUteisAtraso?: number; multa?: number; juros?: number; mora?: number; valorAtualizado?: number;
+  diasAtraso?: number; multa?: number; juros?: number; mora?: number; valorAtualizado?: number;
 };
 type Contrato = {
   id: string; valorTotal: number; numeroParcelas: number; diaVencimento: number;
@@ -248,7 +248,7 @@ export default function ContratosPage() {
                             <td style={{ padding: '6px 8px' }}><Badge s={p.status} /></td>
                             <td style={{ padding: '6px 8px', fontSize: 12 }}>
                               {p.mora ? (
-                                <span title={`Multa: ${fmt(p.multa ?? 0)} · Juros: ${fmt(p.juros ?? 0)} · ${p.diasUteisAtraso} dia(s) útil(is) de atraso · Valor atualizado: ${fmt(p.valorAtualizado ?? p.valor)}`}
+                                <span title={`Multa: ${fmt(p.multa ?? 0)} · Juros: ${fmt(p.juros ?? 0)} · ${p.diasAtraso} dia(s) corrido(s) de atraso · Valor atualizado: ${fmt(p.valorAtualizado ?? p.valor)}`}
                                   style={{ color: '#ef4444', fontWeight: 600, cursor: 'help', borderBottom: '1px dashed #ef4444' }}>
                                   {fmt(p.mora)}
                                 </span>
