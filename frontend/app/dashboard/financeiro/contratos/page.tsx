@@ -6,7 +6,7 @@ import { formatarData } from '@/lib/format';
 type Parcela = {
   id: string; numero: number; valor: number; dataVencimento: string;
   dataPagamento: string | null; valorPago: number | null;
-  status: 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO'; formaPagamento: string | null;
+  status: 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO' | 'SUBSTITUIDA'; formaPagamento: string | null;
 };
 type Contrato = {
   id: string; valorTotal: number; numeroParcelas: number; diaVencimento: number;
@@ -20,14 +20,19 @@ type Periodo = { id: string; ano: number; semestre: number };
 
 const STATUS_COLOR: Record<string, string> = {
   PENDENTE: '#f59e0b', PAGO: '#10b981', VENCIDO: '#ef4444', CANCELADO: 'var(--gray-400)',
+  SUBSTITUIDA: '#8b5cf6',
   ATIVO: '#10b981', SUSPENSO: '#f59e0b', ENCERRADO: 'var(--gray-500)',
+};
+const STATUS_LABEL: Record<string, string> = {
+  PENDENTE: 'Pendente', PAGO: 'Pago', VENCIDO: 'Vencido', CANCELADO: 'Cancelado',
+  SUBSTITUIDA: 'Substituída',
 };
 
 function fmt(v: number) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v); }
 function fmtDate(s: string) { return formatarData(s); }
 
 function Badge({ s }: { s: string }) {
-  return <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: (STATUS_COLOR[s] ?? 'var(--gray-200)') + '22', color: STATUS_COLOR[s] ?? 'var(--gray-700)' }}>{s}</span>;
+  return <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: (STATUS_COLOR[s] ?? 'var(--gray-200)') + '22', color: STATUS_COLOR[s] ?? 'var(--gray-700)' }}>{STATUS_LABEL[s] ?? s}</span>;
 }
 
 // ── Modal Novo Contrato ────────────────────────────────────────────────────

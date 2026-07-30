@@ -403,6 +403,11 @@ async function main() {
   } catch (e) {
     console.error('⚠️  importarContratosEParcelasLegado() falhou (não deveria impedir o resto do seed):', e);
   }
+  try {
+    await corrigirParcelasQuitadoZeroLegado();
+  } catch (e) {
+    console.error('⚠️  corrigirParcelasQuitadoZeroLegado() falhou (não deveria impedir o resto do seed):', e);
+  }
 
   // ── Usuário Admin padrão ────────────────────────────────────
   const senhaHash = await bcrypt.hash('admin123', 12);
@@ -937,14 +942,19 @@ async function importarContratosEParcelasLegado() {
   const contratoIdMap = new Map(contratosCriados.map(c => [`${c.alunoId}|${c.periodoLetivoId}`, c.id]));
 
   // 6. Monta e cria as parcelas em lotes.
-  const parcelasParaCriar: { contratoId: string; numero: number; valor: number; dataVencimento: Date; dataPagamento: Date | null; valorPago: number | null; status: 'PAGO' | 'PENDENTE' | 'VENCIDO' }[] = [];
+  const parcelasParaCriar: { contratoId: string; numero: number; valor: number; dataVencimento: Date; dataPagamento: Date | null; valorPago: number | null; status: 'PAGO' | 'PENDENTE' | 'VENCIDO' | 'SUBSTITUIDA' }[] = [];
   for (const c of contratosParaCriar) {
     const contratoId = contratoIdMap.get(`${c.alunoId}|${c.periodoLetivoId}`);
     if (!contratoId) continue; // não deveria acontecer -- defensivo
     for (const p of c.parcelas) {
       const dataVencimento = new Date(p.dataVencimento);
-      const status: 'PAGO' | 'PENDENTE' | 'VENCIDO' =
-        p.status === 'PAGO' ? 'PAGO' : dataVencimento < hoje ? 'VENCIDO' : 'PENDENTE';
+      // "Quitado" com Valor Recebido = 0 na planilha legada não é pago de
+      // verdade -- é uma parcela substituída por outra via Acordo/
+      // renegociação entre as partes (achado confirmado pelo usuário).
+      const status: 'PAGO' | 'PENDENTE' | 'VENCIDO' | 'SUBSTITUIDA' =
+        p.status === 'PAGO'
+          ? (p.valorPago === 0 ? 'SUBSTITUIDA' : 'PAGO')
+          : dataVencimento < hoje ? 'VENCIDO' : 'PENDENTE';
       parcelasParaCriar.push({
         contratoId, numero: p.numero, valor: p.valor, dataVencimento,
         dataPagamento: p.dataPagamento ? new Date(p.dataPagamento) : null,
@@ -961,6 +971,26 @@ async function importarContratosEParcelasLegado() {
   console.log(`↷ ${pulosPorJaTerContrato} alunos pulados (já tinham contrato de uma execução anterior).`);
   if (semAlunoCorrespondente.length) {
     console.log(`⚠️  ${semAlunoCorrespondente.length} códigos legados da planilha financeira sem Aluno correspondente (não importados como aluno, provável colisão de CPF): ${semAlunoCorrespondente.slice(0, 30).join(', ')}${semAlunoCorrespondente.length > 30 ? '...' : ''}`);
+  }
+}
+
+/**
+ * Correção pontual (Jul/2026): `importarContratosEParcelasLegado()` já tinha
+ * rodado em produção antes do enum `StatusParcela` ganhar `SUBSTITUIDA` —
+ * o mapeamento antigo tratava toda parcela "Quitado" da planilha como PAGO,
+ * mesmo quando o Valor Recebido era 0 (achado confirmado pelo usuário: essas
+ * são parcelas substituídas por outra via Acordo/renegociação, não pagas de
+ * verdade). Corrige retroativamente os registros que já foram criados.
+ * Idempotente: a condição `status = PAGO` deixa de bater assim que corrigido
+ * uma vez, então rodar de novo não repete nem desfaz nada.
+ */
+async function corrigirParcelasQuitadoZeroLegado() {
+  const { count } = await prisma.parcela.updateMany({
+    where: { status: 'PAGO', valorPago: 0 },
+    data: { status: 'SUBSTITUIDA' },
+  });
+  if (count > 0) {
+    console.log(`✅ ${count} parcelas corrigidas de PAGO para SUBSTITUIDA (Valor Recebido = 0 na planilha legada — substituída via Acordo).`);
   }
 }
 
