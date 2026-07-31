@@ -216,6 +216,7 @@ model Aluno {
   bolsas           Bolsista[]
   capturasProva    CapturaProva[]
   horasComplementares HoraComplementar[]
+  matriculasPosGraduacaoLegado MatriculaPosGraduacaoLegado[]
 
   @@map("alunos")
 }
@@ -1990,4 +1991,53 @@ enum StatusLinhaImportacao {
   SUGESTAO_NOME
   SEM_CORRESPONDENCIA
   DADO_INVALIDO
+}
+
+// ── Histórico de Pós-Graduação (Jul/2026) ──────────────────────────────────
+// Financeiro histórico do módulo "Outros Cursos" do Kirsch (pós-graduação/
+// mestrado/doutorado/especialização/parcerias UAL-USAL-UPT-UNLZ), fora do
+// escopo acadêmico atual do sistema (só graduação é modelada de verdade,
+// com Curso/MatrizCurricular/Disciplina). Decisão explícita: NÃO fabricar um
+// catálogo de "cursos de pós" consolidado -- 10 anos de nomenclatura
+// inconsistente do Kirsch (mesma sigla usada pra turmas/versões diferentes,
+// nomes quase idênticos que podem ou não ser o mesmo programa) tornam
+// qualquer agrupamento automático arriscado e difícil de desfazer depois.
+// `nomeProgramaLegado` guarda o nome exatamente como veio da fonte -- fiel
+// ao dado real, sem categorização inventada. Só é importado pra alunos que
+// JÁ existem no nosso cadastro (casados por `codigoLegado`); os que não têm
+// correspondência ficam de fora (o financeiro de pós não tem nome/nascimento/
+// endereço pra justificar criar um Aluno novo só com isso).
+model MatriculaPosGraduacaoLegado {
+  id                  String   @id @default(uuid())
+  alunoId             String
+  codigoCursoLegado   String   // código bruto do Kirsch, pra rastreabilidade/auditoria
+  nomeProgramaLegado  String?  // nome do programa como veio do Kirsch (Cadastro de Cursos); null se o código não tinha entrada no catálogo
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  aluno    Aluno                          @relation(fields: [alunoId], references: [id])
+  parcelas ParcelaPosGraduacaoLegado[]
+
+  @@unique([alunoId, codigoCursoLegado])
+  @@map("matriculas_pos_graduacao_legado")
+}
+
+model ParcelaPosGraduacaoLegado {
+  id             String   @id @default(uuid())
+  matriculaId    String
+  numeroBoleto   String?  // número do boleto do Kirsch -- histórico/auditoria, não tem relação com o módulo CNAB atual (outro banco/sistema)
+  dataVencimento DateTime @db.Date
+  dataPagamento  DateTime? @db.Date
+  valor          Decimal  @db.Decimal(10, 2)
+  valorDesconto  Decimal  @db.Decimal(10, 2) @default(0)
+  valorJuros     Decimal  @db.Decimal(10, 2) @default(0)
+  status         StatusParcela // calculado no import a partir de dataPagamento/dataVencimento -- PENDENTE | PAGO | VENCIDO (nunca SUBSTITUIDA/CANCELADO aqui, não se aplica a esta fonte)
+
+  criadoEm   DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  matricula MatriculaPosGraduacaoLegado @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+
+  @@map("parcelas_pos_graduacao_legado")
 }

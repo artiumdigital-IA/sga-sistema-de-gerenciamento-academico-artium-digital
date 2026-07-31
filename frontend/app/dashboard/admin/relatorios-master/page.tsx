@@ -5,7 +5,7 @@ import { apiDownload, apiFetch } from '@/lib/api';
 const BTN_P: React.CSSProperties = { padding: '10px 18px', borderRadius: 6, border: 'none', background: '#1a56db', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 };
 const BTN_G: React.CSSProperties = { padding: '10px 18px', borderRadius: 6, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: 'var(--white)', color: 'var(--gray-700)' };
 
-type Formato = 'sql' | 'sql-schema' | 'xlsx' | 'xml' | 'json' | 'uploads' | 'biblioteca-xlsx' | 'recebimentos-pdf' | 'recebimentos-xlsx' | 'alunos-xlsx';
+type Formato = 'sql' | 'sql-schema' | 'xlsx' | 'xml' | 'json' | 'uploads' | 'biblioteca-xlsx' | 'recebimentos-pdf' | 'recebimentos-xlsx' | 'alunos-xlsx' | 'vencimentos-pdf' | 'vencimentos-xlsx';
 
 interface PeriodoLetivo { id: string; ano: number; semestre: number | string; }
 
@@ -35,12 +35,13 @@ const BOTOES_BANCO: { formato: Formato; label: string; rota: string; filename: s
  * posição é guardada. Se o conjunto de ids mudar numa versão futura (card
  * novo/removido), cai de volta pro layout padrão em vez de quebrar. ─── */
 interface CardPos { id: string; colIdx: number }
-const IDS_CARDS = ['banco', 'uploads', 'bib-download', 'bib-upload', 'recebimentos', 'alunos'] as const;
+const IDS_CARDS = ['banco', 'uploads', 'bib-download', 'bib-upload', 'recebimentos', 'alunos', 'vencimentos'] as const;
 type CardId = typeof IDS_CARDS[number];
 const ORDEM_PADRAO: CardPos[] = [
   { id: 'banco', colIdx: 0 },
   { id: 'alunos', colIdx: 0 },
   { id: 'recebimentos', colIdx: 0 },
+  { id: 'vencimentos', colIdx: 1 },
   { id: 'uploads', colIdx: 1 },
   { id: 'bib-download', colIdx: 1 },
   { id: 'bib-upload', colIdx: 2 },
@@ -58,6 +59,9 @@ function IconBiblioteca() {
 }
 function IconRecebimento() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/><path d="M6 14h4"/></svg>;
+}
+function IconVencimento() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="M8 15l2 2 4-4"/></svg>;
 }
 function IconAlunos() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
@@ -118,6 +122,10 @@ export default function RelatoriosMasterPage() {
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
 
+  const [filtroVencPeriodoId, setFiltroVencPeriodoId] = useState('');
+  const [filtroVencDataInicio, setFiltroVencDataInicio] = useState('');
+  const [filtroVencDataFim, setFiltroVencDataFim] = useState('');
+
   useEffect(() => {
     apiFetch<any>('/periodos-letivos')
       .then(d => setPeriodos(Array.isArray(d) ? d : d.data ?? []))
@@ -175,6 +183,16 @@ export default function RelatoriosMasterPage() {
     if (filtroDataFim) params.set('dataFim', filtroDataFim);
     const qs = params.toString();
     await baixar(chaveFormato, `/relatorios-master/recebimentos/${formato}${qs ? `?${qs}` : ''}`, `recebimentos.${formato}`);
+  }
+
+  async function baixarVencimentos(formato: 'pdf' | 'xlsx') {
+    const chaveFormato: Formato = formato === 'pdf' ? 'vencimentos-pdf' : 'vencimentos-xlsx';
+    const params = new URLSearchParams();
+    if (filtroVencPeriodoId) params.set('periodoLetivoId', filtroVencPeriodoId);
+    if (filtroVencDataInicio) params.set('dataInicio', filtroVencDataInicio);
+    if (filtroVencDataFim) params.set('dataFim', filtroVencDataFim);
+    const qs = params.toString();
+    await baixar(chaveFormato, `/relatorios-master/vencimentos/${formato}${qs ? `?${qs}` : ''}`, `vencimentos.${formato}`);
   }
 
   function baixarModeloLivros() {
@@ -363,6 +381,66 @@ export default function RelatoriosMasterPage() {
           >
             {baixando === 'alunos-xlsx' ? 'Gerando...' : '⭳ Baixar Excel de Alunos'}
           </button>
+        </>
+      ),
+    },
+    vencimentos: {
+      title: 'Relatório por Data de Vencimento',
+      icon: <IconVencimento />,
+      content: (
+        <>
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--gray-500)' }}>
+            Todas as parcelas que vencem no período (pagas, pendentes, vencidas ou substituídas) — complementar
+            ao Relatório de Recebimento, que só traz as pagas. Mostra o status de cada uma e a mora calculada
+            na hora pras vencidas.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--gray-500)', marginBottom: 3 }}>Período Letivo</label>
+              <select
+                value={filtroVencPeriodoId}
+                onChange={e => setFiltroVencPeriodoId(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 12.5, background: 'var(--white)', color: 'var(--gray-700)' }}
+              >
+                <option value="">Todos</option>
+                {periodos.map(p => <option key={p.id} value={p.id}>{p.ano}/{p.semestre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--gray-500)', marginBottom: 3 }}>Vencimento de</label>
+              <input
+                type="date"
+                value={filtroVencDataInicio}
+                onChange={e => setFiltroVencDataInicio(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 12.5 }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--gray-500)', marginBottom: 3 }}>até</label>
+              <input
+                type="date"
+                value={filtroVencDataFim}
+                onChange={e => setFiltroVencDataFim(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 12.5 }}
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <button
+              style={{ ...BTN_P, opacity: baixando && baixando !== 'vencimentos-pdf' ? 0.5 : 1 }}
+              disabled={baixando !== null}
+              onClick={() => baixarVencimentos('pdf')}
+            >
+              {baixando === 'vencimentos-pdf' ? 'Gerando...' : '⭳ Baixar PDF'}
+            </button>
+            <button
+              style={{ ...BTN_G, opacity: baixando && baixando !== 'vencimentos-xlsx' ? 0.5 : 1 }}
+              disabled={baixando !== null}
+              onClick={() => baixarVencimentos('xlsx')}
+            >
+              {baixando === 'vencimentos-xlsx' ? 'Gerando...' : '⭳ Baixar Excel'}
+            </button>
+          </div>
         </>
       ),
     },

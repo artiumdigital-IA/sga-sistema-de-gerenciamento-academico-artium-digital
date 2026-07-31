@@ -413,6 +413,11 @@ async function main() {
   } catch (e) {
     console.error('⚠️  atualizarAlunosComCadastroLegado() falhou (não deveria impedir o resto do seed):', e);
   }
+  try {
+    await importarPosGraduacaoLegado();
+  } catch (e) {
+    console.error('⚠️  importarPosGraduacaoLegado() falhou (não deveria impedir o resto do seed):', e);
+  }
 
   // ── Usuário Admin padrão ────────────────────────────────────
   const senhaHash = await bcrypt.hash('admin123', 12);
@@ -1098,6 +1103,110 @@ async function atualizarAlunosComCadastroLegado() {
     console.log('⚠️  CPF/e-mail em conflito com outro aluno já cadastrado (não sobrescrito):');
     console.log(colisoes.join(' | '));
   }
+}
+
+/**
+ * Histórico financeiro de Pós-Graduação legado (Kirsch, módulo "Outros
+ * Cursos" -- mestrado/doutorado/especialização/parcerias UAL-USAL-UPT-UNLZ),
+ * Jul/2026. Decisão explícita (ver comentário no schema.prisma, model
+ * MatriculaPosGraduacaoLegado): NÃO consolidar os ~104 códigos de curso do
+ * Kirsch num catálogo fabricado -- a nomenclatura acumulada em 10 anos é
+ * ambígua demais pra classificar com segurança de forma automática. Guarda
+ * o nome do programa como veio da fonte (`nomeProgramaLegado`, texto livre).
+ *
+ * Só importa pra alunos que JÁ EXISTEM no nosso cadastro (casados por
+ * `codigoLegado`) -- esse arquivo financeiro não tem nome/nascimento/
+ * endereço, então não dá pra criar um Aluno novo só com CPF+código sem
+ * ficar com um cadastro pela metade. Idempotente por (aluno, código do
+ * curso legado) -- uma pessoa pode ter feito mais de um programa de pós.
+ *
+ * Fonte: `prisma/data/pos-graduacao-legado.json` (pré-processado fora do
+ * seed -- agrupamento por aluno+curso e resolução do nome via catálogo do
+ * Kirsch já feitos).
+ */
+async function importarPosGraduacaoLegado() {
+  const jsonPath = path.join(__dirname, 'data', 'pos-graduacao-legado.json');
+  if (!fs.existsSync(jsonPath)) {
+    console.log('↷ prisma/data/pos-graduacao-legado.json não encontrado — pulando histórico de pós-graduação.');
+    return;
+  }
+  const registros: {
+    codigoLegado: string;
+    codigoCursoLegado: string;
+    nomeCursoLegado: string | null;
+    parcelas: { numeroBoleto: string | null; dataVencimento: string; dataPagamento: string | null; valor: number; valorDesconto: number; valorJuros: number }[];
+  }[] = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+  const codigos = [...new Set(registros.map(r => r.codigoLegado))];
+  const alunos = await prisma.aluno.findMany({ where: { codigoLegado: { in: codigos } }, select: { id: true, codigoLegado: true } });
+  const alunoIdPorCodigo = new Map(alunos.map(a => [a.codigoLegado as string, a.id]));
+
+  const jaExistentes = await prisma.matriculaPosGraduacaoLegado.findMany({
+    where: { alunoId: { in: [...alunoIdPorCodigo.values()] } },
+    select: { alunoId: true, codigoCursoLegado: true },
+  });
+  const jaExistentesSet = new Set(jaExistentes.map(m => `${m.alunoId}|${m.codigoCursoLegado}`));
+
+  const semAlunoCorrespondente = registros.filter(r => !alunoIdPorCodigo.has(r.codigoLegado)).length;
+  const registrosParaCriar = registros.filter(r => {
+    const alunoId = alunoIdPorCodigo.get(r.codigoLegado);
+    return alunoId && !jaExistentesSet.has(`${alunoId}|${r.codigoCursoLegado}`);
+  });
+  const jaImportadosAntes = registros.length - registrosParaCriar.length - semAlunoCorrespondente;
+
+  if (registrosParaCriar.length === 0) {
+    console.log(`↷ Histórico de Pós-Graduação legado: nada novo pra importar (${jaImportadosAntes} matrículas já existiam, ${semAlunoCorrespondente} sem aluno correspondente).`);
+    return;
+  }
+
+  const TAMANHO_LOTE = 2000;
+  for (let i = 0; i < registrosParaCriar.length; i += TAMANHO_LOTE) {
+    const lote = registrosParaCriar.slice(i, i + TAMANHO_LOTE);
+    await prisma.matriculaPosGraduacaoLegado.createMany({
+      data: lote.map(r => ({
+        alunoId: alunoIdPorCodigo.get(r.codigoLegado) as string,
+        codigoCursoLegado: r.codigoCursoLegado,
+        nomeProgramaLegado: r.nomeCursoLegado,
+      })),
+    });
+  }
+
+  const alunoIdsEnvolvidos = [...new Set(registrosParaCriar.map(r => alunoIdPorCodigo.get(r.codigoLegado) as string))];
+  const matriculasCriadas = await prisma.matriculaPosGraduacaoLegado.findMany({
+    where: { alunoId: { in: alunoIdsEnvolvidos } },
+    select: { id: true, alunoId: true, codigoCursoLegado: true },
+  });
+  const matriculaIdMap = new Map(matriculasCriadas.map(m => [`${m.alunoId}|${m.codigoCursoLegado}`, m.id]));
+
+  const hoje = new Date();
+  const parcelasParaCriar: {
+    matriculaId: string; numeroBoleto: string | null; dataVencimento: Date; dataPagamento: Date | null;
+    valor: number; valorDesconto: number; valorJuros: number; status: 'PENDENTE' | 'PAGO' | 'VENCIDO';
+  }[] = [];
+  for (const r of registrosParaCriar) {
+    const alunoId = alunoIdPorCodigo.get(r.codigoLegado) as string;
+    const matriculaId = matriculaIdMap.get(`${alunoId}|${r.codigoCursoLegado}`);
+    if (!matriculaId) continue; // defensivo -- não deveria acontecer
+    for (const p of r.parcelas) {
+      const dataVencimento = new Date(p.dataVencimento);
+      const status: 'PENDENTE' | 'PAGO' | 'VENCIDO' = p.dataPagamento ? 'PAGO' : dataVencimento < hoje ? 'VENCIDO' : 'PENDENTE';
+      parcelasParaCriar.push({
+        matriculaId,
+        numeroBoleto: p.numeroBoleto,
+        dataVencimento,
+        dataPagamento: p.dataPagamento ? new Date(p.dataPagamento) : null,
+        valor: p.valor,
+        valorDesconto: p.valorDesconto,
+        valorJuros: p.valorJuros,
+        status,
+      });
+    }
+  }
+  for (let i = 0; i < parcelasParaCriar.length; i += TAMANHO_LOTE) {
+    await prisma.parcelaPosGraduacaoLegado.createMany({ data: parcelasParaCriar.slice(i, i + TAMANHO_LOTE) });
+  }
+
+  console.log(`✅ Histórico de Pós-Graduação legado (Kirsch): ${registrosParaCriar.length} matrículas e ${parcelasParaCriar.length} parcelas criadas para ${alunoIdsEnvolvidos.length} alunos já cadastrados, ${jaImportadosAntes} matrículas já existiam de uma execução anterior, ${semAlunoCorrespondente} códigos sem aluno correspondente (fora de escopo -- financeiro de pós não tem dado suficiente pra criar aluno novo).`);
 }
 
 /**

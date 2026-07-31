@@ -148,4 +148,41 @@ export class RelatoriosMasterController {
     res.setHeader('Content-Disposition', 'attachment; filename="recebimentos.pdf"');
     res.send(buffer);
   }
+
+  @Get('vencimentos/xlsx')
+  @ApiOperation({ summary: 'Relatório por Data de Vencimento — XLSX' })
+  @ApiQuery({ name: 'periodoLetivoId', required: false })
+  @ApiQuery({ name: 'dataInicio', required: false })
+  @ApiQuery({ name: 'dataFim', required: false })
+  async vencimentosXlsx(
+    @Query('periodoLetivoId') periodoLetivoId: string | undefined,
+    @Query('dataInicio') dataInicio: string | undefined,
+    @Query('dataFim') dataFim: string | undefined,
+    @Res() res: Response,
+    @Request() req: any,
+  ) {
+    await this.service.registrarExport(req.user.id, 'vencimentos-xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="vencimentos.xlsx"');
+    await this.service.streamVencimentosXlsx(res, { periodoLetivoId, dataInicio, dataFim });
+  }
+
+  @Get('vencimentos/pdf')
+  @ApiOperation({ summary: 'Relatório por Data de Vencimento — PDF' })
+  @ApiQuery({ name: 'periodoLetivoId', required: false })
+  @ApiQuery({ name: 'dataInicio', required: false })
+  @ApiQuery({ name: 'dataFim', required: false })
+  async vencimentosPdf(
+    @Query('periodoLetivoId') periodoLetivoId: string | undefined,
+    @Query('dataInicio') dataInicio: string | undefined,
+    @Query('dataFim') dataFim: string | undefined,
+    @Res() res: Response,
+    @Request() req: any,
+  ) {
+    await this.service.registrarExport(req.user.id, 'vencimentos-pdf');
+    const buffer = await this.service.gerarVencimentosPdf({ periodoLetivoId, dataInicio, dataFim });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="vencimentos.pdf"');
+    res.send(buffer);
+  }
 }
