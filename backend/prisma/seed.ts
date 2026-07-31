@@ -772,46 +772,51 @@ async function importarAlunosLegadosParcela() {
   }
 
   let criados = 0;
+  let criadosComCpfPlaceholder = 0;
   const colisoes: string[] = [];
   for (const d of dados) {
     if (jaImportados.has(d.codigoLegado)) continue;
     const ano = d.dataIngresso ? new Date(d.dataIngresso).getUTCFullYear() : 2018;
     const ra = await proximoRa(ano);
-    const cpf = d.cpf ?? `999${d.codigoLegado.padStart(8, '0')}`;
+    const cpfPlaceholder = `999${d.codigoLegado.padStart(8, '0')}`;
+    const dadosBase = {
+      ra,
+      codigoLegado: d.codigoLegado,
+      nome: d.nome,
+      cursoId: cursoClassificar.id,
+      matrizCurricularId: matrizClassificar.id,
+      dataNascimento: new Date('1900-01-01'),
+      sexo: 'NAO_DECLARADO' as const,
+      corRaca: 'NAO_DECLARADO' as const,
+      nacionalidade: 'BRASILEIRA',
+      formaIngresso: 'OUTRO' as const,
+      dataIngresso: d.dataIngresso ? new Date(d.dataIngresso) : new Date(`${ano}-01-01`),
+      situacaoVinculo: 'CURSANDO' as const,
+      email: `aluno${d.codigoLegado}@pendente.fiurj.edu.br`,
+    };
     try {
-      await prisma.aluno.create({
-        data: {
-          ra,
-          codigoLegado: d.codigoLegado,
-          nome: d.nome,
-          cpf,
-          cursoId: cursoClassificar.id,
-          matrizCurricularId: matrizClassificar.id,
-          dataNascimento: new Date('1900-01-01'),
-          sexo: 'NAO_DECLARADO',
-          corRaca: 'NAO_DECLARADO',
-          nacionalidade: 'BRASILEIRA',
-          formaIngresso: 'OUTRO',
-          dataIngresso: d.dataIngresso ? new Date(d.dataIngresso) : new Date(`${ano}-01-01`),
-          situacaoVinculo: 'CURSANDO',
-          email: `aluno${d.codigoLegado}@pendente.fiurj.edu.br`,
-        },
-      });
+      await prisma.aluno.create({ data: { ...dadosBase, cpf: d.cpf ?? cpfPlaceholder } });
       criados += 1;
     } catch (err) {
-      // P2002 = unique constraint (cpf/email/ra já usados por outro aluno --
-      // provavelmente a mesma pessoa já cadastrada sob outro registro). Não
-      // aborta o lote inteiro por causa de 1 colisão; loga e segue pro próximo.
+      // P2002 no CPF real = já pertence a outro Aluno cadastrado (usuário
+      // confirmou: cadastrar mesmo assim, usando o número do aluno/código
+      // legado como identidade -- não o CPF real -- via CPF placeholder).
       if ((err as { code?: string })?.code === 'P2002') {
-        colisoes.push(`${d.codigoLegado} (${d.nome})`);
+        try {
+          await prisma.aluno.create({ data: { ...dadosBase, cpf: cpfPlaceholder } });
+          criados += 1;
+          criadosComCpfPlaceholder += 1;
+        } catch (err2) {
+          colisoes.push(`${d.codigoLegado} (${d.nome})`);
+        }
       } else {
         throw err;
       }
     }
   }
-  console.log(`✅ Importação legada: ${criados} alunos criados (curso placeholder "A Classificar"), ${dados.length - criados - colisoes.length} já existiam, ${colisoes.length} pulados por colisão de CPF/e-mail/RA com aluno já existente.`);
+  console.log(`✅ Importação legada: ${criados} alunos criados (curso placeholder "A Classificar", ${criadosComCpfPlaceholder} deles com CPF placeholder por colisão do CPF real com outro aluno já cadastrado), ${dados.length - criados - colisoes.length} já existiam, ${colisoes.length} não puderam ser criados.`);
   if (colisoes.length) {
-    console.log('⚠️  Colisões (código legado + nome, não importados -- provável mesma pessoa já cadastrada sob outro registro):');
+    console.log('⚠️  Não importados (erro além da colisão de CPF, ex.: e-mail ou RA já em uso):');
     console.log(colisoes.join(' | '));
   }
 }
