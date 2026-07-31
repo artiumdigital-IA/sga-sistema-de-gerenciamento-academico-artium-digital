@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { LivroService } from '../library/livro/livro.service';
 import { LinhaImportarLivroDto } from './dto/importar-livros.dto';
+import { calcularMora } from '../financial/mora.util';
 
 /**
  * Relatórios Master — exportação completa do banco (backup/disaster
@@ -372,4 +373,153 @@ export class RelatoriosMasterService {
       archive.finalize();
     });
   }
+
+  /**
+   * Dashboards do "Relatórios Master" (Jul/2026) — métricas agregadas de
+   * alunos, turmas, cursos, inadimplentes, acordos (CPagar) e contratos, pro
+   * perfil MASTER acompanhar o sistema num único lugar. Tudo calculado na
+   * hora (mesmo princípio de CR/Integralização/mora já usado no projeto —
+   * nunca armazenado, nunca fica desatualizado).
+   */
+  async getDashboard() {
+    const hoje = new Date();
+    const seteDiasAtras = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const dozeMesesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+
+    const [
+      totalAlunos,
+      alunosPorSituacao,
+      cursos,
+      totalOfertas,
+      periodoAtual,
+      parcelasVencidas,
+      acordos,
+      contratos,
+      novosAlunosSemana,
+      parcelasParaInadimplenciaMensal,
+      ofertasPorPeriodoRaw,
+      periodosParaOfertas,
+    ] = await Promise.all([
+      this.prisma.aluno.count(),
+      this.prisma.aluno.groupBy({ by: ['situacaoVinculo'], _count: { _all: true } }),
+      this.prisma.curso.findMany({
+        select: { id: true, nome: true, status: true, _count: { select: { alunos: true } } },
+        orderBy: { nome: 'asc' },
+      }),
+      this.prisma.oferta.count(),
+      this.prisma.periodoLetivo.findFirst({ where: { status: 'EM_ANDAMENTO' }, orderBy: { criadoEm: 'desc' } }),
+      this.prisma.parcela.findMany({
+        where: { status: { in: ['PENDENTE', 'VENCIDO'] }, dataVencimento: { lt: hoje } },
+        select: { valor: true, dataVencimento: true, status: true, contrato: { select: { alunoId: true } } },
+      }),
+      this.prisma.acordoPagar.findMany({
+        select: { status: true, valorTotal: true, parcelas: { select: { status: true, valor: true, valorPago: true } } },
+      }),
+      this.prisma.contratoMatricula.findMany({
+        select: { status: true, valorTotal: true, parcelas: { select: { status: true, valor: true, valorPago: true } } },
+      }),
+      // Só matrícula "de verdade" (não bulk-import legado, que entrou tudo
+      // com criadoEm nesta mesma semana e inflaria o número artificialmente).
+      this.prisma.aluno.count({ where: { criadoEm: { gte: seteDiasAtras }, codigoLegado: null } }),
+      this.prisma.parcela.findMany({
+        where: { status: { in: ['VENCIDO', 'PENDENTE'] }, dataVencimento: { gte: dozeMesesAtras } },
+        select: { valor: true, dataVencimento: true },
+      }),
+      this.prisma.oferta.groupBy({ by: ['periodoLetivoId'], _count: { _all: true } }),
+      this.prisma.periodoLetivo.findMany({ select: { id: true, ano: true, semestre: true, dataInicio: true } }),
+    ]);
+
+    let valorTotalEmAtraso = 0;
+    let valorTotalMora = 0;
+    const alunosInadimplentes = new Set<string>();
+    for (const p of parcelasVencidas) {
+      const mora = calcularMora(Number(p.valor), new Date(p.dataVencimento), p.status, hoje);
+      valorTotalEmAtraso += Number(p.valor);
+      valorTotalMora += mora.mora;
+      alunosInadimplentes.add(p.contrato.alunoId);
+    }
+
+    const acordosPorStatus = new Map<string, number>();
+    let acordosValorTotal = 0;
+    let acordosValorPago = 0;
+    for (const a of acordos) {
+      acordosPorStatus.set(a.status, (acordosPorStatus.get(a.status) ?? 0) + 1);
+      acordosValorTotal += Number(a.valorTotal);
+      acordosValorPago += a.parcelas
+        .filter(p => p.status === 'PAGO')
+        .reduce((s, p) => s + Number(p.valorPago ?? p.valor), 0);
+    }
+
+    let contratosValorTotal = 0;
+    let contratosValorPago = 0;
+    for (const c of contratos) {
+      contratosValorTotal += Number(c.valorTotal);
+      contratosValorPago += c.parcelas
+        .filter(p => p.status === 'PAGO')
+        .reduce((s, p) => s + Number(p.valorPago ?? p.valor), 0);
+    }
+
+    // Inadimplência por mês de vencimento (últimos 12 meses) — mesma regra de
+    // mora usada no card "Inadimplentes", só que quebrada por competência.
+    const mesesMap = new Map<string, { valor: number; quantidade: number }>();
+    for (const p of parcelasParaInadimplenciaMensal) {
+      const d = new Date(p.dataVencimento);
+      const chave = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      const atual = mesesMap.get(chave) ?? { valor: 0, quantidade: 0 };
+      atual.valor += Number(p.valor);
+      atual.quantidade += 1;
+      mesesMap.set(chave, atual);
+    }
+    const inadimplenciaPorMes = Array.from(mesesMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([mes, v]) => ({ mes, valor: Number(v.valor.toFixed(2)), quantidade: v.quantidade }));
+
+    // Ofertas por período letivo, em ordem cronológica (ano+semestre) — só
+    // períodos que já têm alguma turma formada.
+    const periodoInfoPorId = new Map(periodosParaOfertas.map(p => [p.id, p]));
+    const ofertasPorPeriodo: { periodo: string; ano: number; semestre: string; quantidade: number }[] = [];
+    for (const o of ofertasPorPeriodoRaw) {
+      const periodo = periodoInfoPorId.get(o.periodoLetivoId);
+      if (!periodo) continue;
+      ofertasPorPeriodo.push({ periodo: `${periodo.ano}/${periodo.semestre}`, ano: periodo.ano, semestre: String(periodo.semestre), quantidade: o._count._all });
+    }
+    ofertasPorPeriodo.sort((a, b) => (a.ano - b.ano) || a.semestre.localeCompare(b.semestre));
+
+    return {
+      alunos: {
+        total: totalAlunos,
+        porSituacao: alunosPorSituacao.map(s => ({ situacao: s.situacaoVinculo, quantidade: s._count._all })),
+        novosUltimaSemana: novosAlunosSemana,
+      },
+      cursos: {
+        total: cursos.length,
+        lista: cursos.map(c => ({ id: c.id, nome: c.nome, status: c.status, alunos: c._count.alunos })),
+      },
+      turmas: {
+        totalOfertas,
+        periodoAtual: periodoAtual ? `${periodoAtual.ano}/${periodoAtual.semestre}` : null,
+      },
+      inadimplentes: {
+        totalParcelas: parcelasVencidas.length,
+        totalAlunos: alunosInadimplentes.size,
+        valorTotalEmAtraso: Number(valorTotalEmAtraso.toFixed(2)),
+        valorTotalMora: Number(valorTotalMora.toFixed(2)),
+      },
+      acordos: {
+        total: acordos.length,
+        porStatus: Object.fromEntries(acordosPorStatus),
+        valorTotal: Number(acordosValorTotal.toFixed(2)),
+        valorPago: Number(acordosValorPago.toFixed(2)),
+      },
+      contratos: {
+        total: contratos.length,
+        valorTotal: Number(contratosValorTotal.toFixed(2)),
+        valorPago: Number(contratosValorPago.toFixed(2)),
+        valorPendente: Number((contratosValorTotal - contratosValorPago).toFixed(2)),
+      },
+      inadimplenciaPorMes,
+      ofertasPorPeriodo,
+    };
+  }
 }
+

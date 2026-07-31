@@ -187,6 +187,8 @@ export default function ContratosPage() {
   // texto em vez de somar (ex.: 3 parcelas de 399 viravam "399399399").
   const totalPago = (c: Contrato) => c.parcelas.filter(p => p.status === 'PAGO').reduce((s, p) => s + Number(p.valorPago ?? 0), 0);
   const totalVencido = (c: Contrato) => c.parcelas.filter(p => p.status === 'VENCIDO').reduce((s, p) => s + Number(p.valor), 0);
+  // Soma da coluna Valor + coluna Mora das parcelas vencidas -- o valor "atualizado" de verdade a cobrar.
+  const totalVencidoComMora = (c: Contrato) => c.parcelas.filter(p => p.status === 'VENCIDO').reduce((s, p) => s + Number(p.valor) + Number(p.mora ?? 0), 0);
 
   return (
     <div style={{ padding: '24px 28px' }}>
@@ -211,6 +213,7 @@ export default function ContratosPage() {
             const isOpen = expanded === c.id;
             const pago = totalPago(c);
             const vencido = totalVencido(c);
+            const vencidoComMora = totalVencidoComMora(c);
             return (
               <div key={c.id} style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
                 {/* Header */}
@@ -223,6 +226,7 @@ export default function ContratosPage() {
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{fmt(c.valorTotal)}</div>
                     <div style={{ color: '#10b981' }}>{fmt(pago)} pago</div>
                     {vencido > 0 && <div style={{ color: '#ef4444' }}>{fmt(vencido)} vencido</div>}
+                    {vencido > 0 && <div style={{ color: '#ef4444' }}>{fmt(vencidoComMora)} vencido + mora</div>}
                   </div>
                   <Badge s={c.status} />
                   <span style={{ color: 'var(--gray-400)', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</span>

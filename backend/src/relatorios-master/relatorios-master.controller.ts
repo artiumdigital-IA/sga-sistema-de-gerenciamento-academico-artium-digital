@@ -96,4 +96,10 @@ export class RelatoriosMasterController {
       }
     }
   }
+
+  @Get('dashboard')
+  @ApiOperation({ summary: 'Métricas agregadas: alunos, turmas, cursos, inadimplentes, acordos, contratos' })
+  getDashboard() {
+    return this.service.getDashboard();
+  }
 }

@@ -119,10 +119,12 @@ const MENU_COORDENADOR_GROUP: { title: string; items: RpanelItem[] } = {
 // RolesGuard/PermissoesTelaService: MASTER passa por qualquer @Roles() e
 // enxerga toda tela da matriz, mesmo sem estar listado rota a rota), então
 // vê o painel inteiro de ADMIN (RPANEL_GROUPS) MAIS este grupo em cima. 4
-// dos 6 itens aqui já existem/são usados por ADMIN em Administração/
+// dos itens aqui já existem/são usados por ADMIN em Administração/
 // Utilitários — aqui é só uma vitrine com só eles, não uma tela nova.
-// "Permissões de Tela" e "Relatórios Master" são os únicos itens que só
-// MASTER (e, no caso de Permissões, também admin@fiurj.edu.br) alcançam.
+// "Permissões de Tela", "Upload/Download" (backup/export/import do banco —
+// antes rotulado "Relatórios Master") e o novo "Relatórios Master"
+// (dashboards de métricas, Jul/2026) são os únicos itens que só MASTER
+// (e, no caso de Permissões, também admin@fiurj.edu.br) alcançam.
 const MENU_MASTER_GROUP: { title: string; items: RpanelItem[] } = {
   title: 'Ferramentas Master',
   items: [
@@ -131,7 +133,8 @@ const MENU_MASTER_GROUP: { title: string; items: RpanelItem[] } = {
     { label: 'Ramais', href: '/dashboard/utilitarios/ramais' },
     { label: 'Consulta a registro de acesso ao sistema', href: '/dashboard/admin/log' },
     { label: 'Permissões de Tela', href: '/dashboard/admin/permissoes' },
-    { label: 'Relatórios Master', href: '/dashboard/admin/relatorios-master' },
+    { label: 'Upload/Download', href: '/dashboard/admin/relatorios-master' },
+    { label: 'Relatórios Master', href: '/dashboard/admin/relatorios-master-dashboard' },
     { label: 'Importação de Dados Legados', href: '/dashboard/admin/importacao-legado' },
     { label: 'Requerimentos', href: '/dashboard/admin/requerimentos-tabela' },
   ],
