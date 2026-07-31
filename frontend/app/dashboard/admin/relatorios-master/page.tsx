@@ -388,7 +388,7 @@ export default function RelatoriosMasterPage() {
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1240 }}>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Relatórios Master</h1>
+        <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>Upload/Download</h1>
         <p style={{ margin: 0, fontSize: 12, color: 'var(--gray-500)' }}>
           Exportação completa do sistema — só o perfil Master enxerga esta tela. Arraste os cards pelo ícone
           de pontos pra reordenar ou mudar de coluna.
