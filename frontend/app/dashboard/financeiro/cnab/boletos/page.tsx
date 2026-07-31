@@ -70,7 +70,7 @@ export default function BoletosPage() {
     setAlunos([]);
     setErro('');
     try {
-      const cs = await apiFetch<Contrato[]>(`/financeiro/contratos?alunoId=${a.id}`);
+      const cs = await apiFetch<Contrato[]>(`/financeiro/contratos/aluno/${a.id}`);
       setContratos(cs);
     } catch (e: unknown) { setErro(e instanceof Error ? e.message : 'Erro ao carregar contratos'); }
   }

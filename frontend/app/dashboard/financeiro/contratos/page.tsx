@@ -9,12 +9,16 @@ type Parcela = {
   status: 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO' | 'SUBSTITUIDA'; formaPagamento: string | null;
   diasAtraso?: number; multa?: number; juros?: number; mora?: number; valorAtualizado?: number;
 };
-type Contrato = {
+type Totais = { pago: number; vencido: number; vencidoComMora: number };
+// Item da listagem paginada -- vem sem parcelas (só os totais já calculados
+// no backend); as parcelas de verdade só chegam via GET /financeiro/contratos/:id,
+// pedido sob demanda quando o card é expandido (ver ContratosPage abaixo).
+type ContratoResumo = {
   id: string; valorTotal: number; numeroParcelas: number; diaVencimento: number;
   status: string; observacoes: string | null; criadoEm: string;
   aluno: { id: string; nome: string; ra: string };
   periodoLetivo: { id: string; ano: number; semestre: number };
-  parcelas: Parcela[];
+  totais: Totais;
 };
 type Aluno = { id: string; nome: string; ra: string };
 type Periodo = { id: string; ano: number; semestre: number };
@@ -161,39 +165,72 @@ function ModalPagar({ parcela, onClose, onSaved }: { parcela: Parcela; onClose: 
 
 // ── Página principal ───────────────────────────────────────────────────────
 export default function ContratosPage() {
-  const [contratos, setContratos] = useState<Contrato[]>([]);
+  const [contratos, setContratos] = useState<ContratoResumo[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 20;
   const [loading, setLoading] = useState(true);
   const [showNovo, setShowNovo] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [pagarParcela, setPagarParcela] = useState<Parcela | null>(null);
   const [search, setSearch] = useState('');
+  const [searchDebounced, setSearchDebounced] = useState('');
+  // Parcelas de cada contrato só chegam quando o card é expandido (evita
+  // baixar as parcelas de todos os contratos da página inteira de uma vez).
+  const [detalhes, setDetalhes] = useState<Record<string, Parcela[]>>({});
+  const [carregandoDetalhe, setCarregandoDetalhe] = useState<string | null>(null);
+
+  // Busca com debounce -- evita 1 requisição por tecla digitada; volta pra
+  // página 1 sempre que o termo muda (resultado novo, contagem nova).
+  useEffect(() => {
+    const t = setTimeout(() => { setSearchDebounced(search); setPage(1); }, 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const load = useCallback(() => {
     setLoading(true);
-    apiFetch<Contrato[]>('/financeiro/contratos')
-      .then(d => setContratos(Array.isArray(d) ? d : (d as any).data ?? []))
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (searchDebounced) params.set('search', searchDebounced);
+    apiFetch<{ data: ContratoResumo[]; total: number }>(`/financeiro/contratos?${params.toString()}`)
+      .then(d => { setContratos(d.data ?? []); setTotal(d.total ?? 0); })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, searchDebounced]);
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = contratos.filter(c =>
-    c.aluno.nome.toLowerCase().includes(search.toLowerCase()) ||
-    c.aluno.ra.includes(search)
-  );
+  async function carregarDetalhe(id: string) {
+    setCarregandoDetalhe(id);
+    try {
+      const c = await apiFetch<{ parcelas: Parcela[] }>(`/financeiro/contratos/${id}`);
+      setDetalhes(prev => ({ ...prev, [id]: c.parcelas }));
+    } finally {
+      setCarregandoDetalhe(prev => (prev === id ? null : prev));
+    }
+  }
 
-  // Number(...) é essencial aqui: valorPago/valor vêm do backend como string
-  // (Decimal do Prisma serializado em JSON) -- sem converter, "+" concatena
-  // texto em vez de somar (ex.: 3 parcelas de 399 viravam "399399399").
-  const totalPago = (c: Contrato) => c.parcelas.filter(p => p.status === 'PAGO').reduce((s, p) => s + Number(p.valorPago ?? 0), 0);
-  const totalVencido = (c: Contrato) => c.parcelas.filter(p => p.status === 'VENCIDO').reduce((s, p) => s + Number(p.valor), 0);
-  // Soma da coluna Valor + coluna Mora das parcelas vencidas -- o valor "atualizado" de verdade a cobrar.
-  const totalVencidoComMora = (c: Contrato) => c.parcelas.filter(p => p.status === 'VENCIDO').reduce((s, p) => s + Number(p.valor) + Number(p.mora ?? 0), 0);
+  function toggleExpand(id: string) {
+    const isOpen = expanded === id;
+    setExpanded(isOpen ? null : id);
+    if (!isOpen && !detalhes[id]) carregarDetalhe(id);
+  }
+
+  // Depois de pagar uma parcela: recarrega a lista (totais mudam) e força
+  // buscar de novo o detalhe do contrato que estava expandido.
+  function aposPagar() {
+    setPagarParcela(null);
+    load();
+    if (expanded) {
+      setDetalhes(prev => { const cp = { ...prev }; delete cp[expanded]; return cp; });
+      carregarDetalhe(expanded);
+    }
+  }
+
+  const totalPaginas = Math.max(1, Math.ceil(total / limit));
 
   return (
     <div style={{ padding: '24px 28px' }}>
       {showNovo && <ModalNovoContrato onClose={() => setShowNovo(false)} onSaved={() => { setShowNovo(false); load(); }} />}
-      {pagarParcela && <ModalPagar parcela={pagarParcela} onClose={() => setPagarParcela(null)} onSaved={() => { setPagarParcela(null); load(); }} />}
+      {pagarParcela && <ModalPagar parcela={pagarParcela} onClose={() => setPagarParcela(null)} onSaved={aposPagar} />}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Contratos / Mensalidades</h2>
@@ -208,16 +245,15 @@ export default function ContratosPage() {
 
       {loading ? <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Carregando...</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.length === 0 && <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum contrato encontrado.</div>}
-          {filtered.map(c => {
+          {contratos.length === 0 && <div style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhum contrato encontrado.</div>}
+          {contratos.map(c => {
             const isOpen = expanded === c.id;
-            const pago = totalPago(c);
-            const vencido = totalVencido(c);
-            const vencidoComMora = totalVencidoComMora(c);
+            const { pago, vencido, vencidoComMora } = c.totais;
+            const parcelas = detalhes[c.id];
             return (
               <div key={c.id} style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', cursor: 'pointer', gap: 12 }} onClick={() => setExpanded(isOpen ? null : c.id)}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', cursor: 'pointer', gap: 12 }} onClick={() => toggleExpand(c.id)}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{c.aluno.nome} <span style={{ color: 'var(--gray-500)', fontWeight: 400, fontSize: 12 }}>({c.aluno.ra})</span></div>
                     <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 2 }}>{c.periodoLetivo.ano}/{c.periodoLetivo.semestre} · {c.numeroParcelas}x de {fmt(c.valorTotal / c.numeroParcelas)} · venc. dia {c.diaVencimento}</div>
@@ -232,51 +268,77 @@ export default function ContratosPage() {
                   <span style={{ color: 'var(--gray-400)', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
 
-                {/* Parcelas */}
+                {/* Parcelas -- carregadas sob demanda ao expandir */}
                 {isOpen && (
                   <div style={{ borderTop: '1px solid var(--gray-100)', padding: '0 16px 12px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
-                      <thead>
-                        <tr>
-                          {['Nº', 'Vencimento', 'Valor', 'Status', 'Mora', 'Pagamento', 'Forma', 'Ação'].map(h => (
-                            <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontSize: 11, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-100)' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {c.parcelas.map(p => (
-                          <tr key={p.id}>
-                            <td style={{ padding: '6px 8px', fontSize: 13 }}>{p.numero}</td>
-                            <td style={{ padding: '6px 8px', fontSize: 13 }}>{fmtDate(p.dataVencimento)}</td>
-                            <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600 }}>{fmt(p.valor)}</td>
-                            <td style={{ padding: '6px 8px' }}><Badge s={p.status} /></td>
-                            <td style={{ padding: '6px 8px', fontSize: 12 }}>
-                              {p.mora ? (
-                                <span title={`Multa: ${fmt(p.multa ?? 0)} · Juros: ${fmt(p.juros ?? 0)} · ${p.diasAtraso} dia(s) corrido(s) de atraso · Valor atualizado: ${fmt(p.valorAtualizado ?? p.valor)}`}
-                                  style={{ color: '#ef4444', fontWeight: 600, cursor: 'help', borderBottom: '1px dashed #ef4444' }}>
-                                  {fmt(p.mora)}
-                                </span>
-                              ) : '—'}
-                            </td>
-                            <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--gray-500)' }}>{p.dataPagamento ? fmtDate(p.dataPagamento) : '—'}</td>
-                            <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--gray-500)' }}>{p.formaPagamento ?? '—'}</td>
-                            <td style={{ padding: '6px 8px' }}>
-                              {(p.status === 'PENDENTE' || p.status === 'VENCIDO') && (
-                                <button style={{ padding: '3px 10px', border: 'none', borderRadius: 4, background: '#10b981', color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
-                                  onClick={() => setPagarParcela(p)}>
-                                  Pagar
-                                </button>
-                              )}
-                            </td>
+                    {carregandoDetalhe === c.id || !parcelas ? (
+                      <div style={{ padding: 16, textAlign: 'center', color: 'var(--gray-400)', fontSize: 13 }}>Carregando parcelas...</div>
+                    ) : (
+                      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+                        <thead>
+                          <tr>
+                            {['Nº', 'Vencimento', 'Valor', 'Status', 'Mora', 'Pagamento', 'Forma', 'Ação'].map(h => (
+                              <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontSize: 11, color: 'var(--gray-500)', borderBottom: '1px solid var(--gray-100)' }}>{h}</th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {parcelas.map(p => (
+                            <tr key={p.id}>
+                              <td style={{ padding: '6px 8px', fontSize: 13 }}>{p.numero}</td>
+                              <td style={{ padding: '6px 8px', fontSize: 13 }}>{fmtDate(p.dataVencimento)}</td>
+                              <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600 }}>{fmt(p.valor)}</td>
+                              <td style={{ padding: '6px 8px' }}><Badge s={p.status} /></td>
+                              <td style={{ padding: '6px 8px', fontSize: 12 }}>
+                                {p.mora ? (
+                                  <span title={`Multa: ${fmt(p.multa ?? 0)} · Juros: ${fmt(p.juros ?? 0)} · ${p.diasAtraso} dia(s) corrido(s) de atraso · Valor atualizado: ${fmt(p.valorAtualizado ?? p.valor)}`}
+                                    style={{ color: '#ef4444', fontWeight: 600, cursor: 'help', borderBottom: '1px dashed #ef4444' }}>
+                                    {fmt(p.mora)}
+                                  </span>
+                                ) : '—'}
+                              </td>
+                              <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--gray-500)' }}>{p.dataPagamento ? fmtDate(p.dataPagamento) : '—'}</td>
+                              <td style={{ padding: '6px 8px', fontSize: 12, color: 'var(--gray-500)' }}>{p.formaPagamento ?? '—'}</td>
+                              <td style={{ padding: '6px 8px' }}>
+                                {(p.status === 'PENDENTE' || p.status === 'VENCIDO') && (
+                                  <button style={{ padding: '3px 10px', border: 'none', borderRadius: 4, background: '#10b981', color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                                    onClick={() => setPagarParcela(p)}>
+                                    Pagar
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {!loading && total > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, fontSize: 13, color: 'var(--gray-500)' }}>
+          <span>{total.toLocaleString('pt-BR')} contrato(s) — página {page} de {totalPaginas}</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              style={{ padding: '6px 14px', border: '1px solid var(--gray-300)', borderRadius: 5, background: 'var(--white)', color: 'var(--gray-700)', cursor: page <= 1 ? 'default' : 'pointer', fontSize: 13, opacity: page <= 1 ? 0.5 : 1 }}
+            >
+              ‹ Anterior
+            </button>
+            <button
+              disabled={page >= totalPaginas}
+              onClick={() => setPage(p => Math.min(totalPaginas, p + 1))}
+              style={{ padding: '6px 14px', border: '1px solid var(--gray-300)', borderRadius: 5, background: 'var(--white)', color: 'var(--gray-700)', cursor: page >= totalPaginas ? 'default' : 'pointer', fontSize: 13, opacity: page >= totalPaginas ? 0.5 : 1 }}
+            >
+              Próxima ›
+            </button>
+          </div>
         </div>
       )}
     </div>

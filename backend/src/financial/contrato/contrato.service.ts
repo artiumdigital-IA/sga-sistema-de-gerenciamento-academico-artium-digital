@@ -64,12 +64,84 @@ export class ContratoService {
     return comMora(contrato);
   }
 
-  async findAll(alunoId?: string, periodoLetivoId?: string) {
+  /**
+   * Listagem paginada (dezenas de milhares de contratos/parcelas em produção
+   * -- carregar tudo de uma vez travava a tela). Busca por nome/RA roda no
+   * banco via Prisma (parametrizado, sem risco de injection), e a resposta
+   * NAO inclui as parcelas -- só os totais (pago/vencido/vencido+mora), já
+   * calculados aqui. O detalhe completo de parcelas fica em findOne(), pedido
+   * só quando o usuário expande um contrato na tela.
+   */
+  async findAll(params: { alunoId?: string; periodoLetivoId?: string; search?: string; page?: number; limit?: number }) {
+    const take = Math.min(Math.max(Math.trunc(params.limit ?? 20) || 20, 1), 100);
+    const page = Math.max(Math.trunc(params.page ?? 1) || 1, 1);
+    const skip = (page - 1) * take;
+
+    const where: any = {
+      ...(params.alunoId ? { alunoId: params.alunoId } : {}),
+      ...(params.periodoLetivoId ? { periodoLetivoId: params.periodoLetivoId } : {}),
+      ...(params.search
+        ? {
+            aluno: {
+              OR: [
+                { nome: { contains: params.search, mode: 'insensitive' } },
+                { ra: { contains: params.search } },
+              ],
+            },
+          }
+        : {}),
+    };
+
+    const [total, contratos] = await Promise.all([
+      (this.prisma as any).contratoMatricula.count({ where }),
+      (this.prisma as any).contratoMatricula.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { criadoEm: 'desc' },
+        include: {
+          aluno: { select: { id: true, nome: true, ra: true } },
+          periodoLetivo: { select: { id: true, ano: true, semestre: true } },
+          parcelas: { select: { valor: true, valorPago: true, status: true, dataVencimento: true, dataPagamento: true } },
+        },
+      }),
+    ]);
+
+    const hoje = new Date();
+    const data = contratos.map((c: any) => {
+      const pago = c.parcelas
+        .filter((p: any) => p.status === 'PAGO')
+        .reduce((s: number, p: any) => s + Number(p.valorPago ?? 0), 0);
+      const vencidas = c.parcelas.filter((p: any) => p.status === 'VENCIDO');
+      const vencido = vencidas.reduce((s: number, p: any) => s + Number(p.valor), 0);
+      const vencidoComMora = vencidas.reduce((s: number, p: any) => {
+        const mora = calcularMora(Number(p.valor), new Date(p.dataVencimento), p.status, hoje, p.dataPagamento ? new Date(p.dataPagamento) : null);
+        return s + Number(p.valor) + mora.mora;
+      }, 0);
+      const { parcelas, ...resto } = c;
+      return {
+        ...resto,
+        totais: {
+          pago: Number(pago.toFixed(2)),
+          vencido: Number(vencido.toFixed(2)),
+          vencidoComMora: Number(vencidoComMora.toFixed(2)),
+        },
+      };
+    });
+
+    return { data, total, page, limit: take };
+  }
+
+  /**
+   * Versão completa (com parcelas) para uso interno, escopada a UM aluno --
+   * usada pelo app do aluno (DiscenteService.financeiro), onde o volume já é
+   * pequeno por natureza (poucos contratos por pessoa) e a tela precisa das
+   * parcelas direto, sem o passo de "expandir" da tela administrativa. Não
+   * pagina de propósito -- não é o endpoint que sofria com o volume total.
+   */
+  async findAllCompletoPorAluno(alunoId: string) {
     const contratos = await (this.prisma as any).contratoMatricula.findMany({
-      where: {
-        ...(alunoId ? { alunoId } : {}),
-        ...(periodoLetivoId ? { periodoLetivoId } : {}),
-      },
+      where: { alunoId },
       include: {
         aluno: { select: { id: true, nome: true, ra: true } },
         periodoLetivo: { select: { id: true, ano: true, semestre: true } },
