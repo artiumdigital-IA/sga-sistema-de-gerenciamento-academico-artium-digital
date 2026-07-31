@@ -39,6 +39,15 @@ const SITUACAO_RECEBIMENTO_LABEL: Record<string, string> = {
   ADIANTADO: 'Adiantado',
 };
 
+/** Rótulo de status de parcela pro Relatório por Data de Vencimento. */
+const STATUS_PARCELA_LABEL: Record<string, string> = {
+  PENDENTE: 'Pendente',
+  PAGO: 'Pago',
+  VENCIDO: 'Vencido',
+  CANCELADO: 'Cancelado',
+  SUBSTITUIDA: 'Substituída',
+};
+
 /**
  * Relatórios Master — exportação completa do banco (backup/disaster
  * recovery) e dos arquivos enviados, pro perfil MASTER. Ver decisão de
@@ -851,6 +860,194 @@ export class RelatoriosMasterService {
       y = doc.y + 8;
     }
     doc.fontSize(11).fillColor('#000').text(`Total recebido: ${fmt(total)}  (${linhas.length} pagamento(s))`, startX, y);
+
+    doc.end();
+    return pronto;
+  }
+
+  /**
+   * Relatório por Data de Vencimento (card "Upload/Download", Jul/2026) --
+   * complementar ao Relatório de Recebimento (que filtra por PAGAMENTO):
+   * aqui filtra por VENCIMENTO e traz TODAS as parcelas do período
+   * (pagas, pendentes, vencidas, substituídas), não só as pagas -- serve
+   * pra ver o que vencia num período e em que situação ficou cada uma,
+   * incluindo mora calculada na hora pras que estão vencidas.
+   */
+  private async vencimentosLinhas(params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }) {
+    const where: any = {};
+    if (params.periodoLetivoId) where.contrato = { periodoLetivoId: params.periodoLetivoId };
+    if (params.dataInicio || params.dataFim) {
+      where.dataVencimento = {};
+      if (params.dataInicio) where.dataVencimento.gte = new Date(`${params.dataInicio}T00:00:00`);
+      if (params.dataFim) where.dataVencimento.lte = new Date(`${params.dataFim}T23:59:59`);
+    }
+
+    const parcelas = await this.prisma.parcela.findMany({
+      where,
+      include: {
+        contrato: {
+          include: {
+            aluno: { select: { nome: true, ra: true, curso: { select: { nome: true } } } },
+            periodoLetivo: { select: { ano: true, semestre: true } },
+          },
+        },
+      },
+      orderBy: { dataVencimento: 'asc' },
+    });
+
+    const hoje = new Date();
+    return parcelas.map(p => {
+      const mora = calcularMora(Number(p.valor), p.dataVencimento, p.status, hoje, p.dataPagamento);
+      return {
+        dataVencimento: p.dataVencimento,
+        aluno: p.contrato.aluno.nome,
+        ra: p.contrato.aluno.ra,
+        curso: p.contrato.aluno.curso.nome,
+        periodo: `${p.contrato.periodoLetivo.ano}/${p.contrato.periodoLetivo.semestre}`,
+        numeroParcela: p.numero,
+        valor: Number(p.valor),
+        status: p.status,
+        dataPagamento: p.dataPagamento,
+        valorPago: p.valorPago !== null ? Number(p.valorPago) : null,
+        mora: mora.mora,
+      };
+    });
+  }
+
+  private async descreverFiltroVencimentos(params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }): Promise<string> {
+    const partes: string[] = [];
+    if (params.periodoLetivoId) {
+      const periodo = await this.prisma.periodoLetivo.findUnique({ where: { id: params.periodoLetivoId } });
+      partes.push(periodo ? `Período Letivo ${periodo.ano}/${periodo.semestre}` : 'Período Letivo selecionado');
+    }
+    if (params.dataInicio || params.dataFim) {
+      const de = params.dataInicio ? new Date(`${params.dataInicio}T00:00:00`).toLocaleDateString('pt-BR') : 'o início';
+      const ate = params.dataFim ? new Date(`${params.dataFim}T00:00:00`).toLocaleDateString('pt-BR') : 'hoje';
+      partes.push(`Vencimento entre ${de} e ${ate}`);
+    }
+    return partes.length > 0 ? partes.join(' · ') : 'Todas as parcelas (sem filtro)';
+  }
+
+  async streamVencimentosXlsx(res: Response, params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }): Promise<void> {
+    const [linhas, filtroDescricao] = await Promise.all([
+      this.vencimentosLinhas(params),
+      this.descreverFiltroVencimentos(params),
+    ]);
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Vencimentos');
+    sheet.addRow([`Relatório por Data de Vencimento — ${filtroDescricao}`]);
+    sheet.addRow([]);
+    sheet.addRow(['Vencimento', 'Aluno', 'RA', 'Curso', 'Período', 'Parcela Nº', 'Valor', 'Status', 'Data Pagamento', 'Valor Pago', 'Mora']);
+    for (const l of linhas) {
+      sheet.addRow([
+        fmtDataUtc(l.dataVencimento), l.aluno, l.ra, l.curso, l.periodo, l.numeroParcela,
+        l.valor, STATUS_PARCELA_LABEL[l.status] ?? l.status,
+        l.dataPagamento ? fmtDataUtc(l.dataPagamento) : '—',
+        l.valorPago ?? '', l.mora > 0 ? Number(l.mora.toFixed(2)) : '',
+      ]);
+    }
+
+    const totalValor = linhas.reduce((s, l) => s + l.valor, 0);
+    const totalMora = linhas.reduce((s, l) => s + l.mora, 0);
+    sheet.addRow([]);
+    for (const status of ['PENDENTE', 'PAGO', 'VENCIDO', 'SUBSTITUIDA', 'CANCELADO']) {
+      const doStatus = linhas.filter(l => l.status === status);
+      if (doStatus.length === 0) continue;
+      sheet.addRow(['', '', '', '', '', '', '', STATUS_PARCELA_LABEL[status], '', Number(doStatus.reduce((s, l) => s + l.valor, 0).toFixed(2)), `${doStatus.length} parcela(s)`]);
+    }
+    sheet.addRow(['', '', '', '', '', '', '', 'TOTAL', '', Number(totalValor.toFixed(2)), `${linhas.length} parcela(s)`]);
+    if (totalMora > 0) sheet.addRow(['', '', '', '', '', '', '', 'Mora total (parcelas vencidas)', '', Number(totalMora.toFixed(2)), '']);
+
+    sheet.getColumn(2).width = 32;
+    sheet.getColumn(4).width = 26;
+    sheet.getColumn(7).width = 14;
+    sheet.getColumn(8).width = 14;
+    sheet.getColumn(9).width = 16;
+    sheet.getColumn(10).width = 14;
+    sheet.getColumn(11).width = 14;
+
+    await workbook.xlsx.write(res);
+  }
+
+  async gerarVencimentosPdf(params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }): Promise<Buffer> {
+    const [linhas, filtroDescricao] = await Promise.all([
+      this.vencimentosLinhas(params),
+      this.descreverFiltroVencimentos(params),
+    ]);
+
+    const doc = new (PDFDocument as any)({ margin: 36, size: 'A4', layout: 'landscape' });
+    const chunks: Buffer[] = [];
+    doc.on('data', (c: Buffer) => chunks.push(c));
+    const pronto = new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
+
+    const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const colWidths = [60, 125, 55, 110, 45, 35, 65, 65, 60, 65, 60];
+    const headers = ['Vencimento', 'Aluno', 'RA', 'Curso', 'Período', 'Parc.', 'Valor', 'Status', 'Pagamento', 'Vlr. Pago', 'Mora'];
+    const startX = doc.page.margins.left;
+    let y = doc.page.margins.top;
+
+    function drawTitulo() {
+      doc.fontSize(15).fillColor('#000').text('Relatório por Data de Vencimento', startX, y, { align: 'center', width: doc.page.width - startX * 2 });
+      y = doc.y + 4;
+      doc.fontSize(9).fillColor('#555').text(filtroDescricao, startX, y, { align: 'center', width: doc.page.width - startX * 2 });
+      y = doc.y + 14;
+    }
+    function drawHeader() {
+      const larguraTotal = colWidths.reduce((a, b) => a + b, 0);
+      doc.rect(startX, y, larguraTotal, 18).fill('#1e3a5f');
+      let x = startX;
+      doc.fontSize(9).fillColor('#fff');
+      headers.forEach((h, i) => { doc.text(h, x + 4, y + 5, { width: colWidths[i] - 8 }); x += colWidths[i]; });
+      y += 18;
+      doc.fillColor('#000');
+    }
+
+    drawTitulo();
+    drawHeader();
+
+    doc.fontSize(8.5);
+    for (const [i, l] of linhas.entries()) {
+      if (y > doc.page.height - doc.page.margins.bottom - 30) {
+        doc.addPage();
+        y = doc.page.margins.top;
+        drawHeader();
+      }
+      if (i % 2 === 1) {
+        doc.rect(startX, y, colWidths.reduce((a, b) => a + b, 0), 15).fill('#f5f5f5');
+        doc.fillColor('#000');
+      }
+      let x = startX;
+      const vals = [
+        fmtDataUtc(l.dataVencimento), l.aluno, l.ra, l.curso, l.periodo, String(l.numeroParcela),
+        fmt(l.valor), STATUS_PARCELA_LABEL[l.status] ?? l.status,
+        l.dataPagamento ? fmtDataUtc(l.dataPagamento) : '—',
+        l.valorPago !== null ? fmt(l.valorPago) : '—',
+        l.mora > 0 ? fmt(l.mora) : '—',
+      ];
+      vals.forEach((v, idx) => { doc.text(v, x + 4, y + 3, { width: colWidths[idx] - 8, ellipsis: true }); x += colWidths[idx]; });
+      y += 15;
+    }
+
+    const totalValor = linhas.reduce((s, l) => s + l.valor, 0);
+    const totalMora = linhas.reduce((s, l) => s + l.mora, 0);
+    if (y > doc.page.height - doc.page.margins.bottom - 90) { doc.addPage(); y = doc.page.margins.top; }
+    doc.moveTo(startX, y + 6).lineTo(doc.page.width - doc.page.margins.right, y + 6).strokeColor('#999').stroke();
+    y += 14;
+
+    doc.fontSize(9.5).fillColor('#333');
+    for (const status of ['PENDENTE', 'PAGO', 'VENCIDO', 'SUBSTITUIDA', 'CANCELADO']) {
+      const doStatus = linhas.filter(l => l.status === status);
+      if (doStatus.length === 0) continue;
+      doc.text(`${STATUS_PARCELA_LABEL[status]}: ${fmt(doStatus.reduce((s, l) => s + l.valor, 0))} (${doStatus.length} parcela(s))`, startX, y);
+      y = doc.y + 2;
+    }
+    y += 6;
+    doc.fontSize(11).fillColor('#000').text(`Total: ${fmt(totalValor)}  (${linhas.length} parcela(s))`, startX, y);
+    if (totalMora > 0) {
+      y = doc.y + 4;
+      doc.fontSize(9.5).fillColor('#b91c1c').text(`Mora total (parcelas vencidas): ${fmt(totalMora)}`, startX, y);
+    }
 
     doc.end();
     return pronto;
