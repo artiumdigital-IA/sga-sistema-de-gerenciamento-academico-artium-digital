@@ -103,12 +103,18 @@ services:
     # publico, sem consulta a banco/redis) esta em backend/src/health/.
     # start_period da margem pra migrate deploy + boot terminarem antes de
     # contar falhas.
+    # start_period ampliado (Jul/2026): o boot real (migrate deploy + seed +
+    # Nest bootstrap) vinha levando ~27s e um deploy perdeu a corrida contra
+    # o antigo start_period de 30s por poucos segundos -- o seed.ts so cresce
+    # a cada sessao (mais tabelas/arquivos verificados em todo boot, mesmo
+    # quando idempotente e sem nada novo pra inserir), entao a margem
+    # antiga ja estava severamente apertada e ia falhar de novo em breve.
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 90s
     # Labels manuais do Traefik (Coolify) pra rotear /api/v1 E /uploads pro
     # backend SEM remover o prefixo do path. O campo Domains do Coolify
     # sempre gera um middleware stripprefix, mas o Nest ja expoe tudo sob
