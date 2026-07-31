@@ -6,12 +6,30 @@ import type { Response } from 'express';
 import * as ExcelJS from 'exceljs';
 import { create } from 'xmlbuilder2';
 import * as archiver from 'archiver';
+import * as PDFDocument from 'pdfkit';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { LivroService } from '../library/livro/livro.service';
 import { LinhaImportarLivroDto } from './dto/importar-livros.dto';
 import { calcularMora } from '../financial/mora.util';
+
+/**
+ * Campos `@db.Date` do Prisma (ex.: `Parcela.dataPagamento`) chegam como ISO
+ * com horário zerado em UTC -- `.toLocaleDateString()` converteria pro fuso
+ * do processo Node e poderia exibir o dia anterior (mesmo bug de "-1 dia"
+ * já documentado/corrigido no frontend, `frontend/lib/format.ts`). Lendo os
+ * componentes em UTC em vez de deixar o `Date` converter, a data exibida é
+ * sempre a mesma que foi gravada, independente do fuso do servidor.
+ */
+function fmtDataUtc(d: Date | string | null | undefined): string {
+  if (!d) return '—';
+  const data = typeof d === 'string' ? new Date(d) : d;
+  if (Number.isNaN(data.getTime())) return '—';
+  const dia = String(data.getUTCDate()).padStart(2, '0');
+  const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}/${data.getUTCFullYear()}`;
+}
 
 /**
  * Relatórios Master — exportação completa do banco (backup/disaster
@@ -520,6 +538,154 @@ export class RelatoriosMasterService {
       inadimplenciaPorMes,
       ofertasPorPeriodo,
     };
+  }
+
+  /**
+   * Relatório de Recebimento por Período (card "Upload/Download", Jul/2026)
+   * -- parcelas efetivamente PAGAS (dinheiro que já entrou), filtráveis por
+   * Período Letivo e/ou intervalo de datas de pagamento. Os dois filtros são
+   * opcionais e combináveis (AND); sem nenhum, traz o histórico completo.
+   */
+  private async recebimentosLinhas(params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }) {
+    const where: any = { status: 'PAGO' };
+    if (params.periodoLetivoId) where.contrato = { periodoLetivoId: params.periodoLetivoId };
+    if (params.dataInicio || params.dataFim) {
+      where.dataPagamento = {};
+      if (params.dataInicio) where.dataPagamento.gte = new Date(`${params.dataInicio}T00:00:00`);
+      if (params.dataFim) where.dataPagamento.lte = new Date(`${params.dataFim}T23:59:59`);
+    }
+
+    const parcelas = await this.prisma.parcela.findMany({
+      where,
+      include: {
+        contrato: {
+          include: {
+            aluno: { select: { nome: true, ra: true, curso: { select: { nome: true } } } },
+            periodoLetivo: { select: { ano: true, semestre: true } },
+          },
+        },
+      },
+      orderBy: { dataPagamento: 'asc' },
+    });
+
+    return parcelas.map(p => ({
+      dataPagamento: p.dataPagamento,
+      aluno: p.contrato.aluno.nome,
+      ra: p.contrato.aluno.ra,
+      curso: p.contrato.aluno.curso.nome,
+      periodo: `${p.contrato.periodoLetivo.ano}/${p.contrato.periodoLetivo.semestre}`,
+      numeroParcela: p.numero,
+      valorPago: Number(p.valorPago ?? p.valor),
+      formaPagamento: p.formaPagamento ?? '—',
+    }));
+  }
+
+  /** Descrição legível do filtro aplicado, pro cabeçalho do XLSX/PDF. */
+  private async descreverFiltroRecebimentos(params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }): Promise<string> {
+    const partes: string[] = [];
+    if (params.periodoLetivoId) {
+      const periodo = await this.prisma.periodoLetivo.findUnique({ where: { id: params.periodoLetivoId } });
+      partes.push(periodo ? `Período Letivo ${periodo.ano}/${periodo.semestre}` : 'Período Letivo selecionado');
+    }
+    if (params.dataInicio || params.dataFim) {
+      const de = params.dataInicio ? new Date(`${params.dataInicio}T00:00:00`).toLocaleDateString('pt-BR') : 'o início';
+      const ate = params.dataFim ? new Date(`${params.dataFim}T00:00:00`).toLocaleDateString('pt-BR') : 'hoje';
+      partes.push(`Pagamento entre ${de} e ${ate}`);
+    }
+    return partes.length > 0 ? partes.join(' · ') : 'Todos os recebimentos (sem filtro)';
+  }
+
+  async streamRecebimentosXlsx(res: Response, params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }): Promise<void> {
+    const [linhas, filtroDescricao] = await Promise.all([
+      this.recebimentosLinhas(params),
+      this.descreverFiltroRecebimentos(params),
+    ]);
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Recebimentos');
+    sheet.addRow([`Relatório de Recebimento por Período — ${filtroDescricao}`]);
+    sheet.addRow([]);
+    sheet.addRow(['Data Pagamento', 'Aluno', 'RA', 'Curso', 'Período', 'Parcela Nº', 'Valor Recebido', 'Forma de Pagamento']);
+    for (const l of linhas) {
+      sheet.addRow([
+        fmtDataUtc(l.dataPagamento),
+        l.aluno, l.ra, l.curso, l.periodo, l.numeroParcela, l.valorPago, l.formaPagamento,
+      ]);
+    }
+    const total = linhas.reduce((s, l) => s + l.valorPago, 0);
+    sheet.addRow([]);
+    sheet.addRow(['', '', '', '', '', 'TOTAL', Number(total.toFixed(2)), `${linhas.length} pagamento(s)`]);
+    sheet.getColumn(2).width = 32;
+    sheet.getColumn(4).width = 26;
+    sheet.getColumn(7).width = 16;
+    sheet.getColumn(8).width = 18;
+
+    await workbook.xlsx.write(res);
+  }
+
+  async gerarRecebimentosPdf(params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }): Promise<Buffer> {
+    const [linhas, filtroDescricao] = await Promise.all([
+      this.recebimentosLinhas(params),
+      this.descreverFiltroRecebimentos(params),
+    ]);
+
+    const doc = new (PDFDocument as any)({ margin: 36, size: 'A4', layout: 'landscape' });
+    const chunks: Buffer[] = [];
+    doc.on('data', (c: Buffer) => chunks.push(c));
+    const pronto = new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
+
+    const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const colWidths = [70, 150, 65, 150, 55, 45, 80, 100];
+    const headers = ['Pagamento', 'Aluno', 'RA', 'Curso', 'Período', 'Parc.', 'Valor', 'Forma'];
+    const startX = doc.page.margins.left;
+    let y = doc.page.margins.top;
+
+    function drawTitulo() {
+      doc.fontSize(15).fillColor('#000').text('Relatório de Recebimento por Período', startX, y, { align: 'center', width: doc.page.width - startX * 2 });
+      y = doc.y + 4;
+      doc.fontSize(9).fillColor('#555').text(filtroDescricao, startX, y, { align: 'center', width: doc.page.width - startX * 2 });
+      y = doc.y + 14;
+    }
+    function drawHeader() {
+      const larguraTotal = colWidths.reduce((a, b) => a + b, 0);
+      doc.rect(startX, y, larguraTotal, 18).fill('#1e3a5f');
+      let x = startX;
+      doc.fontSize(9).fillColor('#fff');
+      headers.forEach((h, i) => { doc.text(h, x + 4, y + 5, { width: colWidths[i] - 8 }); x += colWidths[i]; });
+      y += 18;
+      doc.fillColor('#000');
+    }
+
+    drawTitulo();
+    drawHeader();
+
+    doc.fontSize(8.5);
+    for (const [i, l] of linhas.entries()) {
+      if (y > doc.page.height - doc.page.margins.bottom - 30) {
+        doc.addPage();
+        y = doc.page.margins.top;
+        drawHeader();
+      }
+      if (i % 2 === 1) {
+        doc.rect(startX, y, colWidths.reduce((a, b) => a + b, 0), 15).fill('#f5f5f5');
+        doc.fillColor('#000');
+      }
+      let x = startX;
+      const vals = [
+        fmtDataUtc(l.dataPagamento),
+        l.aluno, l.ra, l.curso, l.periodo, String(l.numeroParcela), fmt(l.valorPago), l.formaPagamento,
+      ];
+      vals.forEach((v, idx) => { doc.text(v, x + 4, y + 3, { width: colWidths[idx] - 8, ellipsis: true }); x += colWidths[idx]; });
+      y += 15;
+    }
+
+    const total = linhas.reduce((s, l) => s + l.valorPago, 0);
+    if (y > doc.page.height - doc.page.margins.bottom - 40) { doc.addPage(); y = doc.page.margins.top; }
+    doc.moveTo(startX, y + 6).lineTo(doc.page.width - doc.page.margins.right, y + 6).strokeColor('#999').stroke();
+    doc.fontSize(11).fillColor('#000').text(`Total recebido: ${fmt(total)}  (${linhas.length} pagamento(s))`, startX, y + 14);
+
+    doc.end();
+    return pronto;
   }
 }
 

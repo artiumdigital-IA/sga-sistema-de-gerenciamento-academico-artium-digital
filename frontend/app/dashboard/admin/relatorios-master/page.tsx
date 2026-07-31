@@ -5,7 +5,9 @@ import { apiDownload, apiFetch } from '@/lib/api';
 const BTN_P: React.CSSProperties = { padding: '10px 18px', borderRadius: 6, border: 'none', background: '#1a56db', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 };
 const BTN_G: React.CSSProperties = { padding: '10px 18px', borderRadius: 6, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: 'var(--white)', color: 'var(--gray-700)' };
 
-type Formato = 'sql' | 'sql-schema' | 'xlsx' | 'xml' | 'json' | 'uploads' | 'biblioteca-xlsx';
+type Formato = 'sql' | 'sql-schema' | 'xlsx' | 'xml' | 'json' | 'uploads' | 'biblioteca-xlsx' | 'recebimentos-pdf' | 'recebimentos-xlsx';
+
+interface PeriodoLetivo { id: string; ano: number; semestre: number | string; }
 
 interface ResultadoImportacaoLivros {
   total: number;
@@ -33,10 +35,11 @@ const BOTOES_BANCO: { formato: Formato; label: string; rota: string; filename: s
  * posição é guardada. Se o conjunto de ids mudar numa versão futura (card
  * novo/removido), cai de volta pro layout padrão em vez de quebrar. ─── */
 interface CardPos { id: string; colIdx: number }
-const IDS_CARDS = ['banco', 'uploads', 'bib-download', 'bib-upload'] as const;
+const IDS_CARDS = ['banco', 'uploads', 'bib-download', 'bib-upload', 'recebimentos'] as const;
 type CardId = typeof IDS_CARDS[number];
 const ORDEM_PADRAO: CardPos[] = [
   { id: 'banco', colIdx: 0 },
+  { id: 'recebimentos', colIdx: 0 },
   { id: 'uploads', colIdx: 1 },
   { id: 'bib-download', colIdx: 1 },
   { id: 'bib-upload', colIdx: 2 },
@@ -51,6 +54,9 @@ function IconUploads() {
 }
 function IconBiblioteca() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
+}
+function IconRecebimento() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/><path d="M6 14h4"/></svg>;
 }
 
 /* ─── Card arrastável — mesmo padrão visual/drag do Painel (dashboard/page.tsx) ─── */
@@ -103,6 +109,17 @@ export default function RelatoriosMasterPage() {
   const [resultadoImportacao, setResultadoImportacao] = useState<ResultadoImportacaoLivros | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [periodos, setPeriodos] = useState<PeriodoLetivo[]>([]);
+  const [filtroPeriodoId, setFiltroPeriodoId] = useState('');
+  const [filtroDataInicio, setFiltroDataInicio] = useState('');
+  const [filtroDataFim, setFiltroDataFim] = useState('');
+
+  useEffect(() => {
+    apiFetch<any>('/periodos-letivos')
+      .then(d => setPeriodos(Array.isArray(d) ? d : d.data ?? []))
+      .catch(() => {});
+  }, []);
+
   const [ordem, setOrdem] = useState<CardPos[]>(ORDEM_PADRAO);
   const dragId = useRef<CardId | null>(null);
   const [draggingId, setDraggingId] = useState<CardId | null>(null);
@@ -144,6 +161,16 @@ export default function RelatoriosMasterPage() {
     } finally {
       setBaixando(null);
     }
+  }
+
+  async function baixarRecebimentos(formato: 'pdf' | 'xlsx') {
+    const chaveFormato: Formato = formato === 'pdf' ? 'recebimentos-pdf' : 'recebimentos-xlsx';
+    const params = new URLSearchParams();
+    if (filtroPeriodoId) params.set('periodoLetivoId', filtroPeriodoId);
+    if (filtroDataInicio) params.set('dataInicio', filtroDataInicio);
+    if (filtroDataFim) params.set('dataFim', filtroDataFim);
+    const qs = params.toString();
+    await baixar(chaveFormato, `/relatorios-master/recebimentos/${formato}${qs ? `?${qs}` : ''}`, `recebimentos.${formato}`);
   }
 
   function baixarModeloLivros() {
@@ -312,6 +339,65 @@ export default function RelatoriosMasterPage() {
           >
             {baixando === 'biblioteca-xlsx' ? 'Gerando...' : '⭳ XLSX do acervo'}
           </button>
+        </>
+      ),
+    },
+    recebimentos: {
+      title: 'Relatório de Recebimento por Período',
+      icon: <IconRecebimento />,
+      content: (
+        <>
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--gray-500)' }}>
+            Parcelas efetivamente pagas (dinheiro que já entrou), filtráveis por Período Letivo e/ou intervalo
+            de data de pagamento. Combine os filtros ou deixe em branco pra trazer o histórico completo.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--gray-500)', marginBottom: 3 }}>Período Letivo</label>
+              <select
+                value={filtroPeriodoId}
+                onChange={e => setFiltroPeriodoId(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 12.5, background: 'var(--white)', color: 'var(--gray-700)' }}
+              >
+                <option value="">Todos</option>
+                {periodos.map(p => <option key={p.id} value={p.id}>{p.ano}/{p.semestre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--gray-500)', marginBottom: 3 }}>Pagamento de</label>
+              <input
+                type="date"
+                value={filtroDataInicio}
+                onChange={e => setFiltroDataInicio(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 12.5 }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--gray-500)', marginBottom: 3 }}>até</label>
+              <input
+                type="date"
+                value={filtroDataFim}
+                onChange={e => setFiltroDataFim(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 12.5 }}
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <button
+              style={{ ...BTN_P, opacity: baixando && baixando !== 'recebimentos-pdf' ? 0.5 : 1 }}
+              disabled={baixando !== null}
+              onClick={() => baixarRecebimentos('pdf')}
+            >
+              {baixando === 'recebimentos-pdf' ? 'Gerando...' : '⭳ Baixar PDF'}
+            </button>
+            <button
+              style={{ ...BTN_G, opacity: baixando && baixando !== 'recebimentos-xlsx' ? 0.5 : 1 }}
+              disabled={baixando !== null}
+              onClick={() => baixarRecebimentos('xlsx')}
+            >
+              {baixando === 'recebimentos-xlsx' ? 'Gerando...' : '⭳ Baixar Excel'}
+            </button>
+          </div>
         </>
       ),
     },

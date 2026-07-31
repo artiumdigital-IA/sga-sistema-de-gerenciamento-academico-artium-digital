@@ -201,7 +201,7 @@ export class DiscenteService {
    * (pagamento/negociação continuam sendo tratados pela secretaria/financeiro). */
   async financeiro(usuarioId: string) {
     const alunoId = await this.meuAlunoId(usuarioId);
-    return this.contratoService.findAll(alunoId);
+    return this.contratoService.findAllCompletoPorAluno(alunoId);
   }
 
   /** Horas Complementares — soma das horas lançadas contra o total exigido

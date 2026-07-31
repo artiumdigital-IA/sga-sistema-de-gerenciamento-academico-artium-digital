@@ -102,4 +102,41 @@ export class RelatoriosMasterController {
   getDashboard() {
     return this.service.getDashboard();
   }
+
+  @Get('recebimentos/xlsx')
+  @ApiOperation({ summary: 'Relatório de Recebimento por Período — XLSX' })
+  @ApiQuery({ name: 'periodoLetivoId', required: false })
+  @ApiQuery({ name: 'dataInicio', required: false })
+  @ApiQuery({ name: 'dataFim', required: false })
+  async recebimentosXlsx(
+    @Query('periodoLetivoId') periodoLetivoId: string | undefined,
+    @Query('dataInicio') dataInicio: string | undefined,
+    @Query('dataFim') dataFim: string | undefined,
+    @Res() res: Response,
+    @Request() req: any,
+  ) {
+    await this.service.registrarExport(req.user.id, 'recebimentos-xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="recebimentos.xlsx"');
+    await this.service.streamRecebimentosXlsx(res, { periodoLetivoId, dataInicio, dataFim });
+  }
+
+  @Get('recebimentos/pdf')
+  @ApiOperation({ summary: 'Relatório de Recebimento por Período — PDF' })
+  @ApiQuery({ name: 'periodoLetivoId', required: false })
+  @ApiQuery({ name: 'dataInicio', required: false })
+  @ApiQuery({ name: 'dataFim', required: false })
+  async recebimentosPdf(
+    @Query('periodoLetivoId') periodoLetivoId: string | undefined,
+    @Query('dataInicio') dataInicio: string | undefined,
+    @Query('dataFim') dataFim: string | undefined,
+    @Res() res: Response,
+    @Request() req: any,
+  ) {
+    await this.service.registrarExport(req.user.id, 'recebimentos-pdf');
+    const buffer = await this.service.gerarRecebimentosPdf({ periodoLetivoId, dataInicio, dataFim });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="recebimentos.pdf"');
+    res.send(buffer);
+  }
 }

@@ -22,9 +22,33 @@ export class ContratoController {
 
   @Get()
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.FINANCEIRO)
-  @ApiOperation({ summary: 'Listar contratos' })
-  findAll(@Query('alunoId') alunoId?: string, @Query('periodoLetivoId') periodoLetivoId?: string) {
-    return this.service.findAll(alunoId, periodoLetivoId);
+  @ApiOperation({ summary: 'Listar contratos (paginado, com busca por nome/RA)' })
+  findAll(
+    @Query('alunoId') alunoId?: string,
+    @Query('periodoLetivoId') periodoLetivoId?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.findAll({
+      alunoId,
+      periodoLetivoId,
+      search,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
+  }
+
+  // Rota literal ANTES de ":id" -- mesmo cuidado de sempre (Nest/Express casa
+  // por ordem de declaração). Usada pela tela de emissão de Boleto (CNAB),
+  // que precisa da lista completa (com parcelas + status do boleto) de UM
+  // aluno pra escolher qual parcela emitir -- volume naturalmente pequeno,
+  // não precisa da paginação/resumo do findAll() usado na listagem geral.
+  @Get('aluno/:alunoId')
+  @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.FINANCEIRO)
+  @ApiOperation({ summary: 'Contratos completos (com parcelas) de um aluno' })
+  findAllPorAluno(@Param('alunoId') alunoId: string) {
+    return this.service.findAllCompletoPorAluno(alunoId);
   }
 
   @Get(':id')
