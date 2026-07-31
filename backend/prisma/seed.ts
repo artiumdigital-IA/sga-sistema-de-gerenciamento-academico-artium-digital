@@ -408,6 +408,11 @@ async function main() {
   } catch (e) {
     console.error('⚠️  corrigirParcelasQuitadoZeroLegado() falhou (não deveria impedir o resto do seed):', e);
   }
+  try {
+    await atualizarAlunosComCadastroLegado();
+  } catch (e) {
+    console.error('⚠️  atualizarAlunosComCadastroLegado() falhou (não deveria impedir o resto do seed):', e);
+  }
 
   // ── Usuário Admin padrão ────────────────────────────────────
   const senhaHash = await bcrypt.hash('admin123', 12);
@@ -996,6 +1001,102 @@ async function corrigirParcelasQuitadoZeroLegado() {
   });
   if (count > 0) {
     console.log(`✅ ${count} parcelas corrigidas de PAGO para SUBSTITUIDA (Valor Recebido = 0 na planilha legada — substituída via Acordo).`);
+  }
+}
+
+/**
+ * Enriquece o cadastro dos alunos legados com dados reais do "Cadastro de
+ * Alunos" do Kirsch (arquivo trazido pelo usuário, Jul/2026 — export em HTML
+ * salvo com extensão .xls, pré-processado fora do seed em
+ * `prisma/data/alunos-cadastro-legado.json`). Casa por `codigoLegado` (a
+ * coluna "RA do aluno" desse export é na verdade o código interno do Kirsch,
+ * o mesmo número que já usamos como `codigoLegado` -- confirmado batendo
+ * ~85% dos códigos contra `alunos-legado-parcela.json`).
+ *
+ * Só PREENCHE campo que hoje está com o placeholder criado por
+ * `importarAlunosLegadosParcela()` (nunca sobrescreve um valor real que já
+ * exista, seja da importação original ou de edição manual posterior) --
+ * idempotente por campo: uma vez preenchido, o placeholder não bate mais e
+ * o campo nunca mais é tocado.
+ *
+ * O campo "Sexo" do arquivo NÃO é usado -- veio 100% "M" nas 2434 linhas
+ * (achado na análise: claramente um valor travado/exportado errado no
+ * Kirsch, não dado real), então incluí-lo aqui inflacionaria o cadastro com
+ * um dado pior que o placeholder atual (NAO_DECLARADO).
+ */
+async function atualizarAlunosComCadastroLegado() {
+  const jsonPath = path.join(__dirname, 'data', 'alunos-cadastro-legado.json');
+  if (!fs.existsSync(jsonPath)) {
+    console.log('↷ prisma/data/alunos-cadastro-legado.json não encontrado — pulando enriquecimento de cadastro.');
+    return;
+  }
+  const registros: {
+    codigoLegado: string; nome: string; cpf: string | null; dataNascimento: string | null;
+    nacionalidade: string | null; email: string | null; telefone: string | null;
+    logradouro: string | null; numero: string | null; complemento: string | null;
+    bairro: string | null; municipio: string | null; uf: string | null; cep: string | null;
+  }[] = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+  const codigos = registros.map(r => r.codigoLegado);
+  const alunos = await prisma.aluno.findMany({ where: { codigoLegado: { in: codigos } } });
+  const alunoPorCodigo = new Map(alunos.map(a => [a.codigoLegado as string, a]));
+
+  let atualizados = 0;
+  let semAlteracao = 0;
+  let naoEncontrados = 0;
+  const colisoes: string[] = [];
+  const NASCIMENTO_PLACEHOLDER = new Date('1900-01-01').getTime();
+
+  for (const r of registros) {
+    const aluno = alunoPorCodigo.get(r.codigoLegado);
+    if (!aluno) { naoEncontrados += 1; continue; }
+
+    const dados: Record<string, unknown> = {};
+    const cpfPlaceholder = `999${r.codigoLegado.padStart(8, '0')}`;
+    const emailPlaceholder = `aluno${r.codigoLegado}@pendente.fiurj.edu.br`;
+
+    if (r.cpf && aluno.cpf === cpfPlaceholder) dados.cpf = r.cpf;
+    if (r.dataNascimento && aluno.dataNascimento.getTime() === NASCIMENTO_PLACEHOLDER) dados.dataNascimento = new Date(r.dataNascimento);
+    if (r.nacionalidade && aluno.nacionalidade === 'BRASILEIRA') dados.nacionalidade = r.nacionalidade;
+    if (r.email && aluno.email === emailPlaceholder) dados.email = r.email;
+    if (r.telefone && !aluno.telefone) dados.telefone = r.telefone;
+    if (r.cep && !aluno.cep) dados.cep = r.cep;
+    if (r.logradouro && !aluno.logradouro) dados.logradouro = r.logradouro;
+    if (r.numero && !aluno.numero) dados.numero = r.numero;
+    if (r.complemento && !aluno.complemento) dados.complemento = r.complemento;
+    if (r.bairro && !aluno.bairro) dados.bairro = r.bairro;
+    if (r.uf && !aluno.uf) dados.uf = r.uf;
+    if (r.municipio && !aluno.municipio) dados.municipio = r.municipio;
+
+    if (Object.keys(dados).length === 0) { semAlteracao += 1; continue; }
+
+    try {
+      await prisma.aluno.update({ where: { id: aluno.id }, data: dados });
+      atualizados += 1;
+    } catch (err) {
+      // P2002 = cpf ou email do arquivo já pertence a outro Aluno -- tenta de
+      // novo sem os dois campos únicos (o resto do enriquecimento não tem
+      // por que falhar por causa disso).
+      if ((err as { code?: string })?.code === 'P2002') {
+        const { cpf, email, ...resto } = dados;
+        if (Object.keys(resto).length > 0) {
+          try {
+            await prisma.aluno.update({ where: { id: aluno.id }, data: resto });
+            atualizados += 1;
+            continue;
+          } catch { /* segue pro log de colisão abaixo */ }
+        }
+        colisoes.push(`${r.codigoLegado} (${r.nome})`);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  console.log(`✅ Enriquecimento de cadastro (Kirsch "Cadastro de Alunos"): ${atualizados} alunos atualizados, ${semAlteracao} já estavam completos (nada de placeholder pra preencher), ${naoEncontrados} códigos do arquivo sem aluno correspondente, ${colisoes.length} com CPF/e-mail em conflito (demais campos aplicados quando possível).`);
+  if (colisoes.length) {
+    console.log('⚠️  CPF/e-mail em conflito com outro aluno já cadastrado (não sobrescrito):');
+    console.log(colisoes.join(' | '));
   }
 }
 

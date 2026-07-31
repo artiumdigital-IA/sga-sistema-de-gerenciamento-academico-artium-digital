@@ -5,7 +5,7 @@ import { apiDownload, apiFetch } from '@/lib/api';
 const BTN_P: React.CSSProperties = { padding: '10px 18px', borderRadius: 6, border: 'none', background: '#1a56db', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 };
 const BTN_G: React.CSSProperties = { padding: '10px 18px', borderRadius: 6, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 13, fontWeight: 500, background: 'var(--white)', color: 'var(--gray-700)' };
 
-type Formato = 'sql' | 'sql-schema' | 'xlsx' | 'xml' | 'json' | 'uploads' | 'biblioteca-xlsx' | 'recebimentos-pdf' | 'recebimentos-xlsx';
+type Formato = 'sql' | 'sql-schema' | 'xlsx' | 'xml' | 'json' | 'uploads' | 'biblioteca-xlsx' | 'recebimentos-pdf' | 'recebimentos-xlsx' | 'alunos-xlsx';
 
 interface PeriodoLetivo { id: string; ano: number; semestre: number | string; }
 
@@ -35,10 +35,11 @@ const BOTOES_BANCO: { formato: Formato; label: string; rota: string; filename: s
  * posição é guardada. Se o conjunto de ids mudar numa versão futura (card
  * novo/removido), cai de volta pro layout padrão em vez de quebrar. ─── */
 interface CardPos { id: string; colIdx: number }
-const IDS_CARDS = ['banco', 'uploads', 'bib-download', 'bib-upload', 'recebimentos'] as const;
+const IDS_CARDS = ['banco', 'uploads', 'bib-download', 'bib-upload', 'recebimentos', 'alunos'] as const;
 type CardId = typeof IDS_CARDS[number];
 const ORDEM_PADRAO: CardPos[] = [
   { id: 'banco', colIdx: 0 },
+  { id: 'alunos', colIdx: 0 },
   { id: 'recebimentos', colIdx: 0 },
   { id: 'uploads', colIdx: 1 },
   { id: 'bib-download', colIdx: 1 },
@@ -57,6 +58,9 @@ function IconBiblioteca() {
 }
 function IconRecebimento() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/><path d="M6 14h4"/></svg>;
+}
+function IconAlunos() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 }
 
 /* ─── Card arrastável — mesmo padrão visual/drag do Painel (dashboard/page.tsx) ─── */
@@ -338,6 +342,26 @@ export default function RelatoriosMasterPage() {
             onClick={() => baixar('biblioteca-xlsx', '/relatorios-master/biblioteca/dump-xlsx', 'biblioteca.xlsx')}
           >
             {baixando === 'biblioteca-xlsx' ? 'Gerando...' : '⭳ XLSX do acervo'}
+          </button>
+        </>
+      ),
+    },
+    alunos: {
+      title: 'Alunos',
+      icon: <IconAlunos />,
+      content: (
+        <>
+          <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--gray-500)' }}>
+            Cadastro completo de TODOS os alunos (sem filtro, sem paginação) — RA, CPF, dados do Censo, curso,
+            matriz, contato e endereço. Contém dado pessoal sensível (LGPD); cada download fica registrado no
+            Log de Auditoria.
+          </p>
+          <button
+            style={{ ...BTN_P, opacity: baixando && baixando !== 'alunos-xlsx' ? 0.5 : 1 }}
+            disabled={baixando !== null}
+            onClick={() => baixar('alunos-xlsx', '/relatorios-master/alunos/dump-xlsx', 'alunos.xlsx')}
+          >
+            {baixando === 'alunos-xlsx' ? 'Gerando...' : '⭳ Baixar Excel de Alunos'}
           </button>
         </>
       ),
