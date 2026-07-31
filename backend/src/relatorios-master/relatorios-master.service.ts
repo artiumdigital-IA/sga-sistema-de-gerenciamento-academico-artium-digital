@@ -383,6 +383,8 @@ export class RelatoriosMasterService {
    */
   async getDashboard() {
     const hoje = new Date();
+    const seteDiasAtras = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const dozeMesesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
 
     const [
       totalAlunos,
@@ -393,6 +395,10 @@ export class RelatoriosMasterService {
       parcelasVencidas,
       acordos,
       contratos,
+      novosAlunosSemana,
+      parcelasParaInadimplenciaMensal,
+      ofertasPorPeriodoRaw,
+      periodosParaOfertas,
     ] = await Promise.all([
       this.prisma.aluno.count(),
       this.prisma.aluno.groupBy({ by: ['situacaoVinculo'], _count: { _all: true } }),
@@ -412,6 +418,15 @@ export class RelatoriosMasterService {
       this.prisma.contratoMatricula.findMany({
         select: { status: true, valorTotal: true, parcelas: { select: { status: true, valor: true, valorPago: true } } },
       }),
+      // Só matrícula "de verdade" (não bulk-import legado, que entrou tudo
+      // com criadoEm nesta mesma semana e inflaria o número artificialmente).
+      this.prisma.aluno.count({ where: { criadoEm: { gte: seteDiasAtras }, codigoLegado: null } }),
+      this.prisma.parcela.findMany({
+        where: { status: { in: ['VENCIDO', 'PENDENTE'] }, dataVencimento: { gte: dozeMesesAtras } },
+        select: { valor: true, dataVencimento: true },
+      }),
+      this.prisma.oferta.groupBy({ by: ['periodoLetivoId'], _count: { _all: true } }),
+      this.prisma.periodoLetivo.findMany({ select: { id: true, ano: true, semestre: true, dataInicio: true } }),
     ]);
 
     let valorTotalEmAtraso = 0;
@@ -444,10 +459,37 @@ export class RelatoriosMasterService {
         .reduce((s, p) => s + Number(p.valorPago ?? p.valor), 0);
     }
 
+    // Inadimplência por mês de vencimento (últimos 12 meses) — mesma regra de
+    // mora usada no card "Inadimplentes", só que quebrada por competência.
+    const mesesMap = new Map<string, { valor: number; quantidade: number }>();
+    for (const p of parcelasParaInadimplenciaMensal) {
+      const d = new Date(p.dataVencimento);
+      const chave = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      const atual = mesesMap.get(chave) ?? { valor: 0, quantidade: 0 };
+      atual.valor += Number(p.valor);
+      atual.quantidade += 1;
+      mesesMap.set(chave, atual);
+    }
+    const inadimplenciaPorMes = Array.from(mesesMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([mes, v]) => ({ mes, valor: Number(v.valor.toFixed(2)), quantidade: v.quantidade }));
+
+    // Ofertas por período letivo, em ordem cronológica (ano+semestre) — só
+    // períodos que já têm alguma turma formada.
+    const periodoInfoPorId = new Map(periodosParaOfertas.map(p => [p.id, p]));
+    const ofertasPorPeriodo: { periodo: string; ano: number; semestre: string; quantidade: number }[] = [];
+    for (const o of ofertasPorPeriodoRaw) {
+      const periodo = periodoInfoPorId.get(o.periodoLetivoId);
+      if (!periodo) continue;
+      ofertasPorPeriodo.push({ periodo: `${periodo.ano}/${periodo.semestre}`, ano: periodo.ano, semestre: String(periodo.semestre), quantidade: o._count._all });
+    }
+    ofertasPorPeriodo.sort((a, b) => (a.ano - b.ano) || a.semestre.localeCompare(b.semestre));
+
     return {
       alunos: {
         total: totalAlunos,
         porSituacao: alunosPorSituacao.map(s => ({ situacao: s.situacaoVinculo, quantidade: s._count._all })),
+        novosUltimaSemana: novosAlunosSemana,
       },
       cursos: {
         total: cursos.length,
@@ -475,6 +517,8 @@ export class RelatoriosMasterService {
         valorPago: Number(contratosValorPago.toFixed(2)),
         valorPendente: Number((contratosValorTotal - contratosValorPago).toFixed(2)),
       },
+      inadimplenciaPorMes,
+      ofertasPorPeriodo,
     };
   }
 }
