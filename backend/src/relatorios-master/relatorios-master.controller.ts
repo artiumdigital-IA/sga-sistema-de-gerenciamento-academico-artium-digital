@@ -68,6 +68,15 @@ export class RelatoriosMasterController {
     res.send(JSON.stringify(dados, null, 2));
   }
 
+  @Get('alunos/dump-xlsx')
+  @ApiOperation({ summary: 'Todos os dados de todos os alunos em XLSX (sem paginação)' })
+  async dumpAlunosXlsx(@Res() res: Response, @Request() req: any) {
+    await this.service.registrarExport(req.user.id, 'alunos-xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="alunos.xlsx"');
+    await this.service.streamAlunosXlsx(res);
+  }
+
   @Get('biblioteca/dump-xlsx')
   @ApiOperation({ summary: 'Acervo da Biblioteca em XLSX (Livros/Exemplares, Equipamentos, Empréstimos)' })
   async dumpBibliotecaXlsx(@Res() res: Response, @Request() req: any) {

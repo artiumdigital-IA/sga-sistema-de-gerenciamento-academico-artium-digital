@@ -307,6 +307,96 @@ export class RelatoriosMasterService {
   }
 
   /**
+   * XLSX com TODOS os dados de TODOS os alunos (Jul/2026) — card "Alunos" da
+   * tela Upload/Download. Sem paginação e sem filtro de propósito, diferente
+   * da listagem administrativa de Alunos (que pagina): aqui o pedido é
+   * literalmente "todos os alunos", pro Master baixar o cadastro completo
+   * pra análise/auditoria/backup pontual. Curso e Matriz vêm resolvidos por
+   * nome (não só o id cru) pra ficar legível fora do sistema — diferente do
+   * dump genérico "Banco de Dados" (que traz a tabela crua, 1 aba por
+   * modelo, sem resolver FK nenhuma).
+   */
+  async streamAlunosXlsx(res: Response): Promise<void> {
+    const workbook = new (ExcelJS as any).stream.xlsx.WorkbookWriter({ stream: res });
+    const sheet = workbook.addWorksheet('Alunos');
+    sheet.columns = [
+      { header: 'RA', key: 'ra' },
+      { header: 'Código Legado', key: 'codigoLegado' },
+      { header: 'Nome', key: 'nome' },
+      { header: 'CPF', key: 'cpf' },
+      { header: 'Data Nascimento', key: 'dataNascimento' },
+      { header: 'Sexo', key: 'sexo' },
+      { header: 'Cor/Raça', key: 'corRaca' },
+      { header: 'Nacionalidade', key: 'nacionalidade' },
+      { header: 'Forma de Ingresso', key: 'formaIngresso' },
+      { header: 'Data Ingresso', key: 'dataIngresso' },
+      { header: 'Situação de Vínculo', key: 'situacaoVinculo' },
+      { header: 'Curso', key: 'curso' },
+      { header: 'Matriz', key: 'matriz' },
+      { header: 'E-mail', key: 'email' },
+      { header: 'Telefone', key: 'telefone' },
+      { header: 'CEP', key: 'cep' },
+      { header: 'Logradouro', key: 'logradouro' },
+      { header: 'Número', key: 'numero' },
+      { header: 'Complemento', key: 'complemento' },
+      { header: 'Bairro', key: 'bairro' },
+      { header: 'UF', key: 'uf' },
+      { header: 'Município', key: 'municipio' },
+    ];
+
+    // findMany sem where/take -- de propósito, é literalmente "todos os
+    // alunos"; cursor por id evita carregar tudo na memória de uma vez só
+    // (a base já passa de 2.600 alunos e só cresce).
+    const TAMANHO_PAGINA = 500;
+    let cursor: string | undefined;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const pagina = await this.prisma.aluno.findMany({
+        take: TAMANHO_PAGINA,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+        orderBy: { id: 'asc' },
+        include: {
+          curso: { select: { nome: true } },
+          matrizCurricular: { select: { versao: true, anoVigencia: true } },
+        },
+      });
+      if (pagina.length === 0) break;
+      for (const a of pagina) {
+        sheet
+          .addRow({
+            ra: a.ra,
+            codigoLegado: a.codigoLegado ?? '',
+            nome: a.nome,
+            cpf: a.cpf,
+            dataNascimento: fmtDataUtc(a.dataNascimento),
+            sexo: a.sexo,
+            corRaca: a.corRaca,
+            nacionalidade: a.nacionalidade,
+            formaIngresso: a.formaIngresso,
+            dataIngresso: fmtDataUtc(a.dataIngresso),
+            situacaoVinculo: a.situacaoVinculo,
+            curso: a.curso.nome,
+            matriz: `${a.matrizCurricular.versao} (${a.matrizCurricular.anoVigencia})`,
+            email: a.email,
+            telefone: a.telefone ?? '',
+            cep: a.cep ?? '',
+            logradouro: a.logradouro ?? '',
+            numero: a.numero ?? '',
+            complemento: a.complemento ?? '',
+            bairro: a.bairro ?? '',
+            uf: a.uf ?? '',
+            municipio: a.municipio ?? '',
+          })
+          .commit();
+      }
+      cursor = pagina[pagina.length - 1].id;
+      if (pagina.length < TAMANHO_PAGINA) break;
+    }
+    sheet.commit();
+    await workbook.commit();
+  }
+
+  /**
    * Importação em lote do acervo de livros — cada linha da planilha é UM
    * exemplar físico (código de tombamento único); título+autor iguais
    * (case-insensitive) reaproveitam o mesmo `Livro`, senão criam um novo.
