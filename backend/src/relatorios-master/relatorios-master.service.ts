@@ -31,6 +31,14 @@ function fmtDataUtc(d: Date | string | null | undefined): string {
   return `${dia}/${mes}/${data.getUTCFullYear()}`;
 }
 
+/** Rótulo da situação de uma linha do Relatório de Recebimento por Período
+ * (ver `RelatoriosMasterService.recebimentosLinhas`). */
+const SITUACAO_RECEBIMENTO_LABEL: Record<string, string> = {
+  NO_PERIODO: 'No período',
+  ATRASADO: 'Atrasado',
+  ADIANTADO: 'Adiantado',
+};
+
 /**
  * Relatórios Master — exportação completa do banco (backup/disaster
  * recovery) e dos arquivos enviados, pro perfil MASTER. Ver decisão de
@@ -636,6 +644,28 @@ export class RelatoriosMasterService {
    * Período Letivo e/ou intervalo de datas de pagamento. Os dois filtros são
    * opcionais e combináveis (AND); sem nenhum, traz o histórico completo.
    */
+  /**
+   * Resolve o "período pesquisado" pra fim de classificar cada recebimento
+   * como dentro do período, atrasado (venceu antes) ou adiantado (venceu
+   * depois) -- ver `recebimentosLinhas()`. Período Letivo (quando informado)
+   * usa as datas oficiais do período; senão usa o intervalo manual de datas
+   * de pagamento already usado no filtro. Sem nenhum dos dois, não há
+   * referência pra classificar (retorna tudo null).
+   */
+  private async periodoReferenciaRecebimentos(params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }): Promise<{ inicio: Date | null; fim: Date | null }> {
+    if (params.periodoLetivoId) {
+      const periodo = await this.prisma.periodoLetivo.findUnique({ where: { id: params.periodoLetivoId } });
+      if (periodo) return { inicio: periodo.dataInicio, fim: periodo.dataFim };
+    }
+    if (params.dataInicio || params.dataFim) {
+      return {
+        inicio: params.dataInicio ? new Date(`${params.dataInicio}T00:00:00`) : null,
+        fim: params.dataFim ? new Date(`${params.dataFim}T23:59:59`) : null,
+      };
+    }
+    return { inicio: null, fim: null };
+  }
+
   private async recebimentosLinhas(params: { periodoLetivoId?: string; dataInicio?: string; dataFim?: string }) {
     const where: any = { status: 'PAGO' };
     if (params.periodoLetivoId) where.contrato = { periodoLetivoId: params.periodoLetivoId };
@@ -645,29 +675,47 @@ export class RelatoriosMasterService {
       if (params.dataFim) where.dataPagamento.lte = new Date(`${params.dataFim}T23:59:59`);
     }
 
-    const parcelas = await this.prisma.parcela.findMany({
-      where,
-      include: {
-        contrato: {
-          include: {
-            aluno: { select: { nome: true, ra: true, curso: { select: { nome: true } } } },
-            periodoLetivo: { select: { ano: true, semestre: true } },
+    const [parcelas, referencia] = await Promise.all([
+      this.prisma.parcela.findMany({
+        where,
+        include: {
+          contrato: {
+            include: {
+              aluno: { select: { nome: true, ra: true, curso: { select: { nome: true } } } },
+              periodoLetivo: { select: { ano: true, semestre: true } },
+            },
           },
         },
-      },
-      orderBy: { dataPagamento: 'asc' },
-    });
+        orderBy: { dataPagamento: 'asc' },
+      }),
+      this.periodoReferenciaRecebimentos(params),
+    ]);
 
-    return parcelas.map(p => ({
-      dataPagamento: p.dataPagamento,
-      aluno: p.contrato.aluno.nome,
-      ra: p.contrato.aluno.ra,
-      curso: p.contrato.aluno.curso.nome,
-      periodo: `${p.contrato.periodoLetivo.ano}/${p.contrato.periodoLetivo.semestre}`,
-      numeroParcela: p.numero,
-      valorPago: Number(p.valorPago ?? p.valor),
-      formaPagamento: p.formaPagamento ?? '—',
-    }));
+    return parcelas.map(p => {
+      // Situação: compara o VENCIMENTO da parcela contra o período pesquisado
+      // (não a data de pagamento, que já está garantida dentro do filtro) --
+      // venceu antes do período = recebido em atraso; vence depois do
+      // período = recebido adiantado. Sem período de referência (nenhum
+      // filtro de período/data aplicado), não há o que classificar.
+      let situacao: 'NO_PERIODO' | 'ATRASADO' | 'ADIANTADO' | null = null;
+      if (referencia.inicio || referencia.fim) {
+        if (referencia.inicio && p.dataVencimento < referencia.inicio) situacao = 'ATRASADO';
+        else if (referencia.fim && p.dataVencimento > referencia.fim) situacao = 'ADIANTADO';
+        else situacao = 'NO_PERIODO';
+      }
+      return {
+        dataPagamento: p.dataPagamento,
+        dataVencimento: p.dataVencimento,
+        aluno: p.contrato.aluno.nome,
+        ra: p.contrato.aluno.ra,
+        curso: p.contrato.aluno.curso.nome,
+        periodo: `${p.contrato.periodoLetivo.ano}/${p.contrato.periodoLetivo.semestre}`,
+        numeroParcela: p.numero,
+        valorPago: Number(p.valorPago ?? p.valor),
+        formaPagamento: p.formaPagamento ?? '—',
+        situacao,
+      };
+    });
   }
 
   /** Descrição legível do filtro aplicado, pro cabeçalho do XLSX/PDF. */
@@ -695,20 +743,33 @@ export class RelatoriosMasterService {
     const sheet = workbook.addWorksheet('Recebimentos');
     sheet.addRow([`Relatório de Recebimento por Período — ${filtroDescricao}`]);
     sheet.addRow([]);
-    sheet.addRow(['Data Pagamento', 'Aluno', 'RA', 'Curso', 'Período', 'Parcela Nº', 'Valor Recebido', 'Forma de Pagamento']);
+    sheet.addRow(['Data Pagamento', 'Vencimento', 'Aluno', 'RA', 'Curso', 'Período', 'Parcela Nº', 'Valor Recebido', 'Forma de Pagamento', 'Situação']);
     for (const l of linhas) {
       sheet.addRow([
-        fmtDataUtc(l.dataPagamento),
+        fmtDataUtc(l.dataPagamento), fmtDataUtc(l.dataVencimento),
         l.aluno, l.ra, l.curso, l.periodo, l.numeroParcela, l.valorPago, l.formaPagamento,
+        l.situacao ? SITUACAO_RECEBIMENTO_LABEL[l.situacao] : '—',
       ]);
     }
+
     const total = linhas.reduce((s, l) => s + l.valorPago, 0);
     sheet.addRow([]);
-    sheet.addRow(['', '', '', '', '', 'TOTAL', Number(total.toFixed(2)), `${linhas.length} pagamento(s)`]);
-    sheet.getColumn(2).width = 32;
-    sheet.getColumn(4).width = 26;
-    sheet.getColumn(7).width = 16;
-    sheet.getColumn(8).width = 18;
+    // Discrimina o que venceu antes/depois do período pesquisado -- só faz
+    // sentido mostrar essa quebra quando havia um período de referência
+    // (periodoLetivo ou intervalo de datas) pra comparar o vencimento.
+    if (linhas.some(l => l.situacao !== null)) {
+      const somaPor = (s: string) => linhas.filter(l => l.situacao === s).reduce((acc, l) => acc + l.valorPago, 0);
+      const qtdPor = (s: string) => linhas.filter(l => l.situacao === s).length;
+      sheet.addRow(['', '', '', '', '', '', 'Recebido no período', Number(somaPor('NO_PERIODO').toFixed(2)), `${qtdPor('NO_PERIODO')} pagamento(s)`]);
+      sheet.addRow(['', '', '', '', '', '', 'Recebido em atraso (venc. anterior ao período)', Number(somaPor('ATRASADO').toFixed(2)), `${qtdPor('ATRASADO')} pagamento(s)`]);
+      sheet.addRow(['', '', '', '', '', '', 'Recebido adiantado (venc. posterior ao período)', Number(somaPor('ADIANTADO').toFixed(2)), `${qtdPor('ADIANTADO')} pagamento(s)`]);
+    }
+    sheet.addRow(['', '', '', '', '', '', 'TOTAL', Number(total.toFixed(2)), `${linhas.length} pagamento(s)`]);
+    sheet.getColumn(3).width = 32;
+    sheet.getColumn(5).width = 26;
+    sheet.getColumn(8).width = 16;
+    sheet.getColumn(9).width = 18;
+    sheet.getColumn(10).width = 14;
 
     await workbook.xlsx.write(res);
   }
@@ -725,8 +786,8 @@ export class RelatoriosMasterService {
     const pronto = new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
 
     const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const colWidths = [70, 150, 65, 150, 55, 45, 80, 100];
-    const headers = ['Pagamento', 'Aluno', 'RA', 'Curso', 'Período', 'Parc.', 'Valor', 'Forma'];
+    const colWidths = [60, 60, 120, 55, 115, 45, 35, 70, 75, 75];
+    const headers = ['Pagamento', 'Vencimento', 'Aluno', 'RA', 'Curso', 'Período', 'Parc.', 'Valor', 'Forma', 'Situação'];
     const startX = doc.page.margins.left;
     let y = doc.page.margins.top;
 
@@ -762,17 +823,34 @@ export class RelatoriosMasterService {
       }
       let x = startX;
       const vals = [
-        fmtDataUtc(l.dataPagamento),
+        fmtDataUtc(l.dataPagamento), fmtDataUtc(l.dataVencimento),
         l.aluno, l.ra, l.curso, l.periodo, String(l.numeroParcela), fmt(l.valorPago), l.formaPagamento,
+        l.situacao ? SITUACAO_RECEBIMENTO_LABEL[l.situacao] : '—',
       ];
       vals.forEach((v, idx) => { doc.text(v, x + 4, y + 3, { width: colWidths[idx] - 8, ellipsis: true }); x += colWidths[idx]; });
       y += 15;
     }
 
     const total = linhas.reduce((s, l) => s + l.valorPago, 0);
-    if (y > doc.page.height - doc.page.margins.bottom - 40) { doc.addPage(); y = doc.page.margins.top; }
+    if (y > doc.page.height - doc.page.margins.bottom - 70) { doc.addPage(); y = doc.page.margins.top; }
     doc.moveTo(startX, y + 6).lineTo(doc.page.width - doc.page.margins.right, y + 6).strokeColor('#999').stroke();
-    doc.fontSize(11).fillColor('#000').text(`Total recebido: ${fmt(total)}  (${linhas.length} pagamento(s))`, startX, y + 14);
+    y += 14;
+
+    // Discrimina o que venceu antes/depois do período pesquisado -- só faz
+    // sentido mostrar essa quebra quando havia um período de referência
+    // pra comparar o vencimento (ver periodoReferenciaRecebimentos()).
+    if (linhas.some(l => l.situacao !== null)) {
+      const somaPor = (s: string) => linhas.filter(l => l.situacao === s).reduce((acc, l) => acc + l.valorPago, 0);
+      const qtdPor = (s: string) => linhas.filter(l => l.situacao === s).length;
+      doc.fontSize(9.5).fillColor('#333');
+      doc.text(`Recebido no período: ${fmt(somaPor('NO_PERIODO'))} (${qtdPor('NO_PERIODO')} pagamento(s))`, startX, y);
+      y = doc.y + 2;
+      doc.text(`Recebido em atraso (venc. anterior ao período): ${fmt(somaPor('ATRASADO'))} (${qtdPor('ATRASADO')} pagamento(s))`, startX, y);
+      y = doc.y + 2;
+      doc.text(`Recebido adiantado (venc. posterior ao período): ${fmt(somaPor('ADIANTADO'))} (${qtdPor('ADIANTADO')} pagamento(s))`, startX, y);
+      y = doc.y + 8;
+    }
+    doc.fontSize(11).fillColor('#000').text(`Total recebido: ${fmt(total)}  (${linhas.length} pagamento(s))`, startX, y);
 
     doc.end();
     return pronto;
