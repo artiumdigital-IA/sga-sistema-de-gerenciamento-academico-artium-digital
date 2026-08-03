@@ -27,6 +27,9 @@
   --teal-bg:    #d1f5f5;
   --accent-blue-text: #1C3A6B;
   --accent-red-text:  #C8102E;
+  --viz-blue:   #2a78d6;
+  --viz-good:   #0ca30c;
+  --viz-critical: #d03b3b;
   --sidebar-w:  52px;
   --top-h:      44px;
   --radius:     0.25rem;
@@ -55,6 +58,7 @@ html.dark-theme {
   --white:     #1b2330;
   --accent-blue-text: #7fa8e8;
   --accent-red-text:  #ff8a9b;
+  --viz-blue:   #3987e5;
   --background: 222 28% 9%;
   --foreground: 210 20% 94%;
   --border: 217 18% 22%;
