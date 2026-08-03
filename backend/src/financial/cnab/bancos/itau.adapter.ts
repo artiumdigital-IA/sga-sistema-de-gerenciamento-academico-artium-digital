@@ -173,7 +173,7 @@ function montarHeader(conta: ContaBancariaParaRemessa, dataGeracao: Date): strin
     brancos(8),                            // 039-046
     alfa(conta.titular, 30),               // 047-076 nome da empresa
     num('341', 3),                         // 077-079 código do banco
-    alfa('BANCO ITAU SA', 15),             // 080-094
+    alfa('BANCO ITAU S.A.', 15),           // 080-094
     dataDDMMAA(dataGeracao),               // 095-100
     brancos(294),                          // 101-394
     num(1, 6),                             // 395-400 número sequencial do registro
