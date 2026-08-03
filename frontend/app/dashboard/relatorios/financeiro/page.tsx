@@ -20,6 +20,16 @@ const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, borde
 
 const DIAS_POR_MES = 30; // mesma convenção "mês comercial de 30 dias" já usada no cálculo de mora do projeto
 
+// Compara em UTC (mesma lógica de lib/format.ts) -- evita o bug já documentado
+// no projeto de "data exibida um dia a menos" ao comparar ISO com o fuso local.
+function chaveDataUTC(iso: string): string {
+  const d = new Date(iso);
+  const ano = d.getUTCFullYear();
+  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dia = String(d.getUTCDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
 const FAIXAS_ATRASO = [
   { label: '< 1 mês', min: 0, max: 0 },
   { label: '1 mês', min: 1, max: 1 },
@@ -71,6 +81,8 @@ export default function RelatoriosFinanceirosPage() {
   const [contabil, setContabil] = useState<LinhaContabil[]>([]);
   const [loading, setLoading] = useState(false);
   const [filtroMesesAtraso, setFiltroMesesAtraso] = useState(1);
+  const [filtroDataInicial, setFiltroDataInicial] = useState('');
+  const [filtroDataFinal, setFiltroDataFinal] = useState('');
   const [filtroPeriodoDash, setFiltroPeriodoDash] = useState('TODOS');
   const [filtroCursoDash, setFiltroCursoDash] = useState('TODOS');
 
@@ -86,7 +98,13 @@ export default function RelatoriosFinanceirosPage() {
 
   useEffect(() => { carregar(tab); }, [tab, carregar]);
 
-  const linhasFiltradas = (inadimplencia?.linhas ?? []).filter(l => Math.floor(l.diasAtraso / DIAS_POR_MES) >= filtroMesesAtraso);
+  const linhasFiltradas = (inadimplencia?.linhas ?? []).filter(l => {
+    if (Math.floor(l.diasAtraso / DIAS_POR_MES) < filtroMesesAtraso) return false;
+    const chave = chaveDataUTC(l.dataVencimento);
+    if (filtroDataInicial && chave < filtroDataInicial) return false;
+    if (filtroDataFinal && chave > filtroDataFinal) return false;
+    return true;
+  });
   const totalFiltrado = linhasFiltradas.reduce((s, l) => s + Number(l.valor), 0);
   const moraFiltrada = linhasFiltradas.reduce((s, l) => s + l.mora, 0);
   const atualizadoFiltrado = linhasFiltradas.reduce((s, l) => s + l.valorAtualizado, 0);
@@ -350,20 +368,44 @@ export default function RelatoriosFinanceirosPage() {
       )}
       {!loading && tab === 'filtros' && inadimplencia && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>Atraso mínimo:</label>
-            <select
-              value={filtroMesesAtraso}
-              onChange={e => setFiltroMesesAtraso(Number(e.target.value))}
-              style={{ padding: '6px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)' }}
-            >
-              {Array.from({ length: 60 }, (_, i) => i + 1).map(m => (
-                <option key={m} value={m}>{m} {m === 1 ? 'mês' : 'meses'}</option>
-              ))}
-            </select>
-            <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>
-              Mostra parcelas com pelo menos essa quantidade de meses de atraso (mês = {DIAS_POR_MES} dias corridos).
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>Atraso mínimo:</label>
+              <select
+                value={filtroMesesAtraso}
+                onChange={e => setFiltroMesesAtraso(Number(e.target.value))}
+                style={{ padding: '6px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)' }}
+              >
+                {Array.from({ length: 60 }, (_, i) => i + 1).map(m => (
+                  <option key={m} value={m}>{m} {m === 1 ? 'mês' : 'meses'}</option>
+                ))}
+              </select>
+              <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+                Mostra parcelas com pelo menos essa quantidade de meses de atraso (mês = {DIAS_POR_MES} dias corridos).
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>📅 Vencimento entre:</label>
+              <input
+                type="date"
+                value={filtroDataInicial}
+                onChange={e => setFiltroDataInicial(e.target.value)}
+                style={{ padding: '5px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)', colorScheme: 'light dark' }}
+              />
+              <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>e</span>
+              <input
+                type="date"
+                value={filtroDataFinal}
+                onChange={e => setFiltroDataFinal(e.target.value)}
+                style={{ padding: '5px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)', colorScheme: 'light dark' }}
+              />
+              {(filtroDataInicial || filtroDataFinal) && (
+                <button onClick={() => { setFiltroDataInicial(''); setFiltroDataFinal(''); }} style={{ ...BTN_G, padding: '5px 10px' }}>
+                  Limpar
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
