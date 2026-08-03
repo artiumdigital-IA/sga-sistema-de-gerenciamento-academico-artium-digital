@@ -386,20 +386,26 @@ export default function RelatoriosFinanceirosPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>📅 Vencimento entre:</label>
-              <input
-                type="date"
-                value={filtroDataInicial}
-                onChange={e => setFiltroDataInicial(e.target.value)}
-                style={{ padding: '5px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)', colorScheme: 'light dark' }}
-              />
+              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>Vencimento entre:</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span style={{ position: 'absolute', left: 8, fontSize: 13, pointerEvents: 'none' }}>📅</span>
+                <input
+                  type="date"
+                  value={filtroDataInicial}
+                  onChange={e => setFiltroDataInicial(e.target.value)}
+                  style={{ padding: '5px 8px 5px 30px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)', colorScheme: 'light dark' }}
+                />
+              </div>
               <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>e</span>
-              <input
-                type="date"
-                value={filtroDataFinal}
-                onChange={e => setFiltroDataFinal(e.target.value)}
-                style={{ padding: '5px 8px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)', colorScheme: 'light dark' }}
-              />
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span style={{ position: 'absolute', left: 8, fontSize: 13, pointerEvents: 'none' }}>📅</span>
+                <input
+                  type="date"
+                  value={filtroDataFinal}
+                  onChange={e => setFiltroDataFinal(e.target.value)}
+                  style={{ padding: '5px 8px 5px 30px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)', colorScheme: 'light dark' }}
+                />
+              </div>
               {(filtroDataInicial || filtroDataFinal) && (
                 <button onClick={() => { setFiltroDataInicial(''); setFiltroDataFinal(''); }} style={{ ...BTN_G, padding: '5px 10px' }}>
                   Limpar
