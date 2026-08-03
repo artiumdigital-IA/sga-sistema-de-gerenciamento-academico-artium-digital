@@ -128,8 +128,14 @@ function ContaModal({ conta, onClose, onSave }: { conta: Conta | null; onClose: 
                   </F>
                 </G>
                 <G cols="1fr 1fr">
-                  <F label="Código do cedente (convênio) *">
-                    <input style={INPUT} value={form.codigoCedente ?? ''} required={form.cnabHabilitado} onChange={e => set('codigoCedente', e.target.value)} />
+                  <F label={form.codigoBancoFebraban === '341' ? 'Código do cedente (convênio)' : 'Código do cedente (convênio) *'}>
+                    <input style={INPUT} value={form.codigoCedente ?? ''} required={form.cnabHabilitado && form.codigoBancoFebraban !== '341'} onChange={e => set('codigoCedente', e.target.value)} />
+                    {form.codigoBancoFebraban === '341' && (
+                      <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--gray-500)' }}>
+                        Não é usado no layout do Itaú (CNAB 400) — o arquivo identifica o cedente só
+                        por agência/conta. Pode deixar em branco ou usar como anotação livre.
+                      </p>
+                    )}
                   </F>
                   <F label="Carteira *">
                     <input style={INPUT} value={form.carteira ?? ''} required={form.cnabHabilitado} onChange={e => set('carteira', e.target.value)} />
