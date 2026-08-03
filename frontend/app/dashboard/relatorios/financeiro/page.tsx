@@ -16,23 +16,33 @@ interface LinhaContabil { curso: string; competencia: string; quantidade: number
 const money = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const BTN_G: React.CSSProperties = { padding: '6px 12px', borderRadius: 5, border: '1px solid var(--gray-300)', cursor: 'pointer', fontSize: 12, background: 'var(--white)', color: 'var(--gray-700)' };
 
+const DIAS_POR_MES = 30; // mesma convenção "mês comercial de 30 dias" já usada no cálculo de mora do projeto
+
 export default function RelatoriosFinanceirosPage() {
-  const [tab, setTab] = useState<'inadimplencia' | 'turma' | 'contabil'>('inadimplencia');
+  const [tab, setTab] = useState<'inadimplencia' | 'turma' | 'contabil' | 'filtros'>('inadimplencia');
   const [inadimplencia, setInadimplencia] = useState<Inadimplencia | null>(null);
   const [turma, setTurma] = useState<LinhaTurma[]>([]);
   const [contabil, setContabil] = useState<LinhaContabil[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filtroMesesAtraso, setFiltroMesesAtraso] = useState(1);
 
   const carregar = useCallback(async (t: typeof tab) => {
     setLoading(true);
     try {
-      if (t === 'inadimplencia') setInadimplencia(await apiFetch<Inadimplencia>('/relatorios/financeiro/inadimplencia'));
+      // "Filtros" reaproveita os mesmos dados de Inadimplência (já tem Dias em
+      // Atraso por parcela) -- não precisa de endpoint novo, só filtra na tela.
+      if (t === 'inadimplencia' || t === 'filtros') setInadimplencia(await apiFetch<Inadimplencia>('/relatorios/financeiro/inadimplencia'));
       if (t === 'turma') setTurma(await apiFetch<LinhaTurma[]>('/relatorios/financeiro/resumo-turma'));
       if (t === 'contabil') setContabil(await apiFetch<LinhaContabil[]>('/relatorios/financeiro/resumo-contabil'));
     } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { carregar(tab); }, [tab, carregar]);
+
+  const linhasFiltradas = (inadimplencia?.linhas ?? []).filter(l => Math.floor(l.diasAtraso / DIAS_POR_MES) >= filtroMesesAtraso);
+  const totalFiltrado = linhasFiltradas.reduce((s, l) => s + Number(l.valor), 0);
+  const moraFiltrada = linhasFiltradas.reduce((s, l) => s + l.mora, 0);
+  const atualizadoFiltrado = linhasFiltradas.reduce((s, l) => s + l.valorAtualizado, 0);
 
   return (
     <div style={{ padding: '24px 28px' }}>
@@ -46,6 +56,7 @@ export default function RelatoriosFinanceirosPage() {
           ['inadimplencia', 'Inadimplência'],
           ['turma', 'Resumo por Turma'],
           ['contabil', 'Resumo Contábil'],
+          ['filtros', 'Filtros'],
         ] as const).map(([v, l]) => (
           <button key={v} onClick={() => setTab(v)} style={{ padding: '8px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 600, borderBottom: tab === v ? '2px solid #1a56db' : '2px solid transparent', color: tab === v ? '#1a56db' : 'var(--gray-500)' }}>
             {l}
@@ -147,6 +158,67 @@ export default function RelatoriosFinanceirosPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {!loading && tab === 'filtros' && inadimplencia && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>Atraso mínimo:</label>
+            <select
+              value={filtroMesesAtraso}
+              onChange={e => setFiltroMesesAtraso(Number(e.target.value))}
+              style={{ padding: '6px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)' }}
+            >
+              {Array.from({ length: 60 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m}>{m} {m === 1 ? 'mês' : 'meses'}</option>
+              ))}
+            </select>
+            <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+              Mostra parcelas com pelo menos essa quantidade de meses de atraso (mês = {DIAS_POR_MES} dias corridos).
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 16px', fontSize: 13 }}>
+              <strong>{linhasFiltradas.length}</strong> parcela(s) com {filtroMesesAtraso}+ {filtroMesesAtraso === 1 ? 'mês' : 'meses'} de atraso
+            </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 16px', fontSize: 13 }}>
+              Valor: <strong>{money(totalFiltrado)}</strong>
+            </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 16px', fontSize: 13 }}>
+              Multa + juros: <strong>{money(moraFiltrada)}</strong>
+            </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 16px', fontSize: 13 }}>
+              Total atualizado: <strong>{money(atualizadoFiltrado)}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 8, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
+                  {['RA', 'Aluno', 'Período', 'Parcela', 'Valor', 'Vencimento', 'Dias em Atraso', 'Meses de Atraso', 'Mora', 'Valor Atualizado'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 12 }}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {linhasFiltradas.length === 0 && <tr><td colSpan={10} style={{ padding: 24, textAlign: 'center', color: 'var(--gray-400)' }}>Nenhuma parcela com esse atraso mínimo.</td></tr>}
+                {linhasFiltradas.map(l => (
+                  <tr key={l.parcelaId} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                    <td style={{ padding: '8px 14px', fontWeight: 600 }}>{l.aluno.ra}</td>
+                    <td style={{ padding: '8px 14px' }}>{l.aluno.nome}</td>
+                    <td style={{ padding: '8px 14px' }}>{l.periodo.ano}/{l.periodo.semestre}</td>
+                    <td style={{ padding: '8px 14px' }}>{l.numero}</td>
+                    <td style={{ padding: '8px 14px' }}>{money(Number(l.valor))}</td>
+                    <td style={{ padding: '8px 14px' }}>{formatarData(l.dataVencimento)}</td>
+                    <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>{l.diasAtraso}</td>
+                    <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>{Math.floor(l.diasAtraso / DIAS_POR_MES)}</td>
+                    <td style={{ padding: '8px 14px', fontWeight: 600 }}>{money(l.mora)}</td>
+                    <td style={{ padding: '8px 14px', fontWeight: 600 }}>{money(l.valorAtualizado)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
