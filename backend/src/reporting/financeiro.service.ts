@@ -87,17 +87,28 @@ export class FinanceiroRelatoriosService {
   /**
    * Resumo Financeiro por Curso/Competência (achado Kirsch: menu "Contabilidade" — Resumo
    * Financeiro Curso/Competência). Competência = mês/ano de pagamento das parcelas.
+   *
+   * Achado em Ago/2026 (conferência do usuário contra a base): o filtro antigo exigia
+   * `dataPagamento: { not: null }` porque a competência é derivada dessa data -- mas parcelas
+   * PAGO sem essa data (88 na produção na época, ~R$134,5 mil, dado incompleto de importação
+   * legada) simplesmente somem do total, sem nenhum aviso. Agora elas entram num grupo
+   * "Sem data de pagamento" -- o total bate sempre, e dá pra ver quais linhas precisam de
+   * correção de dado na origem.
    */
   async resumoContabilPorCompetencia() {
     const parcelas = await this.prisma.parcela.findMany({
-      where: { status: 'PAGO', dataPagamento: { not: null } },
+      where: { status: 'PAGO' },
       include: { contrato: { include: { aluno: { select: { curso: { select: { nome: true } } } } } } },
     });
 
+    const SEM_DATA = 'Sem data de pagamento';
     const grupos = new Map<string, { curso: string; competencia: string; quantidade: number; valorRecebido: number }>();
     for (const p of parcelas) {
-      const dp = new Date(p.dataPagamento!);
-      const competencia = `${dp.getFullYear()}-${String(dp.getMonth() + 1).padStart(2, '0')}`;
+      // getUTC* (não getFullYear/getMonth locais) -- mesma regra de lib/format.ts, evita a
+      // competência sair um dia/mês errado dependendo do fuso do processo.
+      const competencia = p.dataPagamento
+        ? `${new Date(p.dataPagamento).getUTCFullYear()}-${String(new Date(p.dataPagamento).getUTCMonth() + 1).padStart(2, '0')}`
+        : SEM_DATA;
       const chave = `${p.contrato.aluno.curso.nome}__${competencia}`;
       if (!grupos.has(chave)) {
         grupos.set(chave, { curso: p.contrato.aluno.curso.nome, competencia, quantidade: 0, valorRecebido: 0 });
@@ -107,6 +118,10 @@ export class FinanceiroRelatoriosService {
       g.valorRecebido += Number(p.valorPago ?? p.valor);
     }
 
-    return Array.from(grupos.values()).sort((a, b) => b.competencia.localeCompare(a.competencia) || a.curso.localeCompare(b.curso));
+    return Array.from(grupos.values()).sort((a, b) => {
+      if (a.competencia === SEM_DATA) return 1;
+      if (b.competencia === SEM_DATA) return -1;
+      return b.competencia.localeCompare(a.competencia) || a.curso.localeCompare(b.curso);
+    });
   }
 }
