@@ -66,6 +66,14 @@ html.dark-theme {
   --card-foreground: 210 20% 94%;
 }
 
+/* Esconde o indicador nativo do input[type=date] -- some/fica invisível em
+   algumas combinações de tema (color-scheme segue o SO, não o dark-theme do
+   app). Um botão próprio (ícone de calendário) assume o papel de abrir o
+   picker via showPicker(), ver relatorios/financeiro/page.tsx. */
+input.fin-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
 /* =============================================================================
    Base
    ============================================================================= */

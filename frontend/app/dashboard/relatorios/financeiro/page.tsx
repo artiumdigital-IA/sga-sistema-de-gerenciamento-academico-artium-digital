@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { formatarData } from '@/lib/format';
 import { StackedBarChart, TrendLineChart, VIZ_GOOD, VIZ_CRITICAL, type BarGroupDatum, type LinePoint } from '@/components/charts/FinanceiroCharts';
@@ -54,6 +54,19 @@ function downloadCsv(data: Record<string, unknown>[], filename: string) {
   URL.revokeObjectURL(url);
 }
 
+// O ícone substitui o indicador nativo do input[type=date] (some/fica invisível
+// em alguns navegadores fora do color-scheme certo) -- ele mesmo é o botão que
+// abre o calendário nativo via showPicker(); focus() é o fallback pra navegadores
+// sem showPicker (Safari mais antigo).
+function abrirCalendario(ref: React.RefObject<HTMLInputElement>) {
+  const el = ref.current;
+  if (!el) return;
+  if (typeof el.showPicker === 'function') {
+    try { el.showPicker(); return; } catch { /* cai no fallback abaixo */ }
+  }
+  el.focus();
+}
+
 function ChartCard({ title, subtitle, onVerTabela, onExportar, children }: {
   title: string; subtitle: string; onVerTabela: () => void; onExportar: () => void; children: React.ReactNode;
 }) {
@@ -83,6 +96,8 @@ export default function RelatoriosFinanceirosPage() {
   const [filtroMesesAtraso, setFiltroMesesAtraso] = useState(1);
   const [filtroDataInicial, setFiltroDataInicial] = useState('');
   const [filtroDataFinal, setFiltroDataFinal] = useState('');
+  const dataInicialRef = useRef<HTMLInputElement>(null);
+  const dataFinalRef = useRef<HTMLInputElement>(null);
   const [filtroPeriodoDash, setFiltroPeriodoDash] = useState('TODOS');
   const [filtroCursoDash, setFiltroCursoDash] = useState('TODOS');
 
@@ -388,9 +403,16 @@ export default function RelatoriosFinanceirosPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>Vencimento entre:</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <span style={{ position: 'absolute', left: 8, fontSize: 13, pointerEvents: 'none' }}>📅</span>
+                <button
+                  type="button"
+                  onClick={() => abrirCalendario(dataInicialRef)}
+                  aria-label="Abrir calendário (data inicial)"
+                  style={{ position: 'absolute', left: 4, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, padding: 0, lineHeight: 1 }}
+                >📅</button>
                 <input
+                  ref={dataInicialRef}
                   type="date"
+                  className="fin-date-input"
                   value={filtroDataInicial}
                   onChange={e => setFiltroDataInicial(e.target.value)}
                   style={{ padding: '5px 8px 5px 30px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)', colorScheme: 'light dark' }}
@@ -398,9 +420,16 @@ export default function RelatoriosFinanceirosPage() {
               </div>
               <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>e</span>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <span style={{ position: 'absolute', left: 8, fontSize: 13, pointerEvents: 'none' }}>📅</span>
+                <button
+                  type="button"
+                  onClick={() => abrirCalendario(dataFinalRef)}
+                  aria-label="Abrir calendário (data final)"
+                  style={{ position: 'absolute', left: 4, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, padding: 0, lineHeight: 1 }}
+                >📅</button>
                 <input
+                  ref={dataFinalRef}
                   type="date"
+                  className="fin-date-input"
                   value={filtroDataFinal}
                   onChange={e => setFiltroDataFinal(e.target.value)}
                   style={{ padding: '5px 8px 5px 30px', borderRadius: 5, border: '1px solid var(--gray-300)', fontSize: 13, background: 'var(--white)', color: 'var(--gray-700)', colorScheme: 'light dark' }}
