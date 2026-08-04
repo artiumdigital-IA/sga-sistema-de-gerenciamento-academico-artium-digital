@@ -18,14 +18,14 @@ export class RemessaController {
   @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
   @ApiOperation({ summary: 'Gerar remessa CNAB a partir dos boletos EMITIDO de uma conta' })
   gerar(@Body() dto: CreateRemessaDto, @Request() req: any) {
-    return this.service.gerar(dto, req.user.sub);
+    return this.service.gerar(dto, req.user.id);
   }
 
   @Post('baixa')
   @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
   @ApiOperation({ summary: 'Gerar remessa de baixa/cancelamento pros boletos já enviados/registrados' })
   gerarBaixa(@Body() dto: CreateRemessaDto, @Request() req: any) {
-    return this.service.gerarBaixa(dto, req.user.sub);
+    return this.service.gerarBaixa(dto, req.user.id);
   }
 
   @Get()

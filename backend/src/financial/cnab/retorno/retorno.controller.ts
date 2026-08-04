@@ -42,7 +42,7 @@ export class RetornoController {
   )
   importar(@Body('contaBancariaId') contaBancariaId: string, @UploadedFile() file: ArquivoUpload, @Request() req: any) {
     if (!file) throw new BadRequestException('Nenhum arquivo enviado.');
-    return this.service.importar(contaBancariaId, file, req.user.sub);
+    return this.service.importar(contaBancariaId, file, req.user.id);
   }
 
   @Get()

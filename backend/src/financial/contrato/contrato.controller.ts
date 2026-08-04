@@ -17,7 +17,7 @@ export class ContratoController {
   @Roles(Perfil.ADMIN, Perfil.SECRETARIA, Perfil.FINANCEIRO)
   @ApiOperation({ summary: 'Criar contrato + gerar parcelas' })
   create(@Body() dto: CreateContratoDto, @Request() req: any) {
-    return this.service.create(dto, req.user.sub);
+    return this.service.create(dto, req.user.id);
   }
 
   @Get()
@@ -58,6 +58,6 @@ export class ContratoController {
   @Patch(':id/status')
   @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
   updateStatus(@Param('id') id: string, @Body('status') status: string, @Request() req: any) {
-    return this.service.updateStatus(id, status, req.user.sub);
+    return this.service.updateStatus(id, status, req.user.id);
   }
 }
