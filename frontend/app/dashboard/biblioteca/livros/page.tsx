@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch, apiDownload } from '@/lib/api';
 import { getToken, parseJwt } from '@/lib/auth';
+import { CHAVE_FILA_ETIQUETAS_LIVROS } from '@/lib/etiquetasLote';
 
 interface Exemplar { id: string; codigoTombamento: string; localizacao: string | null; status: StatusItem; numeroExemplar: number | null; }
 type StatusItem = 'DISPONIVEL' | 'EMPRESTADO' | 'MANUTENCAO' | 'EXTRAVIADO' | 'BAIXADO';
@@ -93,7 +94,10 @@ function LivroModal({ livro, onClose, onSave }: { livro: Livro | null; onClose: 
   );
 }
 
-function ExemplaresModal({ livro, onClose, onChanged }: { livro: Livro; onClose: () => void; onChanged: () => void }) {
+function ExemplaresModal({ livro, onClose, onChanged, selecionados, onToggle }: {
+  livro: Livro; onClose: () => void; onChanged: () => void;
+  selecionados: Set<string>; onToggle: (id: string) => void;
+}) {
   const [detalhe, setDetalhe] = useState<Livro | null>(null);
   const [codigo, setCodigo] = useState('');
   const [local, setLocal] = useState('');
@@ -144,6 +148,19 @@ function ExemplaresModal({ livro, onClose, onChanged }: { livro: Livro; onClose:
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)' }}>
+              <th style={{ padding: '8px 10px', textAlign: 'left', width: 28 }}>
+                {!!detalhe?.exemplares?.length && (
+                  <input
+                    type="checkbox"
+                    title="Marcar/desmarcar todos os exemplares deste livro"
+                    checked={detalhe.exemplares.every(ex => selecionados.has(ex.id))}
+                    onChange={() => detalhe.exemplares!.forEach(ex => {
+                      const todosMarcados = detalhe.exemplares!.every(e => selecionados.has(e.id));
+                      if (todosMarcados === selecionados.has(ex.id)) onToggle(ex.id);
+                    })}
+                  />
+                )}
+              </th>
               {['Ex.', 'Código', 'Localização', 'Status', ''].map(h => (
                 <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--gray-700)', fontSize: 11.5 }}>{h}</th>
               ))}
@@ -151,10 +168,13 @@ function ExemplaresModal({ livro, onClose, onChanged }: { livro: Livro; onClose:
           </thead>
           <tbody>
             {(!detalhe || detalhe.exemplares?.length === 0) && (
-              <tr><td colSpan={5} style={{ padding: 18, textAlign: 'center', color: 'var(--gray-400)' }}>{detalhe ? 'Nenhum exemplar cadastrado.' : 'Carregando...'}</td></tr>
+              <tr><td colSpan={6} style={{ padding: 18, textAlign: 'center', color: 'var(--gray-400)' }}>{detalhe ? 'Nenhum exemplar cadastrado.' : 'Carregando...'}</td></tr>
             )}
             {detalhe?.exemplares?.map(ex => (
               <tr key={ex.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                <td style={{ padding: '7px 10px' }}>
+                  <input type="checkbox" checked={selecionados.has(ex.id)} onChange={() => onToggle(ex.id)} />
+                </td>
                 <td style={{ padding: '7px 10px', color: 'var(--gray-500)' }}>{ex.numeroExemplar ?? '—'}</td>
                 <td style={{ padding: '7px 10px', fontWeight: 500 }}>{ex.codigoTombamento}</td>
                 <td style={{ padding: '7px 10px', color: 'var(--gray-500)' }}>{ex.localizacao ?? '—'}</td>
@@ -194,6 +214,16 @@ export default function LivrosPage() {
   const [exemplaresDe, setExemplaresDe] = useState<Livro | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [baixandoExcel, setBaixandoExcel] = useState(false);
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const toggleSelecionado = (id: string) => setSelecionados(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  function imprimirEtiquetasSelecionadas() {
+    sessionStorage.setItem(CHAVE_FILA_ETIQUETAS_LIVROS, JSON.stringify(Array.from(selecionados)));
+    window.open('/dashboard/biblioteca/livros/etiquetas-lote', '_blank');
+  }
   const token = getToken();
   const perfil = token ? parseJwt(token)?.perfil : null;
   const podeEditar = perfil === 'ADMIN' || perfil === 'SECRETARIA' || perfil === 'MASTER';
@@ -308,7 +338,22 @@ export default function LivrosPage() {
         <LivroModal livro={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSave={() => load(busca)} />
       )}
       {exemplaresDe && (
-        <ExemplaresModal livro={exemplaresDe} onClose={() => setExemplaresDe(null)} onChanged={() => load(busca)} />
+        <ExemplaresModal
+          livro={exemplaresDe} onClose={() => setExemplaresDe(null)} onChanged={() => load(busca)}
+          selecionados={selecionados} onToggle={toggleSelecionado}
+        />
+      )}
+
+      {selecionados.size > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 60,
+          background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,.15)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{selecionados.size} etiqueta{selecionados.size > 1 ? 's' : ''} selecionada{selecionados.size > 1 ? 's' : ''}</span>
+          <button style={BTN('ghost')} onClick={() => setSelecionados(new Set())}>Limpar</button>
+          <button style={BTN('primary')} onClick={imprimirEtiquetasSelecionadas}>🖨️ Imprimir etiquetas</button>
+        </div>
       )}
     </div>
   );
