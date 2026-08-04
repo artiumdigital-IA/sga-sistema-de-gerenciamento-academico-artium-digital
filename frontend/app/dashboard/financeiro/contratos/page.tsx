@@ -20,7 +20,7 @@ type ContratoResumo = {
   periodoLetivo: { id: string; ano: number; semestre: number };
   totais: Totais;
 };
-type Aluno = { id: string; nome: string; ra: string };
+type Aluno = { id: string; nome: string; ra: string; cpf?: string };
 type Periodo = { id: string; ano: number; semestre: number };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -42,16 +42,47 @@ function Badge({ s }: { s: string }) {
 
 // ── Modal Novo Contrato ────────────────────────────────────────────────────
 function ModalNovoContrato({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [periodos, setPeriodos] = useState<Periodo[]>([]);
   const [form, setForm] = useState({ alunoId: '', periodoLetivoId: '', valorTotal: '', numeroParcelas: '6', diaVencimento: '10', observacoes: '' });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
+  // Busca de aluno por nome/RA/CPF — o cadastro tem milhares de alunos, um
+  // <select> com todos (como era antes) não dava pra usar de verdade.
+  const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null);
+  const [alunoBusca, setAlunoBusca] = useState('');
+  const [alunoResultados, setAlunoResultados] = useState<Aluno[]>([]);
+  const [buscandoAluno, setBuscandoAluno] = useState(false);
+
   useEffect(() => {
-    apiFetch<any>('/alunos?limit=500').then((d: any) => setAlunos(d.data ?? d));
     apiFetch<any>('/periodos-letivos').then((d: any) => setPeriodos(Array.isArray(d) ? d : d.data ?? []));
   }, []);
+
+  // Debounce de 300ms, só busca com 2+ caracteres digitados.
+  useEffect(() => {
+    const termo = alunoBusca.trim();
+    if (termo.length < 2) { setAlunoResultados([]); return; }
+    setBuscandoAluno(true);
+    const t = setTimeout(() => {
+      apiFetch<any>(`/alunos?search=${encodeURIComponent(termo)}`)
+        .then((d: any) => setAlunoResultados((Array.isArray(d) ? d : d.data ?? []).slice(0, 15)))
+        .catch(() => setAlunoResultados([]))
+        .finally(() => setBuscandoAluno(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [alunoBusca]);
+
+  function selecionarAluno(a: Aluno) {
+    setAlunoSelecionado(a);
+    setForm(f => ({ ...f, alunoId: a.id }));
+    setAlunoBusca('');
+    setAlunoResultados([]);
+  }
+
+  function trocarAluno() {
+    setAlunoSelecionado(null);
+    setForm(f => ({ ...f, alunoId: '' }));
+  }
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -80,10 +111,36 @@ function ModalNovoContrato({ onClose, onSaved }: { onClose: () => void; onSaved:
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <label style={lbl}>Aluno *</label>
-            <select style={inp} value={form.alunoId} onChange={set('alunoId')}>
-              <option value="">Selecione...</option>
-              {alunos.map(a => <option key={a.id} value={a.id}>{a.nome} ({a.ra})</option>)}
-            </select>
+            {alunoSelecionado ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '7px 10px', borderRadius: 5, border: '1px solid var(--gray-300)', background: 'var(--gray-50)' }}>
+                <span style={{ fontSize: 13 }}>
+                  <strong>{alunoSelecionado.nome}</strong>
+                  <span style={{ color: 'var(--gray-500)' }}> — RA {alunoSelecionado.ra}{alunoSelecionado.cpf ? ` · CPF ${alunoSelecionado.cpf}` : ''}</span>
+                </span>
+                <button type="button" onClick={trocarAluno} style={{ padding: '3px 10px', border: '1px solid var(--gray-300)', borderRadius: 4, background: 'var(--white)', cursor: 'pointer', fontSize: 11.5 }}>Trocar</button>
+              </div>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <input
+                  style={inp} placeholder="Buscar por nome, RA ou CPF..." value={alunoBusca}
+                  onChange={e => setAlunoBusca(e.target.value)}
+                />
+                {(buscandoAluno || alunoResultados.length > 0) && alunoBusca.trim().length >= 2 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: 'var(--white)', border: '1px solid var(--gray-200)', borderRadius: 6, marginTop: 2, maxHeight: 220, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,.1)' }}>
+                    {buscandoAluno && <div style={{ padding: '8px 10px', fontSize: 12, color: 'var(--gray-500)' }}>Buscando...</div>}
+                    {!buscandoAluno && alunoResultados.length === 0 && (
+                      <div style={{ padding: '8px 10px', fontSize: 12, color: 'var(--gray-500)' }}>Nenhum aluno encontrado.</div>
+                    )}
+                    {!buscandoAluno && alunoResultados.map(a => (
+                      <div key={a.id} onClick={() => selecionarAluno(a)}
+                        style={{ padding: '8px 10px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--gray-100)' }}>
+                        {a.nome} <span style={{ color: 'var(--gray-400)' }}>— RA {a.ra}{a.cpf ? ` · CPF ${a.cpf}` : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div>
             <label style={lbl}>Período Letivo *</label>
