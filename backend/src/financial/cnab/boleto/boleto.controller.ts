@@ -17,7 +17,7 @@ export class BoletoController {
   @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
   @ApiOperation({ summary: 'Emitir boleto a partir de uma parcela' })
   create(@Body() dto: CreateBoletoDto, @Request() req: any) {
-    return this.service.create(dto, req.user.sub);
+    return this.service.create(dto, req.user.id);
   }
 
   @Get()
@@ -37,6 +37,6 @@ export class BoletoController {
   @Roles(Perfil.ADMIN, Perfil.FINANCEIRO)
   @ApiOperation({ summary: 'Mudar status manualmente (CANCELADO/PROTESTADO/REGISTRADO — não LIQUIDADO, que sempre passa pela conciliação real)' })
   mudarStatus(@Param('id') id: string, @Body('status') status: string, @Request() req: any) {
-    return this.service.mudarStatus(id, status, req.user.sub);
+    return this.service.mudarStatus(id, status, req.user.id);
   }
 }
