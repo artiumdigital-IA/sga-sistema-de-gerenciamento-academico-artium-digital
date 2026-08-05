@@ -49,7 +49,7 @@
 import { BancoCnab, LayoutCnab } from '@prisma/client';
 import { CnabBankAdapter, BoletoParaRemessa, ContaBancariaParaRemessa, OcorrenciaParseada } from './cnab-bank-adapter.interface';
 import { alfa, num, brancos, zeros, dataDDMMAA, montarLinha400, fatiaPosicional, paraNumero, paraData } from './cnab-fixo.util';
-import { dacAgenciaContaItau } from './itau-campo-livre.util';
+import { dacAgenciaContaItau, agenciaLimpa, contaLimpa } from './itau-campo-livre.util';
 
 // (17) CÓDIGO DE OCORRÊNCIA (ARQUIVO RETORNO) — tabela completa do manual
 // oficial (item 4, nota 17). Descrições resumidas (sem a referência às
@@ -166,9 +166,9 @@ function montarHeader(conta: ContaBancariaParaRemessa, dataGeracao: Date): strin
     alfa('REMESSA', 7),                    // 003-009
     '01',                                  // 010-011 código do serviço
     alfa('COBRANCA', 15),                  // 012-026
-    num(conta.agencia, 4),                 // 027-030 agência
+    agenciaLimpa(conta.agencia),           // 027-030 agência (sem DV, ver itau-campo-livre.util.ts)
     '00',                                  // 031-032
-    num(conta.numeroConta, 5),             // 033-037 conta
+    contaLimpa(conta.numeroConta),         // 033-037 conta (sem DV)
     dac,                                   // 038-038 DAC agência/conta
     brancos(8),                            // 039-046
     alfa(conta.titular, 30),               // 047-076 nome da empresa
@@ -191,9 +191,9 @@ function montarDetalhe(boleto: BoletoParaRemessa, conta: ContaBancariaParaRemess
     '1',                                          // 001-001 tipo de registro
     '02',                                         // 002-003 tipo inscrição empresa (02=CNPJ)
     num(conta.cnpjCpfTitular ?? '', 14),          // 004-017
-    num(conta.agencia, 4),                        // 018-021 agência
+    agenciaLimpa(conta.agencia),                  // 018-021 agência (sem DV)
     '00',                                         // 022-023
-    num(conta.numeroConta, 5),                    // 024-028 conta
+    contaLimpa(conta.numeroConta),                // 024-028 conta (sem DV)
     dacAgConta,                                   // 029-029 DAC agência/conta
     brancos(8),                                   // 030-037
     alfa(boleto.numeroDocumento, 25),             // 038-062 uso da empresa
