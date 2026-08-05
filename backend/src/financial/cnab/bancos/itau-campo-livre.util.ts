@@ -33,11 +33,23 @@ import { modulo10 } from './linha-digitavel.util';
 // dígitos entram no campo livre.
 const soDigitos = (s: string) => s.replace(/\D/g, '');
 
-function agenciaLimpa(agencia: string): string {
-  return soDigitos(agencia).padStart(4, '0').slice(-4);
+// Se o valor cadastrado inclui o dígito verificador (ex.: "13377-4" ou até
+// "133774" sem hífen), descartar só os últimos N dígitos por posição fixa
+// (padStart+slice) rouba o primeiro dígito da conta de verdade em vez de
+// remover o DV — foi exatamente esse bug que gerou remessa/boleto com a
+// conta errada (13377 virou 33774) em ago/2026. O DV nunca deve entrar
+// aqui: ele é sempre recalculado à parte por dacAgenciaContaItau/
+// dvNossoNumeroItau. Regra: se tem hífen, usa só a parte antes dele; senão,
+// assume que já veio sem DV.
+function semDigitoVerificador(valor: string): string {
+  return soDigitos(valor.split('-')[0]);
 }
-function contaLimpa(contaCorrente: string): string {
-  return soDigitos(contaCorrente).padStart(5, '0').slice(-5);
+
+export function agenciaLimpa(agencia: string): string {
+  return semDigitoVerificador(agencia).padStart(4, '0').slice(-4);
+}
+export function contaLimpa(contaCorrente: string): string {
+  return semDigitoVerificador(contaCorrente).padStart(5, '0').slice(-5);
 }
 
 // Anexo 3 do manual — DAC de Agência/Conta, módulo 10 (mesmo algoritmo do

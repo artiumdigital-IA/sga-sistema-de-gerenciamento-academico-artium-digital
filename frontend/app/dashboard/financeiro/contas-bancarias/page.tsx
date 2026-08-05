@@ -58,14 +58,27 @@ function ContaModal({ conta, onClose, onSave }: { conta: Conta | null; onClose: 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(''); setSaving(true);
     try {
+      // Envia só os campos que a DTO aceita — `form` nasce de `{ ...conta }`
+      // quando é edição, e o objeto `conta` vindo da API traz campos que a
+      // DTO de update rejeita (id, sequencialRemessa, criadoEm, atualizadoEm),
+      // além de saldoInicial vir como string (Decimal do Prisma serializado
+      // em JSON, mesmo padrão já visto em outros campos Decimal do projeto).
       const body = {
-        ...form,
+        banco: form.banco,
+        agencia: form.agencia,
+        numeroConta: form.numeroConta,
+        tipoConta: form.tipoConta,
+        titular: form.titular,
         cnpjCpfTitular: form.cnpjCpfTitular || undefined,
+        saldoInicial: Number(form.saldoInicial),
+        ativa: form.ativa,
         observacoes: form.observacoes || undefined,
+        cnabHabilitado: form.cnabHabilitado,
         codigoBancoFebraban: form.codigoBancoFebraban || undefined,
         codigoCedente: form.codigoCedente || undefined,
         carteira: form.carteira || undefined,
         variacaoCarteira: form.variacaoCarteira || undefined,
+        layoutCnab: form.layoutCnab || undefined,
       };
       if (conta) await apiFetch(`/financeiro/contas-bancarias/${conta.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       else await apiFetch('/financeiro/contas-bancarias', { method: 'POST', body: JSON.stringify(body) });
@@ -83,7 +96,7 @@ function ContaModal({ conta, onClose, onSave }: { conta: Conta | null; onClose: 
           <F label="Banco *"><input style={INPUT} value={form.banco} required onChange={e => set('banco', e.target.value)} /></F>
           <G cols="1fr 1fr">
             <F label="Agência *"><input style={INPUT} value={form.agencia} required onChange={e => set('agencia', e.target.value)} /></F>
-            <F label="Conta *"><input style={INPUT} value={form.numeroConta} required onChange={e => set('numeroConta', e.target.value)} /></F>
+            <F label="Conta * (sem dígito verificador)"><input style={INPUT} placeholder="Ex.: 13377 (não incluir o -4)" value={form.numeroConta} required onChange={e => set('numeroConta', e.target.value)} /></F>
           </G>
           <G cols="1fr 1fr">
             <F label="Tipo">
