@@ -4,10 +4,19 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Sem isso, o body-parser do Express usa o limite default (100kb), que
+  // rejeita com "request entity too large" qualquer payload JSON maior --
+  // ex.: upload em lote de livros da Biblioteca (Relatórios Master), que
+  // manda um array com centenas de linhas em JSON (bem mais verboso que o
+  // CSV de origem, por causa das chaves repetidas em cada objeto).
+  app.use(json({ limit: '20mb' }));
+  app.use(urlencoded({ extended: true, limit: '20mb' }));
 
   // Sem isso, o processo Nest ignora SIGTERM (o sinal que o Docker manda ao
   // parar/reiniciar um container -- todo redeploy no Coolify faz isso) e é

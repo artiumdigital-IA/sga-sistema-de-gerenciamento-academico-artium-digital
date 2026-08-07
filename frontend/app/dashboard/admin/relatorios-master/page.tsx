@@ -22,6 +22,41 @@ function csvEscape(v: string) {
   return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
 }
 
+// Parser de linha CSV que respeita aspas (RFC 4180 simplificado) -- o antigo
+// `linha.split(',')` quebrava qualquer campo com vírgula interna (comum em
+// nome de autor no formato "SOBRENOME, Nome"), embaralhando as colunas sem
+// dar erro nenhum. Suporta aspas duplas escapadas ("" dentro de um campo
+// entre aspas vira um " literal).
+function parseCsvLine(linha: string): string[] {
+  const campos: string[] = [];
+  let atual = '';
+  let dentroAspas = false;
+  for (let i = 0; i < linha.length; i++) {
+    const c = linha[i];
+    if (dentroAspas) {
+      if (c === '"') {
+        if (linha[i + 1] === '"') {
+          atual += '"';
+          i++;
+        } else {
+          dentroAspas = false;
+        }
+      } else {
+        atual += c;
+      }
+    } else if (c === '"') {
+      dentroAspas = true;
+    } else if (c === ',') {
+      campos.push(atual);
+      atual = '';
+    } else {
+      atual += c;
+    }
+  }
+  campos.push(atual);
+  return campos;
+}
+
 const BOTOES_BANCO: { formato: Formato; label: string; rota: string; filename: string; estilo: React.CSSProperties }[] = [
   { formato: 'sql', label: '⭳ SQL completo', rota: '/relatorios-master/dump-sql', filename: 'banco-completo.sql', estilo: BTN_P },
   { formato: 'sql-schema', label: '⭳ SQL (só schema)', rota: '/relatorios-master/dump-sql?apenasSchema=true', filename: 'schema.sql', estilo: BTN_G },
@@ -218,7 +253,7 @@ export default function RelatoriosMasterPage() {
       const linhasTexto = texto.replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim().length > 0);
       if (linhasTexto.length < 2) throw new Error('Planilha vazia ou sem linhas de dados.');
 
-      const header = linhasTexto[0].split(',').map(h => h.trim().toLowerCase());
+      const header = parseCsvLine(linhasTexto[0]).map(h => h.trim().toLowerCase());
       const idx = (nome: string) => header.indexOf(nome.toLowerCase());
       const idxTitulo = idx('Titulo');
       const idxAutor = idx('Autor');
@@ -237,7 +272,7 @@ export default function RelatoriosMasterPage() {
 
       const linhas = [];
       for (const linha of linhasTexto.slice(1)) {
-        const cols = linha.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        const cols = parseCsvLine(linha).map(c => c.trim());
         if (!cols[idxTitulo] || !cols[idxAutor] || !cols[idxTombamento]) continue;
         linhas.push({
           titulo: cols[idxTitulo],
