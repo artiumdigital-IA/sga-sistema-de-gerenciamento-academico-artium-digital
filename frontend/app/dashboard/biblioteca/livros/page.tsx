@@ -270,7 +270,7 @@ export default function LivrosPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
-            style={{ ...INPUT, width: 220 }} placeholder="Buscar título, autor, categoria..."
+            style={{ ...INPUT, width: 220 }} placeholder="Buscar título, autor, categoria, tombamento..."
             value={busca} onChange={e => setBusca(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') load(busca); }}
           />
