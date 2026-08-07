@@ -35,6 +35,10 @@ export class LivroService {
               { titulo: { contains: busca, mode: 'insensitive' } },
               { autor: { contains: busca, mode: 'insensitive' } },
               { categoria: { contains: busca, mode: 'insensitive' } },
+              // Busca também pelo código de tombamento de qualquer exemplar do
+              // livro (ex: "IURJ-2026-005") -- o tombamento mora no exemplar,
+              // não no título, por isso o filtro por relação `exemplares.some`.
+              { exemplares: { some: { codigoTombamento: { contains: busca, mode: 'insensitive' } } } },
             ],
           }
         : undefined,
