@@ -18,10 +18,10 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1C3A6B"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "br.edu.fiurj.aluno",
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -34,7 +34,7 @@
         {
           "image": "./assets/splash.png",
           "resizeMode": "contain",
-          "backgroundColor": "#1C3A6B"
+          "backgroundColor": "#FFFFFF"
         }
       ]
     ],
