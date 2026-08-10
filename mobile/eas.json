@@ -19,6 +19,10 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sga.fiurj.edu.br/api/v1",
+        "EXPO_PUBLIC_WEB_URL": "https://sga.fiurj.edu.br"
+      },
       "android": {
         "buildType": "app-bundle"
       }
