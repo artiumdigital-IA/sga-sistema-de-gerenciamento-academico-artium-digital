@@ -112,5 +112,10 @@ export function montarLinhaDigitavel(codigoBarras44: string): string {
     return partes.join('.');
   };
 
-  return [f(campo1, 5, 5), f(campo2, 5, 5), f(campo3, 5, 5), dvGeral, fatorValor].join(' ');
+  // Campo 1 tem 10 dígitos (9 + DV) → formato 5.5. Campos 2 e 3 têm 11
+  // dígitos cada (10 + DV) → formato 5.6. Formatar os campos 2/3 como 5.5
+  // descartava silenciosamente o DV (11º dígito), gerando uma linha
+  // digitável de 45 dígitos em vez de 47 — o banco rejeitava com "código de
+  // barras inválido/inexistente".
+  return [f(campo1, 5, 5), f(campo2, 5, 6), f(campo3, 5, 6), dvGeral, fatorValor].join(' ');
 }
