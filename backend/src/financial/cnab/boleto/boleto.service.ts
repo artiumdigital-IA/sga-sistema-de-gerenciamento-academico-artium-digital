@@ -1,10 +1,46 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { BancoCnab } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../../../audit/audit.service';
 import { CreateBoletoDto } from './dto/create-boleto.dto';
 import { resolveBancoCnab, BANCOS_IMPLEMENTADOS } from '../bancos/bancos.util';
 import { montarCampoLivreItau } from '../bancos/itau-campo-livre.util';
+import { montarCampoLivreSafra } from '../bancos/safra-campo-livre.util';
 import { montarCodigoBarras, montarLinhaDigitavel } from '../bancos/linha-digitavel.util';
+
+// Composição do campo livre (25 posições do código de barras) é específica
+// de cada banco — NÃO existe fórmula genérica. Até ago/2026 este código
+// usava montarCampoLivreItau() pra qualquer banco (bug real: um boleto
+// emitido pro Safra saía com o código de barras formatado como se fosse do
+// Itaú). Agora cada banco só emite boleto depois de ter sua própria fórmula
+// validada contra o manual técnico — bancos sem entrada aqui são bloqueados
+// explicitamente em vez de herdar a fórmula errada de outro banco.
+function montarCampoLivre(
+  banco: BancoCnab,
+  conta: { agencia: string; numeroConta: string; carteira: string; codigoCedente: string },
+  nossoNumero: string,
+): string {
+  switch (banco) {
+    case BancoCnab.ITAU:
+      return montarCampoLivreItau({ agencia: conta.agencia, contaCorrente: conta.numeroConta, carteira: conta.carteira, nossoNumero });
+    case BancoCnab.SAFRA:
+      // Safra usa um "código do beneficiário" opaco fornecido pelo banco
+      // (ContaBancaria.codigoCedente), não uma fórmula a partir de
+      // agência/conta — ver nota em safra-campo-livre.util.ts. Sem esse
+      // valor, montarCampoLivreSafra geraria silenciosamente um código
+      // zerado (14 zeros) em vez de dar erro — bloqueado explicitamente aqui.
+      if (!conta.codigoCedente?.replace(/\D/g, '')) {
+        throw new BadRequestException(
+          'Conta Safra sem "Código do cedente" cadastrado — informe o Código do Beneficiário (14 dígitos) fornecido pelo banco antes de emitir boleto.',
+        );
+      }
+      return montarCampoLivreSafra({ codigoCedente: conta.codigoCedente, nossoNumero });
+    default:
+      throw new BadRequestException(
+        `Emissão de boleto (código de barras) ainda não implementada pro banco ${banco} — falta validar a composição do campo livre contra o manual técnico desse banco antes de emitir.`,
+      );
+  }
+}
 
 @Injectable()
 export class BoletoService {
@@ -53,12 +89,11 @@ export class BoletoService {
     for (let tentativa = 0; tentativa < maxTentativas; tentativa++) {
       const nossoNumero = await this.gerarNossoNumero();
       try {
-        const campoLivre = montarCampoLivreItau({
-          agencia: conta.agencia,
-          contaCorrente: conta.numeroConta,
-          carteira: conta.carteira,
+        const campoLivre = montarCampoLivre(
+          banco,
+          { agencia: conta.agencia, numeroConta: conta.numeroConta, carteira: conta.carteira, codigoCedente: conta.codigoCedente ?? '' },
           nossoNumero,
-        });
+        );
         const codigoBarras = montarCodigoBarras({
           codigoBancoFebraban: conta.codigoBancoFebraban,
           valor: Number(parcela.valor),
