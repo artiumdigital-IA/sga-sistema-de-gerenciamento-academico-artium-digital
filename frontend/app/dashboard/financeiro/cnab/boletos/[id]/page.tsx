@@ -82,15 +82,32 @@ export default function BoletoDetalhePage() {
   if (!data) return null;
 
   const cb = data.codigoBarras;
-  // DVs lidos direto do código de barras (fonte de verdade) — sem duplicar lógica.
-  // Campo livre começa no índice 19: carteira(19-21) NN(22-29) dvNN(30) ag(31-34) conta(35-39) dacAgConta(40).
-  const dvNN = cb.length === 44 ? cb[30] : '';
-  const dacAgConta = cb.length === 44 ? cb[40] : '';
   const codBanco = data.contaBancaria.codigoBancoFebraban ?? '341';
+  const isSafra = codBanco === '422';
+  // DVs lidos direto do código de barras (fonte de verdade) — sem duplicar lógica.
+  // Campo livre começa no índice 19 (0-based) em ambos os bancos, mas a composição
+  // interna dos 25 dígitos é inteiramente diferente por banco (ver itau-campo-livre.util.ts
+  // e safra-campo-livre.util.ts no backend) — usar a posição errada aqui não dá erro
+  // visível, só imprime um dígito verificador ERRADO no documento.
+  // Itaú: carteira(19-21) NN(22-29) dvNN(30) ag(31-34) conta(35-39) dacAgConta(40).
+  // Safra: "7"(19) codBeneficiario 14d(20-33) nossoNumero+DV 9d(34-42) tipoCobranca(43).
+  //   O DV do nosso número aqui é o ÚLTIMO dígito do bloco de 9 (índice 42), sem hífen
+  //   separador — o formato real do banco é "carteira/NNNNNNNNN" (9 dígitos corridos).
+  const dvNN = cb.length === 44 ? (isSafra ? cb[42] : cb[30]) : '';
+  const dacAgConta = cb.length === 44 ? cb[40] : '';
   const bancoComDv = `${codBanco}-${dvBancoFebraban(codBanco)}`;
-  const nossoNumeroFmt = `${data.carteira}/${data.nossoNumero}${dvNN ? '-' + dvNN : ''}`;
+  const nossoNumeroFmt = isSafra
+    ? `${data.carteira}/${data.nossoNumero}${dvNN}`
+    : `${data.carteira}/${data.nossoNumero}${dvNN ? '-' + dvNN : ''}`;
   const contaSemDv = data.contaBancaria.numeroConta.split('-')[0];
-  const agCodBenef = `${data.contaBancaria.agencia}/${contaSemDv}${dacAgConta ? '-' + dacAgConta : ''}`;
+  // Safra: a "Agência/Código do beneficiário" impressa pelo banco não é agência+conta
+  // separados — é o próprio "Código do Beneficiário" opaco de 14 dígitos (codigoCedente),
+  // que este componente ainda não recebe da API. Até isso ser exposto, mostra
+  // agência/conta reais (corretas, mas não é o número exato que o Safra imprime nesse
+  // campo) em vez de misturar com o dacAgConta do Itaú, que aqui seria lixo.
+  const agCodBenef = isSafra
+    ? `${data.contaBancaria.agencia}/${contaSemDv}`
+    : `${data.contaBancaria.agencia}/${contaSemDv}${dacAgConta ? '-' + dacAgConta : ''}`;
   const valorFmt = fmtMoeda(Number(data.parcela.valor));
   const vencFmt = fmtDataUtc(data.parcela.dataVencimento);
   const procFmt = fmtDataUtc(data.criadoEm);
