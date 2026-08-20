@@ -385,6 +385,241 @@ async function criarCursoComMatriz(cfg: CursoConfig) {
   return { curso, matriz, disciplinas };
 }
 
+/**
+ * Massa de teste dos apps mobile (Ago/2026) — cria 1 aluno de teste + 1
+ * professor de teste (dedicados, e-mails "*.teste@fiurj.edu.br", claramente
+ * distintos de pessoa real) com Usuario de login pros apps mobile/ (aluno) e
+ * mobile-docente/ (professor), e dado suficiente pra cada tela/botão de ação
+ * dos dois apps ter algo pra mostrar/testar: 2 ofertas reais (1 já com nota
+ * lançada e consolidada, 1 "em andamento" pra testar o fluxo de lançar nota/
+ * frequência do zero), matrícula do aluno nas duas, 1 empréstimo de livro em
+ * andamento, 1 contrato financeiro com parcelas paga/vencida/pendente, 1 hora
+ * complementar já creditada, 2 tipos de requerimento no catálogo (um deles
+ * "Hora Complementar" com exigeAnexo=true — nome comparado literalmente pelo
+ * backend, não mudar) e 2 avisos (1 geral, 1 de turma). Idempotente: usa
+ * upsert/findFirst nos campos com identidade natural (email/cpf/ra/nome/
+ * título), pode rodar de novo sem duplicar.
+ */
+async function criarMassaTesteAppsMobile(
+  cursoId: string,
+  matrizCurricularId: string,
+  disciplinas: { id: string; codigo: string; nome: string }[],
+  autorAvisoId: string,
+) {
+  // ── Período letivo em andamento (reaproveita 2026/S2 se a importação
+  // legada já tiver criado — só garante que existe e está EM_ANDAMENTO). ──
+  const periodo = await prisma.periodoLetivo.upsert({
+    where: { ano_semestre: { ano: 2026, semestre: 'S2' } },
+    update: { status: 'EM_ANDAMENTO' },
+    create: {
+      ano: 2026, semestre: 'S2',
+      dataInicio: new Date('2026-07-06'), dataFim: new Date('2026-12-18'),
+      status: 'EM_ANDAMENTO',
+    },
+  });
+
+  // ── Professor de teste + Usuario (app mobile-docente) ───────────────────
+  const professorTeste = await prisma.professor.upsert({
+    where: { email: 'professor.teste@fiurj.edu.br' },
+    update: {},
+    create: {
+      nome: 'Professor Teste App Docente', cpf: '11111111111',
+      titulacao: 'MESTRE', regimeTrabalho: 'PARCIAL', corRaca: 'NAO_DECLARADO',
+      email: 'professor.teste@fiurj.edu.br',
+    },
+  });
+  const senhaProfTesteHash = await bcrypt.hash('professor123', 12);
+  await prisma.usuario.upsert({
+    where: { email: 'professor.teste@fiurj.edu.br' },
+    update: { professorId: professorTeste.id, perfil: 'PROFESSOR', status: 'ATIVO' },
+    create: {
+      email: 'professor.teste@fiurj.edu.br', senhaHash: senhaProfTesteHash,
+      perfil: 'PROFESSOR', professorId: professorTeste.id, status: 'ATIVO',
+      nome: professorTeste.nome,
+    },
+  });
+  console.log('✅ Usuário professor de teste: professor.teste@fiurj.edu.br  (senha: professor123)');
+
+  // ── Aluno de teste + Usuario (app mobile) ───────────────────────────────
+  const alunoTeste = await prisma.aluno.upsert({
+    where: { ra: 'TESTE0001' },
+    update: {},
+    create: {
+      cursoId, matrizCurricularId, ra: 'TESTE0001', nome: 'Aluno Teste App',
+      cpf: '22222222222', dataNascimento: new Date('2003-05-15'),
+      sexo: 'NAO_DECLARADO', corRaca: 'NAO_DECLARADO', nacionalidade: 'Brasileira',
+      formaIngresso: 'VESTIBULAR', dataIngresso: new Date('2026-01-01'),
+      situacaoVinculo: 'CURSANDO', email: 'aluno.teste@fiurj.edu.br',
+    },
+  });
+  const senhaAlunoTesteHash = await bcrypt.hash('aluno123', 12);
+  const usuarioAlunoTeste = await prisma.usuario.upsert({
+    where: { email: 'aluno.teste@fiurj.edu.br' },
+    update: { alunoId: alunoTeste.id, perfil: 'ALUNO', status: 'ATIVO' },
+    create: {
+      email: 'aluno.teste@fiurj.edu.br', senhaHash: senhaAlunoTesteHash,
+      perfil: 'ALUNO', alunoId: alunoTeste.id, status: 'ATIVO',
+      nome: alunoTeste.nome,
+    },
+  });
+  console.log('✅ Usuário aluno de teste: aluno.teste@fiurj.edu.br  (senha: aluno123)');
+
+  // ── 2 ofertas do professor de teste, no período em andamento ────────────
+  async function garantirOferta(disciplinaId: string, turno: 'NOITE' | 'MANHA') {
+    const existente = await prisma.oferta.findFirst({
+      where: { disciplinaId, periodoLetivoId: periodo.id, professorId: professorTeste.id },
+    });
+    if (existente) return existente;
+    return prisma.oferta.create({
+      data: {
+        disciplinaId, periodoLetivoId: periodo.id, professorId: professorTeste.id,
+        vagas: 50, turno, horario: '19h-22h40', sala: '101',
+      },
+    });
+  }
+  const oferta1 = await garantirOferta(disciplinas[0].id, 'NOITE'); // com nota já lançada/consolidada
+  const oferta2 = await garantirOferta(disciplinas[1].id, 'NOITE'); // "em andamento", sem nota
+
+  // ── Matrícula do aluno de teste nas duas ofertas ────────────────────────
+  const matricula1 = await prisma.matriculaDisciplina.upsert({
+    where: { alunoId_ofertaId: { alunoId: alunoTeste.id, ofertaId: oferta1.id } },
+    update: {},
+    create: { alunoId: alunoTeste.id, ofertaId: oferta1.id, status: 'APROVADO' },
+  });
+  await prisma.matriculaDisciplina.upsert({
+    where: { alunoId_ofertaId: { alunoId: alunoTeste.id, ofertaId: oferta2.id } },
+    update: {},
+    create: { alunoId: alunoTeste.id, ofertaId: oferta2.id, status: 'MATRICULADO' },
+  });
+
+  // ── oferta1: avaliações + resultado já consolidado (mesma fórmula de
+  // ResultadoDisciplinaService.calcularResultado — PROVA 8.0 peso 1 + TRABALHO
+  // 9.0 peso 1 = média 8.5, freq 92.5% → APROVADO) ────────────────────────
+  const avaliacoesExistentes = await prisma.avaliacao.count({ where: { matriculaDisciplinaId: matricula1.id } });
+  if (avaliacoesExistentes === 0) {
+    await prisma.avaliacao.create({ data: { matriculaDisciplinaId: matricula1.id, tipo: 'PROVA', nota: 8.0, peso: 1 } });
+    await prisma.avaliacao.create({ data: { matriculaDisciplinaId: matricula1.id, tipo: 'TRABALHO', nota: 9.0, peso: 1 } });
+  }
+  await prisma.resultadoDisciplina.upsert({
+    where: { matriculaDisciplinaId: matricula1.id },
+    update: {},
+    create: {
+      matriculaDisciplinaId: matricula1.id, mediaFinal: 8.5, faltas: 3,
+      frequenciaPercentual: 92.5, situacao: 'APROVADO',
+    },
+  });
+  await prisma.notaPauta.upsert({
+    where: { matriculaDisciplinaId: matricula1.id },
+    update: {},
+    create: { matriculaDisciplinaId: matricula1.id, av1: 8.0, av2: 9.0, faltas: 3 },
+  });
+  console.log('✅ Oferta/matrícula/avaliação/resultado/pauta de teste (disciplina já consolidada)');
+
+  // ── Empréstimo de biblioteca em andamento (Usuario, não Aluno) ──────────
+  const emprestimoAtivo = await prisma.emprestimo.findFirst({
+    where: { usuarioId: usuarioAlunoTeste.id, status: 'EM_ANDAMENTO' },
+  });
+  if (!emprestimoAtivo) {
+    const exemplarLivre = await prisma.exemplarLivro.findFirst({ where: { status: 'DISPONIVEL' } });
+    if (exemplarLivre) {
+      await prisma.$transaction([
+        prisma.emprestimo.create({
+          data: {
+            tipoItem: 'LIVRO', exemplarLivroId: exemplarLivre.id, usuarioId: usuarioAlunoTeste.id,
+            dataPrevistaDevolucao: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            status: 'EM_ANDAMENTO', registradoPorId: autorAvisoId,
+          },
+        }),
+        prisma.exemplarLivro.update({ where: { id: exemplarLivre.id }, data: { status: 'EMPRESTADO' } }),
+      ]);
+      console.log('✅ Empréstimo de biblioteca de teste (1 livro em andamento)');
+    } else {
+      console.log('↷ Nenhum exemplar de livro disponível pra criar empréstimo de teste — pulado.');
+    }
+  }
+
+  // ── Contrato financeiro + parcelas (paga, vencida, pendentes) ───────────
+  const contratoExistente = await prisma.contratoMatricula.findFirst({
+    where: { alunoId: alunoTeste.id, periodoLetivoId: periodo.id },
+  });
+  if (!contratoExistente) {
+    const contrato = await prisma.contratoMatricula.create({
+      data: {
+        alunoId: alunoTeste.id, periodoLetivoId: periodo.id,
+        valorTotal: 1200.0, numeroParcelas: 6, diaVencimento: 10, status: 'ATIVO',
+      },
+    });
+    // Datas relativas a "agora" (calculadas só na 1ª criação, nunca recalculadas
+    // em runs seguintes — idempotência acima já garante isso): parcelas 1-2 no
+    // passado e pagas, 3 no passado e SEM pagamento (vencida de verdade), 4-6 no
+    // futuro e pendentes.
+    const hoje = new Date();
+    const parcelasData = [1, 2, 3, 4, 5, 6].map((numero) => {
+      const venc = new Date(hoje.getFullYear(), hoje.getMonth() - 4 + numero, 10);
+      const pago = numero <= 2;
+      return {
+        contratoId: contrato.id, numero, valor: 200.0, dataVencimento: venc,
+        status: pago ? ('PAGO' as const) : numero === 3 ? ('VENCIDO' as const) : ('PENDENTE' as const),
+        dataPagamento: pago ? venc : null, valorPago: pago ? 200.0 : null,
+      };
+    });
+    await prisma.parcela.createMany({ data: parcelasData });
+    console.log('✅ Contrato financeiro de teste (6 parcelas: 2 pagas, 1 vencida, 3 pendentes)');
+  }
+
+  // ── Hora complementar já creditada ───────────────────────────────────────
+  const horaComplementarExistente = await prisma.horaComplementar.findFirst({
+    where: { alunoId: alunoTeste.id },
+  });
+  if (!horaComplementarExistente) {
+    await prisma.horaComplementar.create({
+      data: {
+        alunoId: alunoTeste.id, professorId: professorTeste.id, horas: 10,
+        nomeArquivo: 'certificado-teste.pdf', url: '/uploads/documentos/certificado-teste.pdf',
+        tamanho: 12345, observacoes: 'Certificado de teste — massa de dados dos apps mobile.',
+      },
+    });
+    console.log('✅ Hora complementar de teste (10h já creditadas)');
+  }
+
+  // ── Catálogo de tipos de requerimento (aluno app: botão "Solicitar") ────
+  const tipoReqCount = await prisma.tipoRequerimentoCatalogo.count();
+  if (tipoReqCount === 0) {
+    await prisma.tipoRequerimentoCatalogo.create({
+      data: { nome: 'Declaração de Matrícula', prazoDias: 3, local: 'Secretaria', taxa: 0, exigeAnexo: false, ativo: true, ordem: 1 },
+    });
+    // Nome "Hora Complementar" é comparado literalmente pelo backend
+    // (docente.service.ts, atalho "reaproveitar certificado") — não renomear.
+    await prisma.tipoRequerimentoCatalogo.create({
+      data: { nome: 'Hora Complementar', prazoDias: 5, local: 'Secretaria', taxa: 0, exigeAnexo: true, ativo: true, ordem: 2 },
+    });
+    console.log('✅ 2 tipos de requerimento (Declaração de Matrícula, Hora Complementar)');
+  }
+
+  // ── Avisos (1 geral pro mural do app aluno, 1 de turma pra oferta1) ─────
+  const tituloAvisoGeral = 'Bem-vindo ao Portal — ambiente de teste';
+  if (!(await prisma.aviso.findFirst({ where: { titulo: tituloAvisoGeral } }))) {
+    await prisma.aviso.create({
+      data: {
+        titulo: tituloAvisoGeral,
+        texto: 'Este é um aviso geral de teste, visível a todos os alunos autenticados.',
+        tag: 'GERAL', autorNome: 'Secretaria', autorId: autorAvisoId,
+      },
+    });
+  }
+  const tituloAvisoTurma = 'Aula de hoje será revista';
+  if (!(await prisma.aviso.findFirst({ where: { titulo: tituloAvisoTurma, ofertaId: oferta1.id } }))) {
+    await prisma.aviso.create({
+      data: {
+        titulo: tituloAvisoTurma,
+        texto: 'Aviso de turma de teste — visível só a quem está matriculado nesta oferta.',
+        tag: 'GERAL', autorNome: professorTeste.nome, ofertaId: oferta1.id,
+      },
+    });
+  }
+  console.log('✅ Avisos de teste (1 geral + 1 de turma)');
+}
+
 async function main() {
   console.log('🌱 Iniciando seed...');
 
@@ -560,6 +795,20 @@ async function main() {
   // reais de Direito/Gestão Pública fica para uma fase futura (depende de
   // mapear qual turma numérica da Kirsch — 251/252/261/262/271/2 — é Direito
   // e qual é Gestão Pública, confirmação pendente com o usuário).
+
+  // ── Massa de teste dos apps mobile (Ago/2026) ───────────────────────────
+  // Nenhum Usuario de perfil ALUNO/PROFESSOR existia (removido junto com o
+  // bloco acima) — sem isso não dá nem pra logar no app do aluno nem no do
+  // professor. Cria 1 aluno + 1 professor de teste, dedicados e claramente
+  // identificáveis (não reaproveita pessoa real), com dado suficiente pra
+  // exercitar toda tela/botão de ação dos dois apps — ver detalhamento tela a
+  // tela no relatório de investigação que motivou este bloco.
+  await criarMassaTesteAppsMobile(
+    cursoFiurjDireito.id,
+    matrizFiurjDireito.id,
+    discFiurjDireito,
+    sec.id,
+  );
 
   // Bloco legado (avisos/ficha de saúde/contas bancárias/documentos/
   // ocorrências/mensagens/observações financeiras/ramais/bolsista/protocolo/
